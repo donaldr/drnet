@@ -12,7 +12,7 @@
     "@automattic/interpolate-components": "^1.2.1",
     "@react-three/drei": "^9.120.0",
     "@react-three/fiber": "^9.0.0-rc.1",
-    "@react-three/postprocessing": "aryankarim/react-postprocessing#master",
+    "@react-three/postprocessing": "https://github.com/aryankarim/react-postprocessing#master",
     "@rigo-m/react-split-text": "^1.0.1",
     "@studio-freight/react-lenis": "^0.0.47",
     "acorn": "^8.14.0",
