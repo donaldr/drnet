@@ -1,0 +1,113 @@
+{
+  "work": [
+    {
+      "project": "Verizon Innovation Center, Boston",
+      "client": "Verizon",
+      "employer": "Gensler",
+      "position": "Technology Director, New York Studio",
+      "date": "202?",
+      "roles": [
+        "Technical Lead",
+        "Software Architect",
+        "Individual Contributor"
+      ],
+      "responsibilities": [
+        "Overall project technical lead, leading internal development teams, coordinating with internal design teams, and external vendors, including AV integration, fabrication, lighting design, and external software development.",
+        "Designed the overall software architecture including a singular CMS for content, with content distribution, and integration with Verizon data APIs and ShowControl systems.",
+        "Backend development, front-end content sync system, custom cue-and-view app for multiple interactives developed in TouchDesigner, system to integrate multiple depth sensors with registration admin for Elevator Lobby, presence-detection functionality for radar sensors for kiosks, Verizon API data integration for web-based kiosk experience, signal processing for privacy glass blurring for low-res LED."
+      ],
+      "slug": "verizon-innovation-center-boston",
+      "hero": "/work/verizon/intro.mp4",
+      "heroType": "video",
+      "video": "/work/verizon/detail.mp4",
+      "videoAspect": 1.77777777778,
+      "thumb": "/work/verizon/atmosphere.jpg",
+      "thumbStartFocus": { "x": 384, "y": 209 },
+      "thumbStartScale": 0.6,
+      "thumbEndFocus": { "x": 385, "y": 200 },
+      "thumbEndScale": 0.5,
+      "thumbSize": { "width": 1089, "height": 613 },
+      "images": [
+        "/work/verizon/smart-ecosystems.jpg",
+        "/work/verizon/smart-ecosystems2.jpg",
+        "/work/verizon/theater.jpg",
+        "/work/verizon/elevator-lobby.jpg",
+        "/work/verizon/flip-screens.jpg",
+        "/work/verizon/carts.jpg",
+        "/work/verizon/carts2.jpg",
+        "/work/verizon/carts3.jpg",
+        "/work/verizon/ar.jpg",
+        "/work/verizon/workspace.jpg",
+        "/work/verizon/ambient.jpg",
+        "/work/verizon/atmosphere.jpg"
+      ],
+      "primaryColor": "#CD040B",
+      "theme": "dark",
+      "description": [
+        "Verizon’s Innovation Center spans three floors within their new Boston headquarters. It's a space that allows visitors to engage with Verizon’s solutions through a curated journey that can be customized to accommodate a variety of visitor types and use cases. The experience is a modular kit of parts and transformable workshop spaces for a wide range of immersive demos and industry verticals.",
+        "The experience includes 17 different touchpoints ranging from a presence-sensing welcome experience composed of 450 individual digital displays emulating vintage technology, to unique presentation experiences that incorpate low- and high-res LEDs, curved panels, privacy glass, architectural elements, and even a hidden door."
+      ],
+      "detailTemplate": "${project} for ${client}, completed in ${date}, while working as ${position} for ${employer}."
+    },
+    {
+      "project": "Workspace Digital Interactive Experiences",
+      "client": "Confidential Consulting Client",
+      "employer": "Gensler",
+      "position": "Technology Director, New York Studio",
+      "date": "202?",
+      "roles": [
+        "Technical Lead",
+        "Software Architect",
+        "Individual Contributor"
+      ],
+      "responsibilities": [
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+      ],
+      "slug": "confidential-consulting-client",
+      "hero": "/work/ccc/ccc_hero.jpg",
+      "heroType": "image",
+      "video": "/work/ccc/ccc.mp4",
+      "videoAspect": 1.77777777778,
+      "thumb": "/work/ccc/ccc2.jpg",
+      "thumbStartFocus": { "x": 882, "y": 312 },
+      "thumbStartScale": 1,
+      "thumbEndFocus": { "x": 772, "y": 317 },
+      "thumbEndScale": 1.2,
+      "thumbSize": { "width": 1089, "height": 613 },
+      "images": [
+        "/work/ccc/ccc1.jpg",
+        "/work/ccc/ccc2.jpg",
+        "/work/ccc/ccc3.jpg",
+        "/work/ccc/ccc4.jpg"
+      ],
+      "primaryColor": "#FFE600",
+      "titleOutline": true,
+      "theme": "light",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "detailTemplate": "${project} for ${client}, completed in ${date}, while working as ${position} for ${employer}."
+    },
+    {
+      "client": "National Archives",
+      "project": "Record of Rights",
+      "employer": "Second Story",
+      "slug": "national-archives-record-of-rights",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    {
+      "client": "AIGA",
+      "project": "Design Archives",
+      "employer": "Second Story",
+      "slug": "aiga-design-archives",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    {
+      "client": "SFMoMA",
+      "project": "Photography Interpretive Center",
+      "employer": "Second Story",
+      "slug": "sfmoma-photography-interpretive-center",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    }
+  ]
+}
