@@ -28,6 +28,9 @@ const nextConfig: NextConfig = {
       test: /\.(glsl|vs|fs|vert|frag)$/,
       use: ["raw-loader", "glslify-loader"],
     });
+    if (options.isServer) {
+      config.resolve.alias["paper"] = false;
+    }
 
     return config;
   },

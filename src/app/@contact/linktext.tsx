@@ -27,14 +27,25 @@ function LinkText({
   const hoverRef = useRef(false);
   const activeOverRef = useRef(false);
   const activeRef = useRef(false);
+  const [width, setWidth] = useState(0);
 
   const textPathRef = useRef<Array<SVGPathElement | null>>([]);
-  const linkText = useLineText(text, window.innerWidth / (text.length * 0.75));
+  const linkText = useLineText(text, width / (text.length * 0.75));
   const lineRef = useRef<SVGPathElement | null>(null);
   const requestRef = useRef<number>(0);
   const [copyText, setCopyText] = useState("click to copy");
   const copyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedRef = useRef(false);
+
+  const resize = useCallback(() => {
+    setWidth(window.innerWidth);
+  }, []);
+
+  useEffect(() => {
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [resize]);
 
   useEffect(() => {
     activeRef.current = active;

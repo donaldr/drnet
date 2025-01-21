@@ -6,7 +6,8 @@ import {
   useState,
 } from "react";
 import opentype from "opentype.js";
-import paper from "paper/dist/paper-full";
+//import paper from "paper/dist/paper-full";
+import paper from "paper-jsdom-canvas";
 import Matter from "matter-js";
 import "pathseg";
 import clsx from "clsx";

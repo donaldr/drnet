@@ -5,7 +5,8 @@ declare module '*.frag' {
 
 declare module "glslify";
 
-declare module "paper/dist/paper-full";
+//declare module "paper/dist/paper-full";
+declare module "paper-jsdom-canvas";
 
 declare module "hex-to-hsl";
 

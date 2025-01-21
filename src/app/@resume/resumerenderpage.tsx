@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { useGlobalState } from "@/lib/state";
 import SVGStroke from "@/lib/svgstroke";
 import { useLocomotiveScroll } from "react-locomotive-scroll";
 import HeaderTitle from "../headertitle";
-import hexToHsl from "hex-to-hsl";
 import { useLineText } from "@/lib/linetext";
+import Squares from "../@work/squares";
 
 enum HoverState {
   INIT = "init",
@@ -31,6 +31,7 @@ export default function ResumeRenderPage() {
   const textPathRef = useRef<Array<SVGPathElement | null>>([]);
   const lineRef = useRef<SVGPathElement | null>(null);
   const clickToDownloadText = useLineText("CLICK TO DOWNLOAD", 16);
+  const [height, setHeight] = useState(0);
 
   const [offset0, setOffset0] = useState(0);
   const [offset1, setOffset1] = useState(0);
@@ -44,7 +45,15 @@ export default function ResumeRenderPage() {
   const [offsetText, setOffsetText] = useState(0);
   const { scroll } = useLocomotiveScroll();
 
-  const height = window.innerHeight / 3;
+  const resize = useCallback(() => {
+    setHeight(window.innerHeight / 3);
+  }, []);
+
+  useEffect(() => {
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [resize]);
 
   useEffect(() => {
     setContainerClasses(
@@ -96,41 +105,8 @@ export default function ResumeRenderPage() {
     }
   }, [scroll]);
 
-  const squares = useMemo(() => {
-    const hsl = hexToHsl("93c5fd");
-    return [...Array(50)].map((item, i) => {
-      return (
-        <div
-          className="absolute"
-          data-scroll
-          data-scroll-speed={20 + Math.random() * 20}
-          key={`resume-square-${i}`}
-          style={{
-            width: `${2 + Math.random() * 3}vw`,
-            left: `${Math.random() * 100}vw`,
-            opacity: Math.random() * 0.5,
-            height: `100vh`,
-            top: "20vh",
-          }}
-        >
-          <div
-            className={`absolute w-full`}
-            style={{
-              backgroundColor: `hsl(${hsl[0]},${hsl[1]}%,${
-                hsl[2] + (100 - hsl[2]) * Math.random() * 0.5
-              }%)`,
-              height: `${10 + Math.random() * 100}vh`,
-              top: `${Math.random() * 100}vh`,
-            }}
-          ></div>
-        </div>
-      );
-    });
-  }, []);
-
   return (
     <>
-      <div className="h-screen"></div>
       <div
         id="resume-target"
         className="absolute top-[-100vh] h-[300vh] w-full"
@@ -142,15 +118,23 @@ export default function ResumeRenderPage() {
         className="absolute top-[-100vh] h-[400vh] w-full"
       />
       <div
-        className="top-[-100vh] absolute h-screen w-screen z-40 bg-blue-300 heavy-grain"
+        className="top-[-100vh] absolute h-[300vh] w-screen z-40 bg-blue-300 heavy-grain"
         data-scroll
         data-scroll-sticky
         data-scroll-target="#resume-sticky-target"
       >
-        {squares}
-      </div>
-      <div className="top-[-100vh] absolute h-screen w-screen z-40">
-        {squares}
+        <Squares
+          count={100}
+          theme={"dark"}
+          index={`resume-squares`}
+          color={"#93c5fd"}
+          minWidth={2}
+          maxWidth={5}
+          minSpeed={20}
+          maxSpeed={40}
+          height={100}
+          top={20}
+        />
       </div>
       <div className="absolute top-[calc(-100vh-5rem)] w-screen z-50 overflow-hidden h-screen">
         <HeaderTitle id="resume" color={"transparent"} theme={"dark"}>

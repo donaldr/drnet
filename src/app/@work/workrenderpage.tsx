@@ -13,9 +13,10 @@ import VideoPull from "./videopull";
 import Detail from "./detail";
 import Slides from "./slides";
 import { useGlobalState } from "@/lib/state";
-import hexToHsl from "hex-to-hsl";
 //import { useWaitWheel } from "../../lib/customhooks";
 import WorkOutro from "./workoutro";
+import Squares from "./squares";
+import NoSSR from "react-no-ssr";
 
 export default function WorkComponent({
   work,
@@ -179,44 +180,6 @@ export default function WorkComponent({
     ),
     []
   );
-
-  const squares = useMemo(() => {
-    const hsl = hexToHsl(work.primaryColor);
-    return [...Array(20)].map((item, i) => {
-      return (
-        <div
-          className="absolute"
-          data-scroll
-          data-scroll-speed={Math.random() * 20}
-          key={`work-${index}-square-${i}`}
-          style={{
-            width: `${5 + Math.random() * 10}vw`,
-            left: `${Math.random() * 100}vw`,
-            opacity: Math.random() * 0.5,
-            height: `${100 * desc.length}vh`,
-            top: 0,
-          }}
-        >
-          <div
-            className={`absolute w-full`}
-            style={{
-              backgroundColor: `hsl(${hsl[0]},${
-                work.theme == "dark"
-                  ? hsl[1]
-                  : hsl[1] + (100 - hsl[1]) * Math.random()
-              }%,${
-                work.theme == "dark"
-                  ? hsl[2] + (100 - hsl[2]) * Math.random() * 0.5
-                  : hsl[2] * (1 - Math.random() * 0.25)
-              }%)`,
-              height: `${10 + Math.random() * 100}vh`,
-              top: `${Math.random() * 100 * desc.length}vh`,
-            }}
-          ></div>
-        </div>
-      );
-    });
-  }, [desc, index, work]);
 
   return (
     <>
@@ -411,7 +374,20 @@ export default function WorkComponent({
               height: `calc(${100 + desc.length * 100}vh - 7rem)`,
             }}
           >
-            {squares}
+            <NoSSR>
+              <Squares
+                count={20}
+                work={work}
+                index={`work-${index}`}
+                color={work.primaryColor}
+                minWidth={5}
+                maxWidth={15}
+                minSpeed={0}
+                maxSpeed={20}
+                height={100 * desc.length}
+                top={0}
+              />
+            </NoSSR>
             {desc.map((d, i) => (
               <div
                 key={`work-${index}-description-${i}`}
