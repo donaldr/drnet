@@ -6,7 +6,7 @@ import SVGStroke from "@/lib/svgstroke";
 import { useLocomotiveScroll } from "react-locomotive-scroll";
 import HeaderTitle from "../headertitle";
 import { useLineText } from "@/lib/linetext";
-import Squares from "../@work/squares";
+import Squares from "../squares";
 
 enum HoverState {
   INIT = "init",

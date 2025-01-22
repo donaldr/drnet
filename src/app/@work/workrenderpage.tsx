@@ -15,7 +15,7 @@ import Slides from "./slides";
 import { useGlobalState } from "@/lib/state";
 //import { useWaitWheel } from "../../lib/customhooks";
 import WorkOutro from "./workoutro";
-import Squares from "./squares";
+import Squares from "../squares";
 import NoSSR from "react-no-ssr";
 
 export default function WorkComponent({
@@ -178,7 +178,7 @@ export default function WorkComponent({
         {work.project}
       </SplitText>
     ),
-    []
+    [work]
   );
 
   return (
@@ -377,7 +377,7 @@ export default function WorkComponent({
             <NoSSR>
               <Squares
                 count={20}
-                work={work}
+                theme={work.theme}
                 index={`work-${index}`}
                 color={work.primaryColor}
                 minWidth={5}

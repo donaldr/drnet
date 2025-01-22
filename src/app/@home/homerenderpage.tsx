@@ -251,7 +251,7 @@ export default function HomeRenderPage() {
         }
       });
     }
-  }, [scroll]);
+  }, [scroll, readyRef, wait, stop]);
 
   const [text, setText] = useState("Donald\u00A0Richardson");
 

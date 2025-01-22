@@ -155,7 +155,7 @@ export default function PageBase({
         }
       }
     }
-  }, [pathMatch, scroll, id]);
+  }, [pathMatch, scroll, id, setNavigating]);
 
   useEffect(() => {
     if (active) {

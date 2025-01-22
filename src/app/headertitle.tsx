@@ -27,7 +27,7 @@ export default function HeaderTitle({
     if (setImageSrcCallbackRef) {
       setImageSrcCallbackRef.current = setImageSrc;
     }
-  }, []);
+  }, [setImageSrcCallbackRef]);
 
   useEffect(() => {
     if (scroll) {

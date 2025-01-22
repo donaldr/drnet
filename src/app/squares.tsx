@@ -1,5 +1,4 @@
 import hexToHsl from "hex-to-hsl";
-import { WorkData } from "./workitems";
 import { memo } from "react";
 
 function Squares({
