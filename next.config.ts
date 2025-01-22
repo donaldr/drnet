@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   //const nextConfig = {
   /* config options here */
+  images: {
+    domains: ["til8tmqclrhrb7ie.public.blob.vercel-storage.com"],
+  },
   async rewrites() {
     return [
       {
