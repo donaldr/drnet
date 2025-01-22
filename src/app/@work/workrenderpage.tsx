@@ -423,7 +423,12 @@ export default function WorkComponent({
               top: `${50 + desc.length * 100}vh`,
             }}
           >
-            <Video work={work} index={index!} videoRef={videoRef} />
+            <Video
+              work={work}
+              index={index!}
+              videoRef={videoRef}
+              crossorigin="anonymous"
+            />
           </div>
         )}
         {work.video && (

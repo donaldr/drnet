@@ -64,6 +64,7 @@ export default function Video({
           width="100%"
           height="100%"
           muted
+          crossOrigin="anonymous"
           style={{
             opacity: 1 - offset * 2,
           }}
