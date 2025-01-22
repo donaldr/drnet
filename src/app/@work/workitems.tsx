@@ -31,12 +31,29 @@ export interface WorkData {
 }
 
 export default async function WorkItems() {
-  const file = await fs.readFile(
-    process.cwd() + "/src/app/@work/data.json",
+  const baseFile = await fs.readFile(
+    process.cwd() + "/src/app/@work/data.base.json",
     "utf8"
   );
-  const data: { work: Array<WorkData> } = JSON.parse(file) as {
-    work: Array<WorkData>;
+  const assetsFile = await fs.readFile(
+    `${process.cwd()}/src/app/@work/data.${
+      process.env.NODE_ENV == "production" ? "prod" : "dev"
+    }.json`,
+    "utf8"
+  );
+  const baseData: { work: Array<Partial<WorkData>> } = JSON.parse(baseFile) as {
+    work: Array<Partial<WorkData>>;
+  };
+  const assetsData: { work: Array<Partial<WorkData>> } = JSON.parse(
+    assetsFile
+  ) as {
+    work: Array<Partial<WorkData>>;
+  };
+
+  const data: { work: Array<WorkData> } = {
+    work: baseData.work.map((work, index) =>
+      Object.assign({}, work, assetsData.work[index])
+    ) as Array<WorkData>,
   };
 
   return (

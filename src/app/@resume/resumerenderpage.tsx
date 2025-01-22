@@ -7,6 +7,7 @@ import { useLocomotiveScroll } from "react-locomotive-scroll";
 import HeaderTitle from "../headertitle";
 import { useLineText } from "@/lib/linetext";
 import Squares from "../squares";
+import NoSSR from "react-no-ssr";
 
 enum HoverState {
   INIT = "init",
@@ -123,18 +124,20 @@ export default function ResumeRenderPage() {
         data-scroll-sticky
         data-scroll-target="#resume-sticky-target"
       >
-        <Squares
-          count={100}
-          theme={"dark"}
-          index={`resume-squares`}
-          color={"#93c5fd"}
-          minWidth={2}
-          maxWidth={5}
-          minSpeed={20}
-          maxSpeed={40}
-          height={100}
-          top={20}
-        />
+        <NoSSR>
+          <Squares
+            count={100}
+            theme={"dark"}
+            index={`resume-squares`}
+            color={"#93c5fd"}
+            minWidth={2}
+            maxWidth={5}
+            minSpeed={20}
+            maxSpeed={40}
+            height={100}
+            top={20}
+          />
+        </NoSSR>
       </div>
       <div className="absolute top-[calc(-100vh-5rem)] w-screen z-50 overflow-hidden h-screen">
         <HeaderTitle id="resume" color={"transparent"} theme={"dark"}>

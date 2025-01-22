@@ -1,0 +1,45 @@
+{
+  "work": [
+    {
+      "slug": "verizon-innovation-center-boston",
+      "hero": "/work/verizon/intro.mp4",
+      "video": "/work/verizon/detail.mp4",
+      "thumb": "/work/verizon/atmosphere.jpg",
+      "images": [
+        "/work/verizon/smart-ecosystems.jpg",
+        "/work/verizon/smart-ecosystems2.jpg",
+        "/work/verizon/theater.jpg",
+        "/work/verizon/elevator-lobby.jpg",
+        "/work/verizon/flip-screens.jpg",
+        "/work/verizon/carts.jpg",
+        "/work/verizon/carts2.jpg",
+        "/work/verizon/carts3.jpg",
+        "/work/verizon/ar.jpg",
+        "/work/verizon/workspace.jpg",
+        "/work/verizon/ambient.jpg",
+        "/work/verizon/atmosphere.jpg"
+      ]
+    },
+    {
+      "slug": "confidential-consulting-client",
+      "hero": "/work/ccc/ccc_hero.jpg",
+      "video": "/work/ccc/ccc.mp4",
+      "thumb": "/work/ccc/ccc2.jpg",
+      "images": [
+        "/work/ccc/ccc1.jpg",
+        "/work/ccc/ccc2.jpg",
+        "/work/ccc/ccc3.jpg",
+        "/work/ccc/ccc4.jpg"
+      ]
+    },
+    {
+      "slug": "national-archives-record-of-rights"
+    },
+    {
+      "slug": "aiga-design-archives"
+    },
+    {
+      "slug": "sfmoma-photography-interpretive-center"
+    }
+  ]
+}

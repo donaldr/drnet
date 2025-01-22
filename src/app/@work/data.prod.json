@@ -1,0 +1,45 @@
+{
+  "work": [
+    {
+      "slug": "verizon-innovation-center-boston",
+      "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/intro-Wiib1k4Aa8qnMvn3TXgeZZLyuAi7jg.mp4",
+      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/detail-9G84PPXNF2dZqNO9VJIB5xQqwUVeVR.mp4",
+      "thumb": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/atmosphere-0fQIWORhWRZGcLfQrnCn3d5aWUfSF7.jpg",
+      "images": [
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/smart-ecosystems-z2MNAxpGFWiWvSto30mnwqy5G1Y79d.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/smart-ecosystems2-ZCHRKc7ydaTHC7Qh99znpiplsupR2z.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/theater-XZzxZSAT63Tc8hezCMOojtyCS8V0LF.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/elevator-lobby-6exDK3LehdVE8e4VmkHGgfr3otzPrO.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/flip-screens-ONiu8Wsf1aewzdBeJwM7zXIcyLByrz.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/carts-xkLIltWEyNmOGLIj6G7NCQqW5Q9ohc.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/carts2-O1YLJH06qg1odKb5kVshLAjyx9WhH8.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/carts3-5UEBsVtype4JIOE0vet6qiMnhgclEG.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/ar-CODbnMWIjwBakSysnwZYllOrCABhdw.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/workspace-ffJDEig6kWZjABPRaTWNmuxCJimA5g.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/ambient-V4UxF3NLf8stG3eIVgpLfKYiicJOun.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/atmosphere-0fQIWORhWRZGcLfQrnCn3d5aWUfSF7.jpg"
+      ]
+    },
+    {
+      "slug": "confidential-consulting-client",
+      "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc_hero-ESMTNIWj5BQKVx9hcLHMoufPv1jpc9.jpg",
+      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc-cS4VRUuww3tYubuthXZ5O9ISHR51OQ.mp4",
+      "thumb": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc2-K3zH7aS7ZFL7ChmBrfTdi79l4nkuPx.jpg",
+      "images": [
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc1-BKp7hAjV74Yk1YYK3KHhwBvVjtwsq4.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc2-K3zH7aS7ZFL7ChmBrfTdi79l4nkuPx.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc3-OEDrYAzXGoqMbcvHQkt1lBy5lzMUEz.jpg",
+        "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc4-TffY5vAgWfvDrOtmIYlSWMLrLxdMKp.jpg"
+      ]
+    },
+    {
+      "slug": "national-archives-record-of-rights"
+    },
+    {
+      "slug": "aiga-design-archives"
+    },
+    {
+      "slug": "sfmoma-photography-interpretive-center"
+    }
+  ]
+}
