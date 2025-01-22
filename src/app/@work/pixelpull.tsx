@@ -53,9 +53,11 @@ export const PixelPull = forwardRef<PixelPullEffect, PixelPullProps>(
     ref: Ref<PixelPullEffect>
   ) {
     const invalidate = useThree((state) => state.invalidate);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { t, texture, perturbationMap, dtSize, isActive } = props;
     const effect = useMemo(() => {
-      return new PixelPullEffect({ ...props });
-    }, [props]);
+      return new PixelPullEffect();
+    }, []);
 
     useLayoutEffect(() => {
       invalidate();
