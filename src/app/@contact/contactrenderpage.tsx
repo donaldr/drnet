@@ -19,7 +19,7 @@ export default function ContactRenderPage() {
   useEffect(() => {
     setContactClasses(
       clsx({
-        "top-[-200vh]": true,
+        "top-[-200dvh]": true,
         absolute: true,
         "h-screen": true,
         "w-screen": true,
@@ -32,11 +32,11 @@ export default function ContactRenderPage() {
       <div className="h-screen"></div>
       <div
         id="contact-target"
-        className="absolute top-[-200vh] h-[300vh] w-full"
+        className="absolute top-[-200dvh] h-[300dvh] w-full"
         data-scroll
         data-scroll-id="contact-target"
       />
-      <div className="absolute top-[calc(-100vh-5rem)] w-screen z-40 overflow-hidden h-[200vh] pointer-events-none">
+      <div className="absolute top-[calc(-100dvh-5rem)] w-screen z-40 overflow-hidden h-[200dvh] pointer-events-none">
         <HeaderTitle id="contact" color={"transparent"} theme={"dark"}>
           Contact
         </HeaderTitle>

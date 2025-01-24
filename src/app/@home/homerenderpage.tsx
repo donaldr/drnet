@@ -237,13 +237,13 @@ export default function HomeRenderPage() {
   useLayoutEffect(() => {
     setHomeClasses(
       clsx({
-        "h-[100vh] transition-[opacity] duration-500 will-change-[opacity,transform]":
+        "h-[100dvh] transition-[opacity] duration-500 will-change-[opacity,transform]":
           true,
       })
     );
     setHomeContentClasses(
       clsx({
-        "fixed top-0 left-0 h-[100vh] w-full": true,
+        "fixed top-0 left-0 h-[100dvh] w-full": true,
       })
     );
   }, []);

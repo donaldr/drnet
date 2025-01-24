@@ -72,7 +72,7 @@ export default function HeaderTitle({
         ></div>
         <div
           id={`${id}-title-appear`}
-          className="absolute top-[100vh] h-full"
+          className="absolute top-[100dvh] h-full"
           data-scroll
           data-scroll-repeat
           data-scroll-call={`showTitleBackground${id}`}
@@ -84,7 +84,7 @@ export default function HeaderTitle({
         data-scroll-sticky
         data-scroll-target={`#${id}-title-background-target`}
         data-scroll-repeat
-        className="relative h-[3rem] w-full z-[46] flex pl-[calc(5vw+4rem)] text-2xl overflow-hidden will-change-transform"
+        className="relative h-[3rem] w-full z-[46] flex pl-[calc(5dvw+4rem)] text-2xl overflow-hidden will-change-transform"
         style={{
           fontVariationSettings: `"wdth" 100, "wght" ${
             theme == "dark" ? 600 : 600
@@ -116,7 +116,7 @@ export default function HeaderTitle({
               alt="boop"
               width={0}
               height={0}
-              sizes="100vw"
+              sizes="100dvw"
               src={imageSrc}
             />
           )}

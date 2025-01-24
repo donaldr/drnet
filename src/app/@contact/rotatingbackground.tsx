@@ -113,16 +113,16 @@ function RotatingBackground({
   return (
     <>
       <div
-        className="w-[300vw] h-[100vh] absolute top-[-50vh] left-[-100vw] z-40 will-change-transform overflow-hidden"
+        className="w-[300dvw] h-[100dvh] absolute top-[-50dvh] left-[-100dvw] z-40 will-change-transform overflow-hidden"
         style={{
           background: `linear-gradient(135deg, ${topStartColor} 25%, ${topEndColor} 75%)`,
           transformOrigin: "bottom center",
-          transform: `translateY(${smoothedOffsetTop * 10}vh) rotateZ(${
+          transform: `translateY(${smoothedOffsetTop * 10}dvh) rotateZ(${
             (smoothedLean - 0.5) * 30
           }deg)`,
           boxShadow: `0 0 30px 10px hsl(${t % 360} 20% 50%/75%)`,
           zIndex: topRef.current ? "100" : "50",
-          perspective: "40vw",
+          perspective: "40dvw",
         }}
       >
         <div
@@ -131,12 +131,12 @@ function RotatingBackground({
             transformOrigin: "bottom center",
             transform: `rotateZ(${-(smoothedLean - 0.5) * 30}deg) translateY(${
               smoothedOffsetTop * -10 + 20
-            }vh) rotateY(${-(smoothedLean - 0.5) * 15}deg) rotateX(${
+            }dvh) rotateY(${-(smoothedLean - 0.5) * 15}deg) rotateX(${
               (smoothedVerticalLean - 0.25) * 10
             }deg)`,
           }}
         >
-          <div className="mt-[15vh] cursor-pointer">
+          <div className="mt-[15dvh] cursor-pointer">
             <LinkText
               activeOver={topRef.current}
               active={active}
@@ -147,16 +147,16 @@ function RotatingBackground({
         </div>
       </div>
       <div
-        className="w-[300vw] h-[100vh] absolute top-[50vh] left-[-100vw] z-40 will-change-transform overflow-hidden"
+        className="w-[300dvw] h-[100dvh] absolute top-[50dvh] left-[-100dvw] z-40 will-change-transform overflow-hidden"
         style={{
           background: `linear-gradient(135deg, ${bottomStartColor} 25%, ${bottomEndColor} 75%)`,
           transformOrigin: "top center",
-          transform: `translateY(${smoothedOffsetBottom * 10}vh) rotateZ(${
+          transform: `translateY(${smoothedOffsetBottom * 10}dvh) rotateZ(${
             (smoothedLean - 0.5) * 30
           }deg)`,
           boxShadow: `0 0 30px 10px hsl(${(t + 180) % 360} 20% 50%/75%)`,
           zIndex: topRef.current ? "50" : "100",
-          perspective: "40vw",
+          perspective: "40dvw",
         }}
       >
         <div
@@ -165,12 +165,12 @@ function RotatingBackground({
             transformOrigin: "top center",
             transform: `rotateZ(${
               -(smoothedLean - 0.5) * 30
-            }deg) translateY(-20vh) rotateY(${
+            }deg) translateY(-20dvh) rotateY(${
               (smoothedLean - 0.5) * 15
             }deg) rotateX(${(smoothedVerticalLean - 0.75) * 10}deg)`,
           }}
         >
-          <div className="mt-[-15vh]">
+          <div className="mt-[-15dvh]">
             <a
               href="https://www.linkedin.com/in/donald-g-richardson/"
               target="_blank"

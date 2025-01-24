@@ -69,7 +69,7 @@ export default function ResumeRenderPage() {
   useEffect(() => {
     setResumeClasses(
       clsx({
-        "top-[-100vh]": true,
+        "top-[-100dvh]": true,
         absolute: true,
         "h-screen": true,
         "w-screen": true,
@@ -110,16 +110,16 @@ export default function ResumeRenderPage() {
     <>
       <div
         id="resume-target"
-        className="absolute top-[-100vh] h-[300vh] w-full"
+        className="absolute top-[-100dvh] h-[300dvh] w-full"
         data-scroll
         data-scroll-id="resume-target"
       />
       <div
         id="resume-sticky-target"
-        className="absolute top-[-100vh] h-[400vh] w-full"
+        className="absolute top-[-100dvh] h-[400dvh] w-full"
       />
       <div
-        className="top-[-100vh] absolute h-[300vh] w-screen z-40 bg-blue-300 heavy-grain"
+        className="top-[-100dvh] absolute h-[300dvh] w-screen z-40 bg-blue-300 heavy-grain"
         data-scroll
         data-scroll-sticky
         data-scroll-target="#resume-sticky-target"
@@ -139,7 +139,7 @@ export default function ResumeRenderPage() {
           />
         </NoSSR>
       </div>
-      <div className="absolute top-[calc(-100vh-5rem)] w-screen z-50 overflow-hidden h-screen">
+      <div className="absolute top-[calc(-100dvh-5rem)] w-screen z-50 overflow-hidden h-screen">
         <HeaderTitle id="resume" color={"transparent"} theme={"dark"}>
           Resume
         </HeaderTitle>

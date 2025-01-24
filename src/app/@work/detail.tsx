@@ -158,7 +158,7 @@ function Detail({
     <>
       <div
         className={clsx({
-          "group absolute px-[5vw] md:text-xl lg:text-2xl h-[100vh] w-[50vw] z-50 box-border will-change-transform max-w-[64rem] md:flex items-center justify-center leading-loose transition-[opacity] duration-1000 hidden":
+          "group absolute px-[5dvw] md:text-xl lg:text-2xl h-[100dvh] w-[50dvw] z-50 box-border will-change-transform max-w-[64rem] md:flex items-center justify-center leading-loose transition-[opacity] duration-1000 hidden":
             true,
           "pointer-events-none": videoInView,
           "md:opacity-100": reveal,
@@ -187,7 +187,7 @@ function Detail({
       <div
         //id={`work-${index}-detail-roles`}
         className={clsx({
-          "group absolute px-[5vw] text-xl h-[150vh] w-full md:w-[50vw] z-50 box-border md:left-[min(50vw,64rem)] will-change-transform max-w-[64rem] flex flex-col items-center justify-center":
+          "group absolute px-[5dvw] text-xl h-[150dvh] w-full md:w-[50dvw] z-50 box-border md:left-[min(50dvw,64rem)] will-change-transform max-w-[64rem] flex flex-col items-center justify-center":
             true,
           "pointer-events-none": videoInView,
           "client-reveal": clientReveal,

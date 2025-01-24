@@ -33,11 +33,11 @@ function Squares({
         data-scroll-speed={minSpeed + Math.random() * (maxSpeed - minSpeed)}
         key={`${index}-square-${i}`}
         style={{
-          width: `${minWidth + Math.random() * (maxWidth - minWidth)}vw`,
-          left: `${Math.random() * 100}vw`,
+          width: `${minWidth + Math.random() * (maxWidth - minWidth)}dvw`,
+          left: `${Math.random() * 100}dvw`,
           opacity: Math.random() * 0.5,
-          height: `${height}vh`,
-          top: `${top}vh`,
+          height: `${height}dvh`,
+          top: `${top}dvh`,
         }}
       >
         <div
@@ -50,8 +50,8 @@ function Squares({
                 ? hsl[2] + (100 - hsl[2]) * Math.random() * 0.5
                 : hsl[2] * (1 - Math.random() * 0.25)
             }%)`,
-            height: `${10 + Math.random() * 100}vh`,
-            top: `${Math.random() * height}vh`,
+            height: `${10 + Math.random() * 100}dvh`,
+            top: `${Math.random() * height}dvh`,
           }}
         ></div>
       </div>

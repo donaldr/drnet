@@ -120,7 +120,7 @@ export default function FitVariable({
         }}
       ></div>
       <div
-        className="font-[fit-variable] tracking-[1vw] relative w-full h-[100vh] flex items-center justify-center z-10"
+        className="font-[fit-variable] tracking-[1dvw] relative w-full h-[100dvh] flex items-center justify-center z-10"
         style={{
           //transform: `translateY(${offset ? offset * -100: 0}px)`
           opacity: offset ? 1 - offset : 1,
@@ -135,7 +135,7 @@ export default function FitVariable({
                   <span className="relative inline-block">
                     <span
                       style={{
-                        height: `min(60vh,${(3 * 75) / textLength}vw)`,
+                        height: `min(60dvh,${(3 * 75) / textLength}dvw)`,
                         textShadow: `0px 0px ${
                           3 *
                           Math.pow(
@@ -171,8 +171,8 @@ export default function FitVariable({
                                   1
                                 )
                           )}`,
-                          fontSize: `min(80vh,${(3 * 100) / textLength}vw)`,
-                          lineHeight: `min(80vh,${(3 * 100) / textLength}vw)`,
+                          fontSize: `min(80dvh,${(3 * 100) / textLength}dvw)`,
+                          lineHeight: `min(80dvh,${(3 * 100) / textLength}dvw)`,
                         }}
                         className="align-text-top"
                       >
@@ -191,7 +191,7 @@ export default function FitVariable({
             style={{
               transform: "rotateZ(180deg) scaleX(-1)",
               zoom: offset ? 1 - offset * 0.5 : 1,
-              top: `min(60vh,${(3 * 75) / textLength}vw)`,
+              top: `min(60dvh,${(3 * 75) / textLength}dvw)`,
             }}
           >
             {
@@ -201,7 +201,7 @@ export default function FitVariable({
                   <span className="relative inline-block">
                     <span
                       style={{
-                        height: `min(60vh,${(3 * 75) / textLength}vw)`,
+                        height: `min(60dvh,${(3 * 75) / textLength}dvw)`,
                       }}
                       className="wrapper relative left-0 z-20 inline-block"
                     >
@@ -222,8 +222,8 @@ export default function FitVariable({
                                   1
                                 )
                           )}`,
-                          fontSize: `min(80vh,${(3 * 100) / textLength}vw)`,
-                          lineHeight: `min(80vh,${(3 * 100) / textLength}vw)`,
+                          fontSize: `min(80dvh,${(3 * 100) / textLength}dvw)`,
+                          lineHeight: `min(80dvh,${(3 * 100) / textLength}dvw)`,
                           opacity:
                             0.1 +
                             0.3 *
@@ -269,7 +269,7 @@ export default function FitVariable({
                   >
                     <span
                       style={{
-                        height: `min(60vh,${(3 * 75) / textLength}vw)`,
+                        height: `min(60dvh,${(3 * 75) / textLength}dvw)`,
                         transform: `skew(${
                           -(
                             letterIndex / textLength -
@@ -295,8 +295,8 @@ export default function FitVariable({
                                 1
                               )
                         )}`,
-                        fontSize: `min(80vh,${(3 * 100) / textLength}vw)`,
-                        lineHeight: `min(80vh,${(3 * 100) / textLength}vw)`,
+                        fontSize: `min(80dvh,${(3 * 100) / textLength}dvw)`,
+                        lineHeight: `min(80dvh,${(3 * 100) / textLength}dvw)`,
                         filter: "blur(2px)",
                         opacity: "1.0",
                         background: "linear-gradient(#00000000, #000000AA)",

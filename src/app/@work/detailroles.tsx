@@ -43,7 +43,7 @@ function DetailRoles({
               Math.pow(Math.abs(progress - 0.5), 2) *
               20 *
               ((progress - 0.5) / Math.abs(progress - 0.5))
-            ).toFixed(2)}vh`;
+            ).toFixed(2)}dvh`;
           }
         });
       });

@@ -30,6 +30,6 @@ export default function WorkComponent({
     render,
     id: `work-${index}`,
     overrideContentTop: "0",
-    overridePaddingBottom: "100vh",
+    overridePaddingBottom: "100dvh",
   });
 }

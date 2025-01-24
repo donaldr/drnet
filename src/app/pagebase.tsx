@@ -258,7 +258,7 @@ export default function PageBase({
     setPageClasses(
       clsx({
         "relative transition-opacity duration-1000": true,
-        "pb-[100vh]": !overridePaddingBottom,
+        "pb-[100dvh]": !overridePaddingBottom,
         "opacity-100": active,
         "opacity-0": !active,
       })
@@ -267,7 +267,7 @@ export default function PageBase({
       clsx({
         "w-screen absolute": true,
         "h-full": !overrideHeight,
-        "top-[100vh]": !overrideContentTop,
+        "top-[100dvh]": !overrideContentTop,
       })
     );
   }, [active, overrideHeight, overridePaddingBottom, overrideContentTop]);

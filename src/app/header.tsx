@@ -62,7 +62,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed h-header w-full z-50 flex justify-between items-center px-[5vw]">
+      <header className="fixed h-header w-full z-50 flex justify-between items-center px-[5dvw]">
         <div className="flex gap-8">
           <Link href="/" shallow={true} scroll={false}>
             <div className="h-[4em] py-4">

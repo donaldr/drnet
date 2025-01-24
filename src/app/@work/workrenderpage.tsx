@@ -62,13 +62,13 @@ export default function WorkComponent({
   useEffect(() => {
     setWorkClasses(
       clsx({
-        "h-full w-screen transition-[opacity] duration-1000 will-change-[opacity] pt-[50vh] bg-[var(--dark)]":
+        "h-full w-screen transition-[opacity] duration-1000 will-change-[opacity] pt-[50dvh] bg-[var(--dark)]":
           true,
       })
     );
     setHeroClasses(
       clsx({
-        "absolute top-[-100vh] z-40 h-[100vh] w-full pointer-events-none will-change-transform":
+        "absolute top-[-100dvh] z-40 h-[100dvh] w-full pointer-events-none will-change-transform":
           true,
       })
     );
@@ -151,7 +151,7 @@ export default function WorkComponent({
   useEffect(() => {
     setTitleClasses(
       clsx({
-        "group pt-header px-[5vw] fixed left-0 top-0": true,
+        "group pt-header px-[5dvw] fixed left-0 top-0": true,
         hidden: !showTitle,
         active: inView,
         "not-active": !inView,
@@ -185,7 +185,7 @@ export default function WorkComponent({
     <>
       <div
         id={`work-${index}-title-target`}
-        className="absolute top-[50vh] h-[200vh] mt-[-100vh]"
+        className="absolute top-[50dvh] h-[200dvh] mt-[-100dvh]"
         data-scroll
         data-scroll-repeat
         data-scroll-call={`work${index}TitleInView`}
@@ -193,32 +193,32 @@ export default function WorkComponent({
       ></div>
       <div
         id={`work-${index}-title-target-2`}
-        className="absolute h-[300vh] mt-[-100vh]"
+        className="absolute h-[300dvh] mt-[-100dvh]"
         data-scroll
         data-scroll-repeat
         data-scroll-id={`work-${index}-title-target-2`}
         style={{
-          top: `${150 + desc.length * 100 + 250}vh`,
+          top: `${150 + desc.length * 100 + 250}dvh`,
         }}
       ></div>
       <div
         id={`work-${index}-video-play`}
-        className="absolute w-screen h-[50vh]"
+        className="absolute w-screen h-[50dvh]"
         data-scroll
         data-scroll-repeat
         data-scroll-call={`work${index}VideoElementInView`}
         style={{
-          top: `${150 + desc.length * 100}vh`,
+          top: `${150 + desc.length * 100}dvh`,
         }}
       ></div>
       <div
         id={`work-${index}-video-target`}
-        className="absolute w-screen h-[300vh]"
+        className="absolute w-screen h-[300dvh]"
         data-scroll
         data-scroll-repeat
         data-scroll-id={`work-${index}-video-target`}
         style={{
-          top: `${150 + desc.length * 100}vh`,
+          top: `${150 + desc.length * 100}dvh`,
         }}
       ></div>
       <div
@@ -228,73 +228,73 @@ export default function WorkComponent({
         data-scroll-repeat
         data-scroll-id={`work-${index}-theme-change-target`}
         style={{
-          top: `150vh`,
-          height: `${desc.length * 100}vh`,
+          top: `150dvh`,
+          height: `${desc.length * 100}dvh`,
         }}
       ></div>
       <div
         id={`work-${index}-detail-target-1`}
-        className="absolute w-screen h-[150vh]"
+        className="absolute w-screen h-[150dvh]"
         data-scroll
         data-scroll-repeat
         data-scroll-id={`work-${index}-detail-target-1`}
         style={{
-          top: `${150 + desc.length * 100 + 200}vh`,
+          top: `${150 + desc.length * 100 + 200}dvh`,
         }}
       ></div>
       <div
         id={`work-${index}-slides-target`}
-        className="absolute w-screen h-[400vh]"
+        className="absolute w-screen h-[400dvh]"
         data-scroll
         data-scroll-repeat
         data-scroll-id={`work-${index}-slides-target`}
         style={{
-          top: `${150 + desc.length * 100 + 100}vh`,
+          top: `${150 + desc.length * 100 + 100}dvh`,
         }}
       ></div>
       <div
         id={`work-${index}-slides-in-view-target`}
-        className="absolute w-screen h-[100vh]"
+        className="absolute w-screen h-[100dvh]"
         data-scroll
         data-scroll-repeat
         data-scroll-id={`work-${index}-slides-in-view-target`}
         data-scroll-call={`work${index}ShowSlides`}
         style={{
-          top: `${150 + desc.length * 100 + 450}vh`,
+          top: `${150 + desc.length * 100 + 450}dvh`,
         }}
       ></div>
       <div
         id={`work-${index}-hero-target`}
-        className="absolute h-[150vh] top-[-100vh]"
+        className="absolute h-[150dvh] top-[-100dvh]"
         data-scroll
         data-scroll-repeat
         data-scroll-id={`work-${index}-hero-target`}
       ></div>
       <div
         id={`work-${index}-hero-show-target`}
-        className="absolute h-[300vh] top-[-100vh]"
+        className="absolute h-[300dvh] top-[-100dvh]"
         data-scroll
         data-scroll-repeat
         data-scroll-id={`work-${index}-hero-show-target`}
       ></div>
       <div
         id={`work-${index}-outro-target`}
-        className="absolute w-screen h-[500vh]"
+        className="absolute w-screen h-[500dvh]"
         data-scroll
         data-scroll-repeat
         data-scroll-id={`work-${index}-outro-target`}
         style={{
-          top: `${150 + desc.length * 100 + 100}vh`,
+          top: `${150 + desc.length * 100 + 100}dvh`,
         }}
       ></div>
       <div
         id={`work-${index}-outro-animate`}
-        className="absolute w-screen h-[100vh]"
+        className="absolute w-screen h-[100dvh]"
         data-scroll
         data-scroll-repeat
         data-scroll-id={`work-${index}-outro-animate`}
         style={{
-          top: `${150 + desc.length * 100 + 500}vh`,
+          top: `${150 + desc.length * 100 + 500}dvh`,
         }}
       ></div>
       <div
@@ -302,7 +302,7 @@ export default function WorkComponent({
         data-scroll
         data-scroll-repeat
         style={{
-          height: `${100 + desc.length * 100 + 550}vh`,
+          height: `${100 + desc.length * 100 + 550}dvh`,
         }}
       >
         <div
@@ -320,7 +320,7 @@ export default function WorkComponent({
           data-scroll
           data-scroll-sticky
           data-scroll-target="#full"
-          className="fixed top-0 z-40 h-[100vh] w-full pointer-events-none will-change-transform"
+          className="fixed top-0 z-40 h-[100dvh] w-full pointer-events-none will-change-transform"
           data-scroll-repeat
           data-scroll-id={`work-${index}-title-container`}
         >
@@ -335,10 +335,10 @@ export default function WorkComponent({
           </div>
         </div>
         <div
-          className="absolute top-[50vh] w-screen z-50 overflow-hidden light-grain"
+          className="absolute top-[50dvh] w-screen z-50 overflow-hidden light-grain"
           style={{
             backgroundColor: work.primaryColor,
-            height: `${100 + 100 * desc.length}vh`,
+            height: `${100 + 100 * desc.length}dvh`,
           }}
         >
           <HeaderTitle
@@ -350,14 +350,14 @@ export default function WorkComponent({
           </HeaderTitle>
           <div
             id={`work-${index}-reveal-title`}
-            className="absolute top-[-100vh] z-[45] w-full h-screen will-change-transform"
+            className="absolute top-[-100dvh] z-[45] w-full h-screen will-change-transform"
             data-scroll
             data-scroll-sticky
             data-scroll-target={`#work-${index}-title-target`}
             data-scroll-repeat
           >
             <h1
-              className="px-[5vw] block pt-4 mt-header leading-none"
+              className="px-[5dvw] block pt-4 mt-header leading-none"
               style={{
                 fontVariationSettings: `"wdth" 100 "wght" 600`,
                 color: work.theme == "light" ? "var(--dark)" : "var(--light)",
@@ -371,7 +371,7 @@ export default function WorkComponent({
             id={`description-${index}-target`}
             className="relative w-screen text-2xl mt-[4rem]"
             style={{
-              height: `calc(${100 + desc.length * 100}vh - 7rem)`,
+              height: `calc(${100 + desc.length * 100}dvh - 7rem)`,
             }}
           >
             <NoSSR>
@@ -415,12 +415,12 @@ export default function WorkComponent({
         </div>
         {work.video && (
           <div
-            className="absolute h-[300vh] box-content w-screen z-40"
+            className="absolute h-[300dvh] box-content w-screen z-40"
             data-scroll
             data-scroll-speed={-5}
             data-scroll-id={`work-${index}-video-container`}
             style={{
-              top: `${50 + desc.length * 100}vh`,
+              top: `${50 + desc.length * 100}dvh`,
             }}
           >
             <Video work={work} index={index!} videoRef={videoRef} />
@@ -428,12 +428,12 @@ export default function WorkComponent({
         )}
         {work.video && (
           <div
-            className="absolute h-[300vh] box-content w-screen z-40 pointer-events-none"
+            className="absolute h-[300dvh] box-content w-screen z-40 pointer-events-none"
             data-scroll
             data-scroll-speed={-5}
             data-scroll-id={`work-${index}-video-pull-container`}
             style={{
-              top: `${50 + desc.length * 100}vh`,
+              top: `${50 + desc.length * 100}dvh`,
             }}
           >
             <VideoPull work={work} index={index!} videoRef={videoRef} />
@@ -442,8 +442,8 @@ export default function WorkComponent({
         <div
           className="absolute w-screen z-[51] overflow-hidden pointer-events-none"
           style={{
-            height: "150vh",
-            top: `${150 + desc.length * 100 + 195}vh`,
+            height: "150dvh",
+            top: `${150 + desc.length * 100 + 195}dvh`,
           }}
         >
           <HeaderTitle
@@ -459,7 +459,7 @@ export default function WorkComponent({
         <Detail
           work={work}
           index={index!}
-          top={`${150 + desc.length * 100 + 200}vh`}
+          top={`${150 + desc.length * 100 + 200}dvh`}
           videoInView={videoInView}
         />
         <div
@@ -467,12 +467,12 @@ export default function WorkComponent({
           data-scroll-sticky
           data-scroll-target={`#work-${index}-slides-target`}
           className={clsx({
-            "absolute h-[100vh] w-screen bg-[var(--dark)] will-change-transform z-30":
+            "absolute h-[100dvh] w-screen bg-[var(--dark)] will-change-transform z-30":
               true,
             "pointer-events-none": videoInView,
           })}
           style={{
-            top: `${150 + desc.length * 100 + 100}vh`,
+            top: `${150 + desc.length * 100 + 100}dvh`,
           }}
         >
           <Slides
@@ -486,12 +486,12 @@ export default function WorkComponent({
           data-scroll-sticky
           data-scroll-target={`#work-${index}-outro-target`}
           className={clsx({
-            "absolute h-[100vh] w-screen bg-[var(--dark)] will-change-transform":
+            "absolute h-[100dvh] w-screen bg-[var(--dark)] will-change-transform":
               true,
             "pointer-events-none": videoInView,
           })}
           style={{
-            top: `${150 + desc.length * 100 + 100}vh`,
+            top: `${150 + desc.length * 100 + 100}dvh`,
           }}
         >
           <WorkOutro index={index} />

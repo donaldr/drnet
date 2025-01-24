@@ -20,7 +20,7 @@ export default function WorkComponent() {
     pathTest,
     render,
     id: "work-intro",
-    overridePaddingBottom: "50vh",
+    overridePaddingBottom: "50dvh",
     overrideContentTop: "0",
   });
 }

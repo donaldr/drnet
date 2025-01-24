@@ -136,9 +136,9 @@ export default function Footer({
       data-scroll
       data-scroll-sticky
       data-scroll-target="#full"
-      className="z-50 left-0 top-[100vh] -mt-footer absolute h-footer w-full flex items-center justify-center will-change-transform delay-"
+      className="z-50 left-0 top-[100dvh] -mt-footer absolute h-footer w-full flex items-center justify-center will-change-transform delay-"
     >
-      <div className="flex flex-row w-full bg-gray-200 h-full box-border p-2 shadow-lg shadow-gray-600 bg-opacity-10 backdrop-blur-md gap-[5vw] items-center justify-stretch">
+      <div className="flex flex-row w-full bg-gray-200 h-full box-border p-2 shadow-lg shadow-gray-600 bg-opacity-10 backdrop-blur-md gap-[5dvw] items-center justify-stretch">
         <div className="flex flex-1 flex-col">
           <div className="text-xs relative overflow-hidden">
             {previousEffectIndex !== undefined && (

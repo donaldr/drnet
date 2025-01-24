@@ -459,7 +459,7 @@ export default function Chop({
         "opacity-0": (show && !reveal) || (!show && reveal),
         "transition-all": true,
         "font-[mekon-block]": true,
-        "tracking-[1vw]": true,
+        "tracking-[1dvw]": true,
         absolute: true,
         "w-full": true,
         "h-full": true,

@@ -60,7 +60,7 @@ export default function Hero({
             alt="_"
             width={0}
             height={0}
-            sizes="100vw"
+            sizes="100dvw"
             src={work.hero!}
           />
         </div>
