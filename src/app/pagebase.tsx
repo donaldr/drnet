@@ -54,6 +54,46 @@ export default function PageBase({
 
   useEffect(() => {
     if (scroll) {
+      /*
+      scroll.on("scroll", (obj: any) => {
+        if (id in obj.currentElements) {
+          setCurrentInView((previousCurrentInView) => {
+            if (!previousCurrentInView.includes(id)) {
+              return [id, ...previousCurrentInView];
+            } else {
+              return previousCurrentInView;
+            }
+          });
+        } else {
+          setCurrentInView((previousCurrentInView) => {
+            const result = [
+              ...previousCurrentInView.filter((thisId) => thisId != id),
+            ];
+            return result;
+          });
+        }
+
+        const contentKey = `${id}-content`;
+
+        if (contentKey in obj.currentElements) {
+          setActiveList((previousActiveList) => {
+            if (!previousActiveList.includes(id)) {
+              return [...previousActiveList, id];
+            } else {
+              return previousActiveList;
+            }
+          });
+        } else {
+          setActiveList((previousActiveList) => {
+            const result = [
+              ...previousActiveList.filter((thisId) => thisId != id),
+            ];
+            return result;
+          });
+        }
+      });
+      */
+      /*
       scroll.on("call", (f: string, type: string, el: any) => {
         if (el.el.id == id && f == "inView") {
           if (type == "enter") {
@@ -93,8 +133,54 @@ export default function PageBase({
           }
         }
       });
+      */
     }
   }, [scroll, id, setActiveList, setCurrentInView]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((value) => {
+        if (value.target.id == id) {
+          if (value.isIntersecting) {
+            setCurrentInView((previousCurrentInView) => {
+              if (!previousCurrentInView.includes(id)) {
+                return [id, ...previousCurrentInView];
+              } else {
+                return previousCurrentInView;
+              }
+            });
+          } else {
+            setCurrentInView((previousCurrentInView) => {
+              const result = [
+                ...previousCurrentInView.filter((thisId) => thisId != id),
+              ];
+              return result;
+            });
+          }
+        }
+        if (value.target.id == `${id}-content`) {
+          if (value.isIntersecting) {
+            setActiveList((previousActiveList) => {
+              if (!previousActiveList.includes(id)) {
+                return [...previousActiveList, id];
+              } else {
+                return previousActiveList;
+              }
+            });
+          } else {
+            setActiveList((previousActiveList) => {
+              const result = [
+                ...previousActiveList.filter((thisId) => thisId != id),
+              ];
+              return result;
+            });
+          }
+        }
+      });
+    });
+    observer.observe(document.getElementById(id) as HTMLElement);
+    observer.observe(document.getElementById(`${id}-content`) as HTMLElement);
+  }, [id, setActiveList, setCurrentInView]);
 
   useEffect(() => {
     //console.log(`%c ${activeList[activeList.length - 1]}`, 'background: #222; color: #bada55');
@@ -125,7 +211,7 @@ export default function PageBase({
                   manualPush.current = false;
                 }, 1000);
               },
-              offset: -window.innerHeight + 1,
+              offset: -document.documentElement.clientHeight + 1,
               duration: 1000,
               disableLerp: true,
             });
@@ -134,7 +220,9 @@ export default function PageBase({
               0,
               Math.max(
                 0,
-                document.getElementById(id)!.offsetTop - window.innerHeight + 1
+                document.getElementById(id)!.offsetTop -
+                  document.documentElement.clientHeight +
+                  1
               )
             );
             scroll.scrollTo(`#${id}`, {
@@ -145,7 +233,7 @@ export default function PageBase({
                   manualPush.current = false;
                 }, 250);
               },
-              offset: -window.innerHeight + 1,
+              offset: -document.documentElement.clientHeight + 1,
               duration: 0,
               disableLerp: true,
             });

@@ -47,7 +47,7 @@ export default function ResumeRenderPage() {
   const { scroll } = useLocomotiveScroll();
 
   const resize = useCallback(() => {
-    setHeight(window.innerHeight / 3);
+    setHeight(document.documentElement.clientHeight / 3);
   }, []);
 
   useEffect(() => {
@@ -90,7 +90,7 @@ export default function ResumeRenderPage() {
         if (key in obj.currentElements) {
           const diff =
             (2 * (obj.scroll.y - obj.currentElements[key].top)) /
-            window.innerHeight;
+            document.documentElement.clientHeight;
           setOffset0(Math.max(0, Math.min(1, diff * 5)));
           setOffset1(Math.max(0, Math.min(1, diff * 5 - 0.5)));
           setOffset2(Math.max(0, Math.min(1, diff * 5 - 1)));

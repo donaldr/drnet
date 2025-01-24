@@ -138,12 +138,12 @@ export default function Footer({
       data-scroll-target="#full"
       className="z-50 left-0 top-[100vh] -mt-footer absolute h-footer w-full flex items-center justify-center will-change-transform delay-"
     >
-      <div className="flex flex-row w-full bg-gray-200 h-full box-border p-2 shadow-lg shadow-gray-600 bg-opacity-10 backdrop-blur-md gap-10 items-center justify-stretch">
+      <div className="flex flex-row w-full bg-gray-200 h-full box-border p-2 shadow-lg shadow-gray-600 bg-opacity-10 backdrop-blur-md gap-[5vw] items-center justify-stretch">
         <div className="flex flex-1 flex-col">
           <div className="text-xs relative overflow-hidden">
             {previousEffectIndex !== undefined && (
               <div
-                className={`absolute fill-mode-forwards slide-out-to-bottom slide-in-from-top ${
+                className={`absolute fill-mode-forwards slide-out-to-bottom slide-in-from-top whitespace-pre ${
                   pingPong % 2 == 0 ? "animate-out" : "animate-in"
                 }`}
               >
@@ -153,7 +153,7 @@ export default function Footer({
               </div>
             )}
             <div
-              className={`absolute fill-mode-forwards slide-out-to-bottom slide-in-from-top ${
+              className={`absolute fill-mode-forwards slide-out-to-bottom slide-in-from-top whitespace-pre ${
                 pingPong % 2 == 1 ? "animate-out" : "animate-in"
               }`}
             >
@@ -163,10 +163,10 @@ export default function Footer({
             </div>
             &nbsp;
           </div>
-          <div className="text-[0.6rem] relative overflow-hidden">
+          <div className="text-[0.6rem] relative overflow-hidden hidden md:block">
             {previousEffectIndex !== undefined && (
               <div
-                className={`absolute fill-mode-forwards slide-out-to-bottom slide-in-from-top ${
+                className={`absolute fill-mode-forwards slide-out-to-bottom slide-in-from-top whitespace-pre ${
                   pingPong % 2 == 0 ? "animate-out" : "animate-in"
                 }`}
               >
@@ -178,7 +178,7 @@ export default function Footer({
               </div>
             )}
             <div
-              className={`absolute fill-mode-forwards slide-out-to-bottom slide-in-from-top ${
+              className={`absolute fill-mode-forwards slide-out-to-bottom slide-in-from-top whitespace-pre ${
                 pingPong % 2 == 1 ? "animate-out" : "animate-in"
               }`}
             >
@@ -240,14 +240,18 @@ export default function Footer({
         </div>
         <div className="flex text-xs flex-1 justify-end">
           <input
-            className="bg-[rgba(0,0,0,0.1)] outline-none px-1 w-[9rem]"
+            className="hidden bg-[rgba(0,0,0,0.1)] outline-none px-1 w-[9rem] sm:block"
             type="text"
             defaultValue=""
             maxLength={17}
             placeholder="[Custom Text]"
             onChange={(e) => {
               if (e.target.value == "") {
-                setText("Donald Richardson".replaceAll(/ /g, "\u00A0"));
+                if (document.documentElement.clientWidth < 640) {
+                  setText("DR");
+                } else {
+                  setText("Donald Richardson".replaceAll(/ /g, "\u00A0"));
+                }
               } else {
                 setText(e.target.value.replaceAll(/ /g, "\u00A0"));
               }

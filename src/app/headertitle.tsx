@@ -40,8 +40,10 @@ export default function HeaderTitle({
             88,
             Math.max(
               0,
-              el[0].progress * (el[0].el.offsetHeight + window.innerHeight) -
-                window.innerHeight
+              el[0].progress *
+                (el[0].el.offsetHeight +
+                  document.documentElement.clientHeight) -
+                document.documentElement.clientHeight
             )
           );
           setTitlePosition(position);
@@ -97,7 +99,7 @@ export default function HeaderTitle({
           className={`h-header w-full flex flex-col items-start justify-center`}
         >
           <div
-            className="relative z-50 leading-tight"
+            className="relative z-50 leading-tight hidden md:block"
             style={{
               marginTop: `${88 - titlePosition}px`,
             }}

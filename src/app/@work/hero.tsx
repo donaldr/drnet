@@ -21,7 +21,7 @@ export default function Hero({
         const showKey = `work-${index}-hero-show-target`;
         if (showKey in obj.currentElements) {
           const diff = obj.scroll.y - obj.currentElements[showKey].top;
-          const o = diff / (window.innerHeight * 1.5);
+          const o = diff / (document.documentElement.clientHeight * 1.5);
           setShow(o >= -0.5 && o <= 1);
         }
       });

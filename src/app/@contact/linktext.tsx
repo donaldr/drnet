@@ -38,7 +38,7 @@ function LinkText({
   const copiedRef = useRef(false);
 
   const resize = useCallback(() => {
-    setWidth(window.innerWidth);
+    setWidth(document.documentElement.clientWidth);
   }, []);
 
   useEffect(() => {

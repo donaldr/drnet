@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   //const nextConfig = {
   /* config options here */
+  devIndicators: {
+    appIsrStatus: false,
+  },
   images: {
     domains: ["til8tmqclrhrb7ie.public.blob.vercel-storage.com"],
   },

@@ -11,18 +11,33 @@ export default function WorkIntroComponent() {
   const pathRefs = useRef<Array<SVGPathElement | null>>([]);
   const lineRefs = useRef<Array<SVGPathElement | null>>([]);
   const [refsAllSet, setRefsAllSet] = useState(false);
+  const [size, setSize] = useState<[number, number] | undefined>();
 
   const [length, setLength] = useState(1);
   const [textContainerClasses, setTextContainerClasses] = useState("opacity-0");
 
   const workIntroText = useLineText(
     "SELECTED WORK".toUpperCase().split("").join(" "),
-    72
+    size ? size[0] / "SELECTED WORK".length : 72
   );
+
+  const resize = useCallback(() => {
+    setSize([
+      document.documentElement.clientWidth,
+      document.documentElement.clientHeight,
+    ]);
+  }, []);
+
+  useEffect(() => {
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [resize]);
 
   const checkAllRefs = useCallback(() => {
     setRefsAllSet(
-      !!workIntroText.paths &&
+      !!workIntroText &&
+        !!workIntroText.paths &&
         pathRefs.current.length == workIntroText.paths.length &&
         pathRefs.current.every((el) => el) &&
         lineRefs.current.length == 2 &&
@@ -59,10 +74,22 @@ export default function WorkIntroComponent() {
         if (key in obj.currentElements) {
           const diff = obj.scroll.y - obj.currentElements[key].top;
           setLength(
-            Math.min(Math.max(0, 1 - (diff * 2 - 1) / window.innerHeight), 1)
+            Math.min(
+              Math.max(
+                0,
+                1 - (diff * 2 - 1) / document.documentElement.clientHeight
+              ),
+              1
+            )
           );
           setOffset(
-            Math.min(Math.max(0, (diff * 2 - 1) / window.innerHeight), 1)
+            Math.min(
+              Math.max(
+                0,
+                (diff * 2 - 1) / document.documentElement.clientHeight
+              ),
+              1
+            )
           );
         }
       });
@@ -81,7 +108,9 @@ export default function WorkIntroComponent() {
         xmlns="http://www.w3.org/2000/svg"
         xmlSpace="preserve"
         width={workIntroText.width}
-        height={workIntroText.height ? workIntroText.height + 5 : 0}
+        height={
+          workIntroText.height ? Math.floor(workIntroText.height * 1.2) : 0
+        }
         className="mb-1"
         style={{
           transform: `translateY(${-50 * offset!}vh)`,
@@ -130,9 +159,11 @@ export default function WorkIntroComponent() {
                     }}
                     d={
                       workIntroText.width
-                        ? `M ${workIntroText.width / 2} ${
-                            workIntroText.height! + 5
-                          }L 0 ${workIntroText.height! + 5}`
+                        ? `M ${Math.floor(
+                            workIntroText.width / 2
+                          )} ${Math.floor(
+                            workIntroText.height! * 1.1
+                          )}L 0 ${Math.floor(workIntroText.height! * 1.1)}`
                         : ""
                     }
                     style={pathCSS}
@@ -156,11 +187,11 @@ export default function WorkIntroComponent() {
                     }}
                     d={
                       workIntroText.width
-                        ? `M ${workIntroText.width / 2} ${
-                            workIntroText.height! + 5
-                          }L ${workIntroText.width} ${
-                            workIntroText.height! + 5
-                          }`
+                        ? `M ${Math.floor(
+                            workIntroText.width / 2
+                          )} ${Math.floor(workIntroText.height! * 1.1)}L ${
+                            workIntroText.width
+                          } ${Math.floor(workIntroText.height! * 1.1)}`
                         : ""
                     }
                     style={pathCSS}

@@ -43,8 +43,8 @@ export default function VideoPull({
                 0,
                 (obj.scroll.y -
                   obj.currentElements[key].top -
-                  window.innerHeight * 0.5) /
-                  (window.innerHeight * 1.5)
+                  document.documentElement.clientHeight * 0.5) /
+                  (document.documentElement.clientHeight * 1.5)
               )
             )
           );
@@ -83,7 +83,10 @@ export default function VideoPull({
   }, [pull]);
 
   const resize = useCallback(() => {
-    setScreenDims({ width: window.innerWidth, height: window.innerHeight });
+    setScreenDims({
+      width: document.documentElement.clientWidth,
+      height: document.documentElement.clientHeight,
+    });
   }, []);
 
   useEffect(() => {

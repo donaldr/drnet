@@ -110,7 +110,7 @@ export default function WorkComponent({
               callback: () => {
                 wait();
               },
-              offset: -window.innerHeight,
+              offset: -document.documentElement.clientHeight,
               duration: 500,
               disableLerp: true
             });
@@ -357,7 +357,7 @@ export default function WorkComponent({
             data-scroll-repeat
           >
             <h1
-              className="px-[5vw] block pt-4 mt-header"
+              className="px-[5vw] block pt-4 mt-header leading-none"
               style={{
                 fontVariationSettings: `"wdth" 100 "wght" 600`,
                 color: work.theme == "light" ? "var(--dark)" : "var(--light)",

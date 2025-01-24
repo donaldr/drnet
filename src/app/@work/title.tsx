@@ -1,5 +1,6 @@
 "use client";
 import { SplitText } from "@rigo-m/react-split-text";
+import clsx from "clsx";
 import { ReactNode, memo } from "react";
 
 function Title({
@@ -14,9 +15,9 @@ function Title({
 }>) {
   return (
     <h1
-      className={`mt-4 overflow-hidden ${
-        titleOutline && "drop-shadow-outline"
-      }`}
+      className={`mt-4 overflow-hidden leading-none ${clsx({
+        "drop-shadow-outline": titleOutline,
+      })}`}
       style={{
         fontVariationSettings: `"wdth" 100 "wght" 600`,
         color,

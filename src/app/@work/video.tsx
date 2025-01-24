@@ -24,8 +24,8 @@ export default function Video({
           setOffset(
             (obj.scroll.y -
               obj.currentElements[key].top -
-              window.innerHeight * 0.5) /
-              window.innerHeight
+              document.documentElement.clientHeight * 0.5) /
+              document.documentElement.clientHeight
           );
         }
       });

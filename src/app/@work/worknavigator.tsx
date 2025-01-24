@@ -93,7 +93,7 @@ export default function WorkNavigator({
   useEffect(() => {
     setWorkNavigatorClasses(
       clsx({
-        "absolute top-0 right-[1rem] w-[10rem] h-screen z-[200] flex items-center justify-end transition-[opacity] duration-500 cursor-pointer z-100":
+        "absolute top-0 right-[1rem] w-[0rem] h-screen z-[200] flex items-center justify-end transition-[opacity] duration-500 cursor-pointer z-100":
           true,
         "pointer-events-none": !show,
         "opacity-0": !(active && show && (moving || hover)),

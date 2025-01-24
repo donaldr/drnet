@@ -28,7 +28,7 @@ function DetailRoles({
               .getElementById(el.id)!
               .parentElement!.getBoundingClientRect();
 
-            const progress = rect.top / window.innerHeight;
+            const progress = rect.top / document.documentElement.clientHeight;
 
             document.getElementById(el.id)!.style.opacity = Math.min(
               1,
@@ -60,7 +60,7 @@ function DetailRoles({
   }, [resize]);
 
   return (
-    <div ref={ref}>
+    <div ref={ref} className="w-full md:px-0">
       {work.roles.map((role, i) => {
         return (
           <div key={role}>
@@ -99,7 +99,7 @@ function DetailRoles({
                   );
                 }}
               >
-                {work.responsibilities[i]}
+                {work.responsibilities[i].replaceAll(/-/g, "\u2011")}
               </SplitText>
             }
           </div>

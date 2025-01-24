@@ -31,7 +31,7 @@ export default function Chop({
   show: boolean;
   children: React.ReactNode;
 }>) {
-  const [size, setSize] = useState([0, 0]);
+  const [size, setSize] = useState<[number, number] | undefined>();
   const [mousePosition, setMousePosition] = useState([0, 0]);
   const requestRef = useRef<number>(0);
   const [font, setFont] = useState<ReturnType<typeof opentype.parse> | null>(
@@ -65,7 +65,10 @@ export default function Chop({
     if (scroll) {
       scroll.on("scroll", (obj: any) => {
         setActive("home-target" in obj.currentElements);
-        offsetRef.current = Math.min(1, obj.scroll.y / window.innerHeight);
+        offsetRef.current = Math.min(
+          1,
+          obj.scroll.y / document.documentElement.clientHeight
+        );
       });
     }
   }, [scroll]);
@@ -91,7 +94,9 @@ export default function Chop({
           y:
             p[1].position.y -
             op.y +
-            (offsetRef.current ? offsetRef.current * window.innerHeight : 0),
+            (offsetRef.current
+              ? offsetRef.current * document.documentElement.clientHeight
+              : 0),
         };
         const positionNorm = Vector.normalise(positionVector);
         const positionMag = Vector.magnitude(positionVector);
@@ -217,208 +222,209 @@ export default function Chop({
   }, [engine]);
 
   useEffect(() => {
-    if (font) {
+    if (font && size) {
       const page: SVGElement = document.getElementById(
         "chop"
       ) as unknown as SVGElement;
-      if (show && reveal) {
-        Array.from(page.children).forEach((child) => {
-          if (child.tagName == "path") {
-            page.removeChild(child);
-          }
-        });
-        paper.clear();
-        detailsRef.current = [];
-        World.clear(engine.world, false);
-        Engine.clear(engine);
-        const rect = page.getBoundingClientRect();
-        //const c: HTMLCanvasElement = document.getElementById("myCanvas") as HTMLCanvasElement;
-        paper.setup();
-        //paper.setup(c);
-        const allPaths: Array<any> = [];
-        const paths = font.getPaths(
-          children!.toString()!,
-          0,
-          0,
-          (100 * window.innerWidth) / 1980
-        );
-        let fullWidth = 0;
-        let fullHeight = 0;
-        paths.forEach((path: any) => {
-          const pathDataStrings = path.toPathData().split("Z");
-          pathDataStrings.pop();
-          let twoPaths = false;
-          pathDataStrings.forEach((pathDataString: any) => {
-            while (!twoPaths) {
-              const p = new paper.Path(pathDataString + "Z");
-              fullWidth = Math.max(p.bounds.x + p.bounds.width, fullWidth);
-              fullHeight = Math.max(p.bounds.height, fullHeight);
+      Array.from(page.children).forEach((child) => {
+        if (child.tagName == "path") {
+          page.removeChild(child);
+        }
+      });
+      paper.clear();
+      detailsRef.current = [];
+      World.clear(engine.world, false);
+      Engine.clear(engine);
+      //const c: HTMLCanvasElement = document.getElementById("myCanvas") as HTMLCanvasElement;
+      paper.setup();
+      //paper.setup(c);
+      const allPaths: Array<any> = [];
+      const paths = font.getPaths(
+        children!.toString()!,
+        0,
+        0,
+        document.documentElement.clientWidth / children!.toString().length
+      );
+      let fullWidth = 0;
+      let fullHeight = 0;
+      paths.forEach((path: any) => {
+        const pathDataStrings = path.toPathData().split("Z");
+        pathDataStrings.pop();
+        let twoPaths = false;
+        pathDataStrings.forEach((pathDataString: any) => {
+          while (!twoPaths) {
+            const p = new paper.Path(pathDataString + "Z");
+            fullWidth = Math.max(p.bounds.x + p.bounds.width, fullWidth);
+            fullHeight = Math.max(p.bounds.height, fullHeight);
 
-              p.fillColor = "black";
-              const xCenter = p.bounds.centerX;
-              const yCenter = p.bounds.centerY;
-              const randomAngle = Math.random() * Math.PI;
+            p.fillColor = "black";
+            const xCenter = p.bounds.centerX;
+            const yCenter = p.bounds.centerY;
+            const randomAngle = Math.random() * Math.PI;
 
-              const p1 = new paper.Point(
-                xCenter + 100 * Math.cos(randomAngle),
-                yCenter + 100 * Math.sin(randomAngle)
-              );
-              const p2 = new paper.Point(
-                xCenter - 100 * Math.cos(randomAngle),
-                yCenter - 100 * Math.sin(randomAngle)
-              );
+            const p1 = new paper.Point(
+              xCenter + 1000 * Math.cos(randomAngle),
+              yCenter + 1000 * Math.sin(randomAngle)
+            );
+            const p2 = new paper.Point(
+              xCenter - 1000 * Math.cos(randomAngle),
+              yCenter - 1000 * Math.sin(randomAngle)
+            );
 
-              const line = new paper.Path.Line(p1, p2);
+            const line = new paper.Path.Line(p1, p2);
 
-              //const newAngle = (Math.random() - 0.5) * 180;
+            //const newAngle = (Math.random() - 0.5) * 180;
 
-              line.strokeWidth = 1;
-              line.strokeColor = "black";
-              //line.rotate(newAngle);
+            line.strokeWidth = 1;
+            line.strokeColor = "black";
+            //line.rotate(newAngle);
 
-              line.remove();
+            line.remove();
 
-              const intersections = p.getIntersections(line);
+            const intersections = p.getIntersections(line);
 
-              const newLine = new paper.Path.Line(
-                intersections[0].point,
-                intersections[intersections.length - 1].point
-              );
-              newLine.strokeWidth = 1;
-              newLine.strokeColor = "black";
+            const newLine = new paper.Path.Line(
+              intersections[0].point,
+              intersections[intersections.length - 1].point
+            );
+            newLine.strokeWidth = 1;
+            newLine.strokeColor = "black";
 
-              const result = p.divide(line, { trace: false });
+            const result = p.divide(line, { trace: false });
 
-              twoPaths = result.children.length == 2;
+            twoPaths = result.children.length == 2;
 
-              if (!twoPaths) {
-                continue;
-              }
-
-              const c0 = result.children[0].insertAbove(p);
-              const c1 = result.children[0].insertAbove(p);
-
-              allPaths.push(c0);
-              allPaths.push(c1);
-              detailsRef.current.push({
-                distance: null,
-                positions: [],
-                bb: {},
-                endAnnealing: 0,
-              });
-              detailsRef.current.push({
-                distance: null,
-                positions: [],
-                bb: {},
-                endAnnealing: 0,
-              });
+            if (!twoPaths) {
+              continue;
             }
-            twoPaths = false;
-          });
+
+            const c0 = result.children[0].insertAbove(p);
+            const c1 = result.children[0].insertAbove(p);
+
+            allPaths.push(c0);
+            allPaths.push(c1);
+            detailsRef.current.push({
+              distance: null,
+              positions: [],
+              bb: {},
+              endAnnealing: 0,
+            });
+            detailsRef.current.push({
+              distance: null,
+              positions: [],
+              bb: {},
+              endAnnealing: 0,
+            });
+          }
+          twoPaths = false;
         });
+      });
 
-        allPaths.forEach((path: any) => {
-          path.position.x += rect.width / 2 - fullWidth / 2;
-          path.position.y += rect.height / 2 + fullHeight / 2;
+      console.log(size);
+      allPaths.forEach((path: any) => {
+        path.position.x += size[0] / 2 - fullWidth / 2;
+        path.position.y += size[1] / 2 + fullHeight / 2;
+      });
+
+      /*
+      // create a renderer
+      var render = Render.create({
+          canvas: c,
+          engine: engine
+      });
+
+      render.canvas.width = 800;
+      render.canvas.height = 600;
+      */
+
+      const svgs = allPaths.map((p) => {
+        const pEl = p.exportSVG({ bounds: "view" });
+        page.appendChild(pEl);
+        pEl.setAttribute("opacity", 0.9);
+        pEl.setAttribute("fill", "white");
+        return pEl;
+      });
+
+      // create two boxes and a ground
+      const elements = [
+        ...allPaths.map((p) => {
+          return Bodies.fromVertices(0, 0, [
+            Svg.pathToVertices(p.exportSVG({ bounds: "view" }), 1),
+          ]);
+        }),
+      ];
+      elements.forEach((el, index) => {
+        const path = allPaths[index];
+        el.friction = 0;
+        Body.setMass(el, 1);
+        Body.translate(el, {
+          x: path.bounds.left + (el.position.x - el.bounds.min.x),
+          y: path.bounds.top + (el.position.y - el.bounds.min.y),
         });
+      });
 
-        /*
-        // create a renderer
-        var render = Render.create({
-            canvas: c,
-            engine: engine
-        });
+      const ground = Bodies.rectangle(size[0] / 2, size[1], size[0], 100, {
+        isStatic: true,
+      });
+      const ceiling = Bodies.rectangle(size[0] / 2, -50, size[0], 100, {
+        isStatic: true,
+      });
+      const leftWall = Bodies.rectangle(-50, size[1] / 2, 100, size[1], {
+        isStatic: true,
+      });
+      const rightWall = Bodies.rectangle(
+        size[0] + 50,
+        size[1] / 2,
+        100,
+        size[1],
+        { isStatic: true }
+      );
 
-        render.canvas.width = 800;
-        render.canvas.height = 600;
-        */
+      const mc = Bodies.circle(0, 0, 10, { isStatic: true });
 
-        const svgs = allPaths.map((p) => {
-          const pEl = p.exportSVG({ bounds: "view" });
-          page.appendChild(pEl);
-          pEl.setAttribute("opacity", 0.9);
-          pEl.setAttribute("fill", "white");
-          return pEl;
-        });
+      setMouseCircle(mc);
 
-        // create two boxes and a ground
-        const elements = [
-          ...allPaths.map((p) => {
-            return Bodies.fromVertices(0, 0, [
-              Svg.pathToVertices(p.exportSVG({ bounds: "view" }), 1),
-            ]);
-          }),
-        ];
-        elements.forEach((el, index) => {
-          const path = allPaths[index];
-          el.friction = 0;
-          Body.setMass(el, 1);
-          Body.translate(el, {
-            x: path.bounds.left + (el.position.x - el.bounds.min.x),
-            y: path.bounds.top + (el.position.y - el.bounds.min.y),
-          });
-        });
+      // add all of the bodies to the world
+      Composite.add(engine.world, [
+        ...elements,
+        ground,
+        ceiling,
+        leftWall,
+        rightWall,
+        mc,
+      ]);
 
-        const ground = Bodies.rectangle(size[0] / 2, size[1], size[0], 100, {
-          isStatic: true,
-        });
-        const ceiling = Bodies.rectangle(size[0] / 2, -50, size[0], 100, {
-          isStatic: true,
-        });
-        const leftWall = Bodies.rectangle(-50, size[1] / 2, 100, size[1], {
-          isStatic: true,
-        });
-        const rightWall = Bodies.rectangle(
-          size[0] + 50,
-          size[1] / 2,
-          100,
-          size[1],
-          { isStatic: true }
-        );
+      // run the renderer
+      //Render.run(render);
 
-        const mc = Bodies.circle(0, 0, 10, { isStatic: true });
+      // create runner
 
-        setMouseCircle(mc);
+      const map = svgs.map(
+        (svg, index) => [svg, elements[index]] as [SVGPathElement, any]
+      );
+      setPathMap(map);
+      const ops = elements.map((el) => {
+        return {
+          x: el.position.x,
+          y: el.position.y,
+        };
+      });
+      setOriginalPositions(ops);
 
-        // add all of the bodies to the world
-        Composite.add(engine.world, [
-          ...elements,
-          ground,
-          ceiling,
-          leftWall,
-          rightWall,
-          mc,
-        ]);
-
-        // run the renderer
-        //Render.run(render);
-
-        // create runner
-
-        const map = svgs.map(
-          (svg, index) => [svg, elements[index]] as [SVGPathElement, any]
-        );
-        setPathMap(map);
-        const ops = elements.map((el) => {
-          return {
-            x: el.position.x,
-            y: el.position.y,
-          };
-        });
-        setOriginalPositions(ops);
-
-        // run the engine
-      }
+      // run the engine
     }
-  }, [children, font, engine, size, show, reveal]);
+  }, [children, font, engine, size]);
 
   useLayoutEffect(() => {
     function updateSize() {
-      setSize([window.innerWidth, window.innerHeight]);
+      setSize([
+        document.documentElement.clientWidth,
+        document.documentElement.clientHeight,
+      ]);
     }
     window.addEventListener("resize", updateSize);
     updateSize();
-    setMousePosition([window.innerWidth / 2, window.innerHeight / 2]);
+    setMousePosition([0, 0]);
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
@@ -437,9 +443,11 @@ export default function Chop({
   }, [mousePosition]);
 
   useLayoutEffect(() => {
-    engine.gravity.scale = 0.0;
-    engine.gravity.x = (mousePosition[0] - size[0] / 2) / size[0];
-    engine.gravity.y = (mousePosition[1] - size[1] / 2) / size[1];
+    if (size) {
+      engine.gravity.scale = 0.0;
+      engine.gravity.x = (mousePosition[0] - size[0] / 2) / size[0];
+      engine.gravity.y = (mousePosition[1] - size[1] / 2) / size[1];
+    }
   }, [mousePosition, size, engine]);
 
   useLayoutEffect(() => {

@@ -22,6 +22,10 @@ export default function Content({
         lerp: 0.1,
         getDirection: true,
         multiplier: 0.5,
+        scrollFromAnywhere: true,
+        mobile: {
+          smooth: true,
+        },
         smartphone: {
           smooth: true,
         },

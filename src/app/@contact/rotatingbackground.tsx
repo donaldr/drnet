@@ -65,8 +65,8 @@ function RotatingBackground({
   }, [throttle]);
 
   const mouse = useCallback((e: MouseEvent) => {
-    const x = e.clientX / window.innerWidth;
-    const y = e.clientY / window.innerHeight;
+    const x = e.clientX / document.documentElement.clientWidth;
+    const y = e.clientY / document.documentElement.clientHeight;
     mouseRef.current = { x, y };
   }, []);
 

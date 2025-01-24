@@ -12,7 +12,7 @@ export default function FitVariable({
   children: React.ReactNode;
 }>) {
   const [size, setSize] = useState([0, 0]);
-  const [mousePosition, setMousePosition] = useState([0, 0]);
+  const [cursorPosition, setCursorPosition] = useState([0, 0]);
   const [fitClasses, setFitClasses] = useState("");
   const [reveal, setReveal] = useState(false);
   const [offset, setOffset] = useState<number>();
@@ -23,7 +23,9 @@ export default function FitVariable({
     if (scroll) {
       scroll.on("scroll", (obj: any) => {
         if ("home-target" in obj.currentElements) {
-          setOffset(Math.min(1, obj.scroll.y / window.innerHeight));
+          setOffset(
+            Math.min(1, obj.scroll.y / document.documentElement.clientHeight)
+          );
         }
       });
     }
@@ -63,22 +65,43 @@ export default function FitVariable({
 
   useLayoutEffect(() => {
     function updateSize() {
-      setSize([window.innerWidth, window.innerHeight]);
+      setSize([
+        document.documentElement.clientWidth,
+        document.documentElement.clientHeight,
+      ]);
     }
     window.addEventListener("resize", updateSize);
     updateSize();
-    setMousePosition([window.innerWidth / 2, window.innerHeight / 2]);
+    setCursorPosition([
+      document.documentElement.clientWidth / 2,
+      document.documentElement.clientHeight / 2,
+    ]);
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
   useLayoutEffect(() => {
     function getMousePosition(e: MouseEvent) {
-      setMousePosition([e.clientX, e.clientY]);
+      setCursorPosition([e.clientX, e.clientY]);
+    }
+    function getTouchStart(e: TouchEvent) {
+      setCursorPosition([e.touches[0].clientX, e.touches[0].clientY]);
+    }
+    function getTouchMovePosition(e: TouchEvent) {
+      setCursorPosition([
+        e.changedTouches[0].clientX,
+        e.changedTouches[0].clientY,
+      ]);
     }
     if (show && reveal) {
       window.addEventListener("mousemove", getMousePosition);
+      window.addEventListener("touchstart", getTouchStart);
+      window.addEventListener("touchmove", getTouchMovePosition);
     }
-    return () => window.removeEventListener("mousemove", getMousePosition);
+    return () => {
+      window.removeEventListener("mousemove", getMousePosition);
+      window.removeEventListener("touchstart", getTouchStart);
+      window.removeEventListener("touchmove", getTouchMovePosition);
+    };
   }, [show, reveal]);
 
   const textLength = children!.toString().length;
@@ -89,9 +112,9 @@ export default function FitVariable({
         className="absolute w-full h-full z-20"
         style={{
           background: `radial-gradient(ellipse at ${
-            (100 * mousePosition[0]) / size[0]
+            (100 * cursorPosition[0]) / size[0]
           }% ${
-            (100 * mousePosition[1]) / size[1]
+            (100 * cursorPosition[1]) / size[1]
           }%, rgba(255, 255, 255, 0.4), rgba(0, 0, 0, 0.5))`,
           mixBlendMode: "normal",
         }}
@@ -112,12 +135,12 @@ export default function FitVariable({
                   <span className="relative inline-block">
                     <span
                       style={{
-                        height: `${15}vw`,
+                        height: `min(60vh,${(3 * 75) / textLength}vw)`,
                         textShadow: `0px 0px ${
                           3 *
                           Math.pow(
                             Math.cos(
-                              (mousePosition[0] / size[0] -
+                              (cursorPosition[0] / size[0] -
                                 letterIndex / textLength) *
                                 Math.PI *
                                 2
@@ -138,7 +161,7 @@ export default function FitVariable({
                               200 *
                                 Math.pow(
                                   Math.cos(
-                                    (mousePosition[0] / size[0] -
+                                    (cursorPosition[0] / size[0] -
                                       letterIndex / textLength) *
                                       Math.PI *
                                       2
@@ -148,8 +171,8 @@ export default function FitVariable({
                                   1
                                 )
                           )}`,
-                          fontSize: `${20}vw`,
-                          lineHeight: `${20}vw`,
+                          fontSize: `min(80vh,${(3 * 100) / textLength}vw)`,
+                          lineHeight: `min(80vh,${(3 * 100) / textLength}vw)`,
                         }}
                         className="align-text-top"
                       >
@@ -164,10 +187,11 @@ export default function FitVariable({
             }
           </div>
           <div
-            className="absolute z-30 text-white left-0 top-[15vw]"
+            className="absolute z-30 text-white left-0"
             style={{
               transform: "rotateZ(180deg) scaleX(-1)",
               zoom: offset ? 1 - offset * 0.5 : 1,
+              top: `min(60vh,${(3 * 75) / textLength}vw)`,
             }}
           >
             {
@@ -177,7 +201,7 @@ export default function FitVariable({
                   <span className="relative inline-block">
                     <span
                       style={{
-                        height: `${15}vw`,
+                        height: `min(60vh,${(3 * 75) / textLength}vw)`,
                       }}
                       className="wrapper relative left-0 z-20 inline-block"
                     >
@@ -188,7 +212,7 @@ export default function FitVariable({
                               200 *
                                 Math.pow(
                                   Math.cos(
-                                    (mousePosition[0] / size[0] -
+                                    (cursorPosition[0] / size[0] -
                                       letterIndex / textLength) *
                                       Math.PI *
                                       2
@@ -198,14 +222,14 @@ export default function FitVariable({
                                   1
                                 )
                           )}`,
-                          fontSize: `${20}vw`,
-                          lineHeight: `${20}vw`,
+                          fontSize: `min(80vh,${(3 * 100) / textLength}vw)`,
+                          lineHeight: `min(80vh,${(3 * 100) / textLength}vw)`,
                           opacity:
                             0.1 +
                             0.3 *
                               Math.pow(
                                 Math.cos(
-                                  (mousePosition[0] / size[0] -
+                                  (cursorPosition[0] / size[0] -
                                     letterIndex / textLength) *
                                     Math.PI *
                                     2
@@ -245,15 +269,15 @@ export default function FitVariable({
                   >
                     <span
                       style={{
-                        height: `${15}vw`,
+                        height: `min(60vh,${(3 * 75) / textLength}vw)`,
                         transform: `skew(${
                           -(
                             letterIndex / textLength -
                             0.5 -
-                            ((mousePosition[0] / size[0]) * 10 - 5)
+                            ((cursorPosition[0] / size[0]) * 10 - 5)
                           ) * 10
                         }deg) scaleY(${
-                          1.0 + 10.0 * (mousePosition[1] / size[1])
+                          1.0 + 10.0 * (cursorPosition[1] / size[1])
                         }) rotateX(-80deg)`,
                         transformOrigin: "bottom center",
                         fontVariationSettings: `"wdth" ${Math.floor(
@@ -261,7 +285,7 @@ export default function FitVariable({
                             200 *
                               Math.pow(
                                 Math.cos(
-                                  (mousePosition[0] / size[0] -
+                                  (cursorPosition[0] / size[0] -
                                     letterIndex / textLength) *
                                     Math.PI *
                                     2
@@ -271,8 +295,8 @@ export default function FitVariable({
                                 1
                               )
                         )}`,
-                        fontSize: `${20}vw`,
-                        lineHeight: `${20}vw`,
+                        fontSize: `min(80vh,${(3 * 100) / textLength}vw)`,
+                        lineHeight: `min(80vh,${(3 * 100) / textLength}vw)`,
                         filter: "blur(2px)",
                         opacity: "1.0",
                         background: "linear-gradient(#00000000, #000000AA)",

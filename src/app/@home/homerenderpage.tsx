@@ -6,6 +6,7 @@ import {
   ReactNode,
   useLayoutEffect,
   useMemo,
+  useCallback,
 } from "react";
 import clsx from "clsx";
 import FitVariable from "@/app/@home/fit";
@@ -48,6 +49,12 @@ export const enum PlayState {
 
 export const PLAY_DURATION = 30000;
 
+const enum TouchOrWheel {
+  INIT = "init",
+  TOUCH = "touch",
+  WHEEL = "wheel",
+}
+
 const effects: Array<EffectDetails> = [
   {
     name: "Fit Lighting",
@@ -81,6 +88,10 @@ export default function HomeRenderPage() {
   }, [activeName]);
   const activeRef = useRef(active);
   const { stop, wait, readyRef } = useWaitWheel();
+  const [touchOrWheel, setTouchOrWheel] = useState(TouchOrWheel.INIT);
+  const touchOrMoveRef = useRef(touchOrWheel);
+  const homeExitRef = useRef(false);
+  const [size, setSize] = useState<[number, number] | undefined>();
 
   useLayoutEffect(() => {
     if (playEvent == PlayEvent.STOP) {
@@ -197,6 +208,28 @@ export default function HomeRenderPage() {
     }
   }, [playState, playEvent]);
 
+  const touchmove = useCallback(() => {
+    setTouchOrWheel(TouchOrWheel.TOUCH);
+  }, []);
+
+  const wheel = useCallback(() => {
+    setTouchOrWheel(TouchOrWheel.WHEEL);
+  }, []);
+
+  useEffect(() => {
+    touchOrMoveRef.current = touchOrWheel;
+  }, [touchOrWheel]);
+
+  useEffect(() => {
+    document.addEventListener("touchmove", touchmove);
+    document.addEventListener("wheel", wheel);
+
+    return () => {
+      document.removeEventListener("touchmove", touchmove);
+      document.removeEventListener("wheel", wheel);
+    };
+  }, [touchmove, wheel]);
+
   useEffect(() => {
     activeRef.current = active;
   }, [active]);
@@ -215,6 +248,19 @@ export default function HomeRenderPage() {
     );
   }, []);
 
+  const resize = useCallback(() => {
+    setSize([
+      document.documentElement.clientWidth,
+      document.documentElement.clientHeight,
+    ]);
+  }, []);
+
+  useEffect(() => {
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [resize]);
+
   useEffect(() => {
     if (scroll) {
       scroll.on("scroll", (obj: any) => {
@@ -225,16 +271,40 @@ export default function HomeRenderPage() {
           readyRef.current
         ) {
           if (obj.direction == "down") {
-            if (obj.scroll.y < window.innerHeight) {
+            if (
+              obj.scroll.y < document.documentElement.clientHeight &&
+              touchOrMoveRef.current == TouchOrWheel.WHEEL
+            ) {
               stop();
               scroll.scrollTo("#work", {
                 callback: () => {
                   wait();
                 },
-                offset: -window.innerHeight,
+                offset: -document.documentElement.clientHeight,
                 duration: 500,
                 disableLerp: true,
               });
+            }
+            if (touchOrMoveRef.current == TouchOrWheel.TOUCH) {
+              if (
+                "work-intro-content" in obj.currentElements &&
+                !("home-content" in obj.currentElements)
+              ) {
+                if (homeExitRef.current == false) {
+                  stop();
+                  scroll.scrollTo("#work", {
+                    callback: () => {
+                      wait();
+                    },
+                    offset: -document.documentElement.clientHeight,
+                    duration: 50,
+                    disableLerp: true,
+                  });
+                  homeExitRef.current = true;
+                }
+              } else {
+                homeExitRef.current = false;
+              }
             }
           } else {
             /*
@@ -254,6 +324,16 @@ export default function HomeRenderPage() {
   }, [scroll, readyRef, wait, stop]);
 
   const [text, setText] = useState("Donald\u00A0Richardson");
+
+  useEffect(() => {
+    if (size) {
+      if (size[0] < 640) {
+        setText("DR");
+      } else {
+        setText("Donald\u00A0Richardson");
+      }
+    }
+  }, [size]);
 
   return (
     <>

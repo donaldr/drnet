@@ -27,6 +27,7 @@ export function usePrevious<T>(value: T): T | undefined {
 function useWaitWheelInitial() {
   const { scroll } = useLocomotiveScroll();
   const [intentionalWheel, setIntentionalWheel] = useState(false);
+  const [intentionalTouchStart, setIntentionalTouchStart] = useState(0);
   const waitingRef = useRef(false);
   const readyRef = useRef(true);
   const countRef = useRef<number>(0);
@@ -34,14 +35,19 @@ function useWaitWheelInitial() {
   const directionCountRef = useRef<number>(0);
 
   useEffect(() => {
-    if (scroll && intentionalWheel && waitingRef.current) {
+    if (
+      scroll &&
+      (intentionalWheel || intentionalTouchStart) &&
+      waitingRef.current
+    ) {
       scroll.start();
       readyRef.current = true;
       waitingRef.current = false;
     }
-  }, [intentionalWheel, scroll]);
+  }, [intentionalWheel, intentionalTouchStart, scroll]);
 
   const wait = useCallback(() => {
+    console.log("WAIT!");
     waitingRef.current = true;
   }, []);
 
@@ -54,45 +60,53 @@ function useWaitWheelInitial() {
 
   const test = () => {
     setIntentionalWheel(false);
+    setIntentionalTouchStart(0);
   };
 
   const throttler = useThrottle();
 
   useEffect(() => {
-    if (scroll) {
-      const throttleWheel = () => throttler(test, 10);
-      document.documentElement.addEventListener("wheel", throttleWheel);
-      wheelGestures.observe(document.documentElement);
-      wheelGestures.on("wheel", (wheelEventState) => {
-        ma.push(countRef.current, Math.abs(wheelEventState.axisVelocity[1]));
-        const currentMa = ma.movingAverage();
-        if (directionCountRef.current > 0) {
-          if (currentMa >= previousMaRef.current) {
-            directionCountRef.current += 1;
-          } else {
-            directionCountRef.current = -1;
-          }
-        } else if (directionCountRef.current < 0) {
-          if (currentMa <= previousMaRef.current) {
-            directionCountRef.current -= 1;
-          } else {
-            directionCountRef.current = 1;
-          }
+    const throttleWheel = () => throttler(test, 10);
+    document.documentElement.addEventListener("wheel", throttleWheel);
+    wheelGestures.observe(document.documentElement);
+    wheelGestures.on("wheel", (wheelEventState) => {
+      ma.push(countRef.current, Math.abs(wheelEventState.axisVelocity[1]));
+      const currentMa = ma.movingAverage();
+      if (directionCountRef.current > 0) {
+        if (currentMa >= previousMaRef.current) {
+          directionCountRef.current += 1;
         } else {
-          if (currentMa < previousMaRef.current) {
-            directionCountRef.current = -1;
-          } else if (currentMa > previousMaRef.current) {
-            directionCountRef.current = 1;
-          }
+          directionCountRef.current = -1;
         }
-        if (directionCountRef.current > 3) {
-          setIntentionalWheel(true);
+      } else if (directionCountRef.current < 0) {
+        if (currentMa <= previousMaRef.current) {
+          directionCountRef.current -= 1;
+        } else {
+          directionCountRef.current = 1;
         }
-        previousMaRef.current = currentMa;
-        countRef.current += 1;
-      });
-    }
-  }, [scroll, throttler]);
+      } else {
+        if (currentMa < previousMaRef.current) {
+          directionCountRef.current = -1;
+        } else if (currentMa > previousMaRef.current) {
+          directionCountRef.current = 1;
+        }
+      }
+      if (directionCountRef.current > 3) {
+        setIntentionalWheel(true);
+      }
+      previousMaRef.current = currentMa;
+      countRef.current += 1;
+    });
+  }, [throttler]);
+
+  const touchstart = useCallback(() => {
+    setIntentionalTouchStart((prev) => prev + 1);
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener("touchstart", touchstart);
+    return () => document.removeEventListener("touchstart", touchstart);
+  }, [touchstart]);
 
   return { wait, stop, readyRef };
 }

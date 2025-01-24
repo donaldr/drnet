@@ -67,7 +67,11 @@ export default function ScrollDown() {
 
   useEffect(() => {
     window.addEventListener("wheel", wheel);
-    return () => window.removeEventListener("wheel", wheel);
+    window.addEventListener("touchmove", wheel);
+    return () => {
+      window.removeEventListener("wheel", wheel);
+      window.removeEventListener("touchmove", wheel);
+    };
   }, [wheel]);
 
   useEffect(() => {

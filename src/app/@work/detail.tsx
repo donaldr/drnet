@@ -1,6 +1,6 @@
 "use client";
 import { WorkData } from "@/app/@work/workitems";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { useTemplateFunction } from "@/lib/customhooks";
 import interpolateComponents from "@automattic/interpolate-components";
@@ -25,6 +25,8 @@ function Detail({
   const [dateReveal, setDateReveal] = useState(false);
   const [positionReveal, setPositionReveal] = useState(false);
   const [employerReveal, setEmployerReveal] = useState(false);
+  const [size, setSize] = useState<[number, number] | undefined>();
+  const sizeRef = useRef(size);
 
   const { scroll } = useLocomotiveScroll();
 
@@ -74,6 +76,22 @@ function Detail({
       });
     }
   }, [scroll, index]);
+
+  const resize = useCallback(() => {
+    setSize([
+      document.documentElement.clientWidth,
+      document.documentElement.clientHeight,
+    ]);
+  }, []);
+
+  useEffect(() => {
+    sizeRef.current = size;
+  }, [size]);
+
+  useEffect(() => {
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
 
   const templateFnGenerator = useTemplateFunction(work.detailTemplate);
 
@@ -140,11 +158,11 @@ function Detail({
     <>
       <div
         className={clsx({
-          "group absolute px-[5vw] text-2xl h-[100vh] w-[50vw] z-50 box-border will-change-transform max-w-[64rem] flex items-center justify-center leading-loose transition-[opacity] duration-1000":
+          "group absolute px-[5vw] md:text-xl lg:text-2xl h-[100vh] w-[50vw] z-50 box-border will-change-transform max-w-[64rem] md:flex items-center justify-center leading-loose transition-[opacity] duration-1000 hidden":
             true,
           "pointer-events-none": videoInView,
-          "opacity-100": reveal,
-          "opacity-0": !reveal,
+          "md:opacity-100": reveal,
+          "md:opacity-0": !reveal,
           "client-reveal": clientReveal,
           "project-reveal": projectReveal,
           "date-reveal": dateReveal,
@@ -164,14 +182,19 @@ function Detail({
           transitionDelay: reveal ? `0ms` : `750ms`,
         }}
       >
-        <div>{detailItem}</div>
+        <div className="leading-[1.75]">{detailItem}</div>
       </div>
       <div
         //id={`work-${index}-detail-roles`}
         className={clsx({
-          "absolute pr-[5vw] text-xl h-[150vh] w-[50vw] z-50 box-border left-[min(50vw,64rem)] will-change-transform max-w-[64rem] flex items-center justify-center":
+          "group absolute px-[5vw] text-xl h-[150vh] w-full md:w-[50vw] z-50 box-border md:left-[min(50vw,64rem)] will-change-transform max-w-[64rem] flex flex-col items-center justify-center":
             true,
           "pointer-events-none": videoInView,
+          "client-reveal": clientReveal,
+          "project-reveal": projectReveal,
+          "date-reveal": dateReveal,
+          "position-reveal": positionReveal,
+          "employer-reveal": employerReveal,
         })}
         data-scroll
         data-scroll-repeat
@@ -181,6 +204,7 @@ function Detail({
           top: top,
         }}
       >
+        <div className="leading-[1.75] md:hidden">{detailItem}</div>
         <DetailRoles work={work} index={index} />
       </div>
     </>
