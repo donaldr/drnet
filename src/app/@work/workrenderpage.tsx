@@ -17,7 +17,6 @@ import WorkOutro from "./workoutro";
 import Squares from "../squares";
 import NoSSR from "react-no-ssr";
 import { useWaitWheel } from "@/lib/customhooks";
-import { RGBA_ASTC_10x10_Format } from "three";
 
 export default function WorkComponent({
   work,
