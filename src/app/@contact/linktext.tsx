@@ -4,6 +4,7 @@ import SVGStroke from "@/lib/svgstroke";
 import { useLineText } from "@/lib/linetext";
 import React from "react";
 import { Hsluv } from "hsluv";
+import { useDebounce } from "@/lib/customhooks";
 
 const conv = new Hsluv();
 
@@ -36,10 +37,13 @@ function LinkText({
   const [copyText, setCopyText] = useState("click to copy");
   const copyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedRef = useRef(false);
+  const debouncer = useDebounce();
 
   const resize = useCallback(() => {
-    setWidth(document.documentElement.clientWidth);
-  }, []);
+    debouncer(() => {
+      setWidth(document.documentElement.clientWidth);
+    });
+  }, [debouncer]);
 
   useEffect(() => {
     resize();

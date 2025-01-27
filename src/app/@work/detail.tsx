@@ -2,7 +2,7 @@
 import { WorkData } from "@/app/@work/workitems";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import { useTemplateFunction } from "@/lib/customhooks";
+import { useDebounce, useTemplateFunction } from "@/lib/customhooks";
 import interpolateComponents from "@automattic/interpolate-components";
 import DetailItem from "./detailitem";
 import { useLocomotiveScroll } from "react-locomotive-scroll";
@@ -27,50 +27,68 @@ function Detail({
   const [employerReveal, setEmployerReveal] = useState(false);
   const [size, setSize] = useState<[number, number] | undefined>();
   const sizeRef = useRef(size);
+  const debouncer = useDebounce();
 
   const { scroll } = useLocomotiveScroll();
 
   useEffect(() => {
     if (scroll) {
       scroll.on("scroll", (obj: any) => {
-        const key = `work-${index}-detail-target-1`;
-        if (key in obj.currentElements) {
-          const el = obj.currentElements[key];
-          if (
-            (el.progress > 0.28 &&
-              el.progress < 0.6 &&
-              obj.direction == "down") ||
-            (el.progress > 0.4 && el.progress < 0.7 && obj.direction == "up")
-          ) {
-            setReveal(true);
-          } else if (
-            (el.progress < 0.4 && obj.direction == "up") ||
-            (el.progress > 0.6 && obj.direction == "down")
-          ) {
-            setReveal(false);
+        if (sizeRef.current && sizeRef.current[0] < 768) {
+          const key = `work-${index}-detail-main`;
+          if (key in obj.currentElements) {
+            const el = obj.currentElements[key];
+            if (el.progress > 0.25 && el.progress < 0.75) {
+              setClientReveal(true);
+              setDateReveal(true);
+              setPositionReveal(true);
+              setProjectReveal(true);
+              setEmployerReveal(true);
+            } else {
+              setClientReveal(false);
+              setDateReveal(false);
+              setPositionReveal(false);
+              setProjectReveal(false);
+              setEmployerReveal(false);
+            }
           }
-          if (
-            (el.progress > 0.281 &&
-              el.progress < 0.599 &&
-              obj.direction == "down") ||
-            (el.progress > 0.401 &&
-              el.progress < 0.699 &&
-              obj.direction == "up")
-          ) {
-            setClientReveal(true);
-            setDateReveal(true);
-            setPositionReveal(true);
-            setProjectReveal(true);
-            setEmployerReveal(true);
-          } else if (
-            (el.progress < 0.401 && obj.direction == "up") ||
-            (el.progress > 0.599 && obj.direction == "down")
-          ) {
-            setClientReveal(false);
-            setDateReveal(false);
-            setPositionReveal(false);
-            setProjectReveal(false);
-            setEmployerReveal(false);
+        } else {
+          const key = `work-${index}-detail-target-1`;
+          if (key in obj.currentElements) {
+            const el = obj.currentElements[key];
+            const progress = el.progress;
+            if (
+              (progress > 0.28 && progress < 0.6 && obj.direction == "down") ||
+              (progress > 0.4 && progress < 0.7 && obj.direction == "up")
+            ) {
+              setReveal(true);
+            } else if (
+              (progress < 0.4 && obj.direction == "up") ||
+              (progress > 0.6 && obj.direction == "down")
+            ) {
+              setReveal(false);
+            }
+            if (
+              (progress > 0.281 &&
+                progress < 0.599 &&
+                obj.direction == "down") ||
+              (progress > 0.401 && progress < 0.699 && obj.direction == "up")
+            ) {
+              setClientReveal(true);
+              setDateReveal(true);
+              setPositionReveal(true);
+              setProjectReveal(true);
+              setEmployerReveal(true);
+            } else if (
+              (progress < 0.401 && obj.direction == "up") ||
+              (progress > 0.599 && obj.direction == "down")
+            ) {
+              setClientReveal(false);
+              setDateReveal(false);
+              setPositionReveal(false);
+              setProjectReveal(false);
+              setEmployerReveal(false);
+            }
           }
         }
       });
@@ -78,17 +96,20 @@ function Detail({
   }, [scroll, index]);
 
   const resize = useCallback(() => {
-    setSize([
-      document.documentElement.clientWidth,
-      document.documentElement.clientHeight,
-    ]);
-  }, []);
+    debouncer(() => {
+      setSize([
+        document.documentElement.clientWidth,
+        document.documentElement.clientHeight,
+      ]);
+    });
+  }, [debouncer]);
 
   useEffect(() => {
     sizeRef.current = size;
   }, [size]);
 
   useEffect(() => {
+    resize();
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
   }, []);
@@ -199,12 +220,18 @@ function Detail({
         data-scroll
         data-scroll-repeat
         data-scroll-id={`work-${index}-detail-roles`}
-        data-scroll-speed={size && size[0] > 640 ? 10 : 1}
+        data-scroll-speed={size && size[0] > 768 ? 10 : 1}
         style={{
           top: top,
         }}
       >
-        <div className="leading-[1.75] md:hidden">{detailItem}</div>
+        <div
+          data-scroll
+          data-scroll-id={`work-${index}-detail-main`}
+          className="leading-[1.75] md:hidden"
+        >
+          {detailItem}
+        </div>
         <DetailRoles work={work} index={index} />
       </div>
     </>

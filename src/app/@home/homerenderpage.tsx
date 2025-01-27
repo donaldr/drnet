@@ -15,7 +15,7 @@ import React from "react";
 import Footer from "./footer";
 import { useLocomotiveScroll } from "react-locomotive-scroll";
 import { useGlobalState, navigating } from "../../lib/state";
-import { useWaitWheel } from "../../lib/customhooks";
+import { useDebounce, useWaitWheel } from "../../lib/customhooks";
 
 export type Effect = ({
   show,
@@ -92,6 +92,7 @@ export default function HomeRenderPage() {
   const touchOrMoveRef = useRef(touchOrWheel);
   const homeExitRef = useRef(false);
   const [size, setSize] = useState<[number, number] | undefined>();
+  const debouncer = useDebounce();
 
   useLayoutEffect(() => {
     if (playEvent == PlayEvent.STOP) {
@@ -249,11 +250,13 @@ export default function HomeRenderPage() {
   }, []);
 
   const resize = useCallback(() => {
-    setSize([
-      document.documentElement.clientWidth,
-      document.documentElement.clientHeight,
-    ]);
-  }, []);
+    debouncer(() =>
+      setSize([
+        document.documentElement.clientWidth,
+        document.documentElement.clientHeight,
+      ])
+    );
+  }, [debouncer]);
 
   useEffect(() => {
     resize();

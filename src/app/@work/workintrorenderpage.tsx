@@ -6,6 +6,7 @@ import SVGStroke from "@/lib/svgstroke";
 import { useLocomotiveScroll } from "react-locomotive-scroll";
 import { useGlobalState } from "@/lib/state";
 import clsx from "clsx";
+import { useDebounce } from "@/lib/customhooks";
 
 export default function WorkIntroComponent() {
   const pathRefs = useRef<Array<SVGPathElement | null>>([]);
@@ -21,12 +22,16 @@ export default function WorkIntroComponent() {
     size ? size[0] / "SELECTED WORK".length : 72
   );
 
+  const debouncer = useDebounce();
+
   const resize = useCallback(() => {
-    setSize([
-      document.documentElement.clientWidth,
-      document.documentElement.clientHeight,
-    ]);
-  }, []);
+    debouncer(() => {
+      setSize([
+        document.documentElement.clientWidth,
+        document.documentElement.clientHeight,
+      ]);
+    });
+  }, [debouncer]);
 
   useEffect(() => {
     resize();

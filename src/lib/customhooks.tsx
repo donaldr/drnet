@@ -148,6 +148,23 @@ export const useThrottle = () => {
   return throttleFunction.current;
 };
 
+export const useDebounce = () => {
+  const debounceSeed = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const debounceFunction = useRef((func: any, delay = 200) => {
+    if (debounceSeed.current) {
+      clearTimeout(debounceSeed.current);
+      debounceSeed.current = null;
+    }
+    debounceSeed.current = setTimeout(() => {
+      func();
+      debounceSeed.current = null;
+    }, delay);
+  });
+
+  return debounceFunction.current;
+};
+
 export function useTemplateFunction(template: string) {
   return useCallback(() => {
     const sanitized = template

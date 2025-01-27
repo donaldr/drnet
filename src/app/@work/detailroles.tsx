@@ -3,6 +3,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { SplitText } from "@rigo-m/react-split-text";
 import { useLocomotiveScroll } from "react-locomotive-scroll";
 import { WorkData } from "@/app/@work/workitems";
+import { useDebounce } from "@/lib/customhooks";
 
 function DetailRoles({
   work,
@@ -14,6 +15,7 @@ function DetailRoles({
   const ref = useRef<HTMLDivElement>(null);
   const { scroll } = useLocomotiveScroll();
   const [, setRedraw] = useState(0);
+  const debouncer = useDebounce();
 
   useEffect(() => {
     if (scroll) {
@@ -51,8 +53,10 @@ function DetailRoles({
   }, [scroll]);
 
   const resize = useCallback(() => {
-    setRedraw((prev) => prev + 1);
-  }, []);
+    debouncer(() => {
+      setRedraw((prev) => prev + 1);
+    });
+  }, [debouncer]);
 
   useEffect(() => {
     window.addEventListener("resize", resize);

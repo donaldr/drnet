@@ -8,6 +8,7 @@ import HeaderTitle from "../headertitle";
 import { useLineText } from "@/lib/linetext";
 import Squares from "../squares";
 import NoSSR from "react-no-ssr";
+import { useDebounce } from "@/lib/customhooks";
 
 enum HoverState {
   INIT = "init",
@@ -33,6 +34,7 @@ export default function ResumeRenderPage() {
   const lineRef = useRef<SVGPathElement | null>(null);
   const clickToDownloadText = useLineText("CLICK TO DOWNLOAD", 16);
   const [height, setHeight] = useState(0);
+  const debouncer = useDebounce();
 
   const [offset0, setOffset0] = useState(0);
   const [offset1, setOffset1] = useState(0);
@@ -47,8 +49,8 @@ export default function ResumeRenderPage() {
   const { scroll } = useLocomotiveScroll();
 
   const resize = useCallback(() => {
-    setHeight(document.documentElement.clientHeight / 3);
-  }, []);
+    debouncer(() => setHeight(document.documentElement.clientHeight / 3));
+  }, [debouncer]);
 
   useEffect(() => {
     resize();

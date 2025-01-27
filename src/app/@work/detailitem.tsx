@@ -9,6 +9,7 @@ import clsx from "clsx";
 */
 import { SplitText } from "@rigo-m/react-split-text";
 import clsx from "clsx";
+import { useDebounce } from "@/lib/customhooks";
 
 function DetailItem({
   children,
@@ -26,13 +27,16 @@ function DetailItem({
   const ref1 = useRef<HTMLDivElement>(null);
   const ref2 = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<[number, number] | undefined>();
+  const debouncer = useDebounce();
 
   const resize = useCallback(() => {
-    setSize([
-      document.documentElement.clientWidth,
-      document.documentElement.clientHeight,
-    ]);
-  }, []);
+    debouncer(() => {
+      setSize([
+        document.documentElement.clientWidth,
+        document.documentElement.clientHeight,
+      ]);
+    });
+  }, [debouncer]);
 
   useEffect(() => {
     resize();

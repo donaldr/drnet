@@ -14,6 +14,7 @@ import { Vector4 } from "three";
 import { PixelPull, PixelSelectionMode, PullDirection } from "./pixelpull";
 import { BlendScene } from "./blendscene";
 import clsx from "clsx";
+import { useDebounce } from "@/lib/customhooks";
 
 export default function VideoPull({
   index,
@@ -30,6 +31,7 @@ export default function VideoPull({
   const [pull, setPull] = useState(false);
   const [pullClasses, setPullClasses] = useState("");
   const [screenDims, setScreenDims] = useState({ width: 0, height: 0 });
+  const debouncer = useDebounce();
 
   useEffect(() => {
     if (scroll) {
@@ -83,11 +85,13 @@ export default function VideoPull({
   }, [pull]);
 
   const resize = useCallback(() => {
-    setScreenDims({
-      width: document.documentElement.clientWidth,
-      height: document.documentElement.clientHeight,
+    debouncer(() => {
+      setScreenDims({
+        width: document.documentElement.clientWidth,
+        height: document.documentElement.clientHeight,
+      });
     });
-  }, []);
+  }, [debouncer]);
 
   useEffect(() => {
     resize();
