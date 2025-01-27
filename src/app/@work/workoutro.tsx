@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useLocomotiveScroll } from "react-locomotive-scroll";
 import Path from "svg-path-generator";
 import { Bezier as BezierAnalyzer } from "bezier-js";
+import { useDebounce } from "@/lib/customhooks";
 
 type Point = {
   x: number;
@@ -55,150 +62,174 @@ export default function WorkOutro({
   index: number;
 }>) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const [size, setSize] = useState<[number, number] | undefined>();
+  const sizeRef = useRef(size);
 
   const { scroll } = useLocomotiveScroll();
+  const debouncer = useDebounce();
+
+  const updateSize = useCallback(() => {
+    debouncer(() => {
+      const newSize = [
+        document.documentElement.clientWidth,
+        document.documentElement.clientHeight,
+      ] as [number, number];
+      setSize(newSize);
+      sizeRef.current = newSize;
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    window.addEventListener("resize", updateSize);
+    updateSize();
+    return () => window.removeEventListener("resize", updateSize);
+  }, [updateSize]);
 
   useEffect(() => {
     if (scroll) {
       scroll.on("scroll", (obj: any) => {
-        const key = `work-${index}-outro-animate`;
-        const third = document.documentElement.clientHeight / 3;
-        if (key in obj.currentElements) {
-          const diff = Math.max(
-            0,
-            Math.min(
-              1,
-              (1.0 +
-                (obj.scroll.y - obj.currentElements[key].top) /
-                  document.documentElement.clientHeight) *
-                1.25
-            )
-          );
-          for (let i = 0; i < 4; i++) {
-            const path = document.getElementById(
-              `logo-path-for-work-${index}-path-${i}`
+        if (sizeRef.current) {
+          const key = `work-${index}-outro-animate`;
+          const third = sizeRef.current[1] / 3;
+          if (key in obj.currentElements) {
+            const diff = Math.max(
+              0,
+              Math.min(
+                1,
+                (1.0 +
+                  (obj.scroll.y - obj.currentElements[key].top) /
+                    sizeRef.current[1]) *
+                  1.25
+              )
             );
-            const length = parseFloat(
-              parseFloat(
-                path?.getAttribute("pathLength")?.valueOf() || "0"
-              ).toFixed(2)
-            );
+            for (let i = 0; i < 4; i++) {
+              const path = document.getElementById(
+                `logo-path-for-work-${index}-path-${i}`
+              );
+              const length = parseFloat(
+                parseFloat(
+                  path?.getAttribute("pathLength")?.valueOf() || "0"
+                ).toFixed(2)
+              );
 
-            if (i == 0) {
-              const startOffset = (length - third) * diff;
-              const endOffsetGrowthSection = startOffset * 1.5;
-              const endOffsetStop = length - third * 0.46;
+              console.log(diff);
+
+              if (i == 0) {
+                const startOffset = (length - third - 0.01) * diff;
+                const endOffsetGrowthSection = startOffset * 1.5;
+                const endOffsetStop = length - third * 0.46;
+                path?.setAttributeNS(
+                  null,
+                  "stroke-dasharray",
+                  `${
+                    endOffsetGrowthSection < endOffsetStop
+                      ? endOffsetGrowthSection - startOffset
+                      : endOffsetStop - startOffset
+                  } ${length}`
+                );
+                path?.setAttributeNS(
+                  null,
+                  "stroke-dashoffset",
+                  `${-startOffset}`
+                );
+              }
+              if (i == 1) {
+                const startOffset = (length - third - 0.01) * diff;
+                const endOffsetGrowthSection = startOffset * 2;
+                const endOffsetStop = length;
+                path?.setAttributeNS(
+                  null,
+                  "stroke-dasharray",
+                  `${
+                    endOffsetGrowthSection < endOffsetStop
+                      ? endOffsetGrowthSection - startOffset
+                      : endOffsetStop - startOffset
+                  } ${length}`
+                );
+                path?.setAttributeNS(
+                  null,
+                  "stroke-dashoffset",
+                  `${-startOffset}`
+                );
+              } else if (i == 2) {
+                const startOffset = (length - third - 0.01) * diff;
+                const endOffsetGrowthSection = startOffset * 2;
+                const endOffsetStop = length - third * 0.3;
+                path?.setAttributeNS(
+                  null,
+                  "stroke-dasharray",
+                  `${
+                    endOffsetGrowthSection < endOffsetStop
+                      ? endOffsetGrowthSection - startOffset
+                      : endOffsetStop - startOffset
+                  } ${length}`
+                );
+                path?.setAttributeNS(
+                  null,
+                  "stroke-dashoffset",
+                  `${-startOffset}`
+                );
+              } else if (i == 3) {
+                const startOffset = (length - third * 0.55) * diff;
+                const endOffsetGrowthSection = startOffset * 1.5;
+                const endOffsetStop = length - third * 0.3;
+                path?.setAttributeNS(
+                  null,
+                  "stroke-dasharray",
+                  `${
+                    endOffsetGrowthSection < endOffsetStop
+                      ? endOffsetGrowthSection - startOffset
+                      : endOffsetStop - startOffset
+                  } ${length}`
+                );
+                path?.setAttributeNS(
+                  null,
+                  "stroke-dashoffset",
+                  `${-startOffset}`
+                );
+              }
+              path?.setAttributeNS(
+                null,
+                "filter",
+                `brightness(${0.5 + ((i / 4 + (1 - i / 4)) / 2) * diff})`
+              );
+              if (diff == 1) {
+                path?.setAttributeNS(null, "class", "animate-glowpulse");
+                path?.setAttributeNS(
+                  null,
+                  "style",
+                  `transition: stroke 0.5s ease-in-out; stroke: #AAAAAA;`
+                );
+              } else {
+                path?.setAttributeNS(null, "class", "");
+                path?.setAttributeNS(
+                  null,
+                  "style",
+                  `transition: stroke 0.5s ease-in-out; stroke: #AAAAAA;`
+                );
+              }
+            }
+            for (let i = 0; i < 4; i++) {
+              const path = document.getElementById(
+                `logo-path-for-work-${index}-path-${i}-background`
+              );
+              const length = parseFloat(
+                parseFloat(
+                  path?.getAttribute("pathLength")?.valueOf() || "0"
+                ).toFixed(2)
+              );
+              const backLength = Math.max(0, diff * length - (length - third));
               path?.setAttributeNS(
                 null,
                 "stroke-dasharray",
-                `${
-                  endOffsetGrowthSection < endOffsetStop
-                    ? endOffsetGrowthSection - startOffset
-                    : endOffsetStop - startOffset
-                } ${length}`
+                `${backLength} ${length}`
               );
               path?.setAttributeNS(
                 null,
                 "stroke-dashoffset",
-                `${-startOffset}`
+                `-${Math.min(length - third, Math.max(0, length - third))}`
               );
             }
-            if (i == 1) {
-              const startOffset = (length - third) * diff;
-              const endOffsetGrowthSection = startOffset * 2;
-              const endOffsetStop = length;
-              path?.setAttributeNS(
-                null,
-                "stroke-dasharray",
-                `${
-                  endOffsetGrowthSection < endOffsetStop
-                    ? endOffsetGrowthSection - startOffset
-                    : endOffsetStop - startOffset
-                } ${length}`
-              );
-              path?.setAttributeNS(
-                null,
-                "stroke-dashoffset",
-                `${-startOffset}`
-              );
-            } else if (i == 2) {
-              const startOffset = (length - third) * diff;
-              const endOffsetGrowthSection = startOffset * 2;
-              const endOffsetStop = length - third * 0.3;
-              path?.setAttributeNS(
-                null,
-                "stroke-dasharray",
-                `${
-                  endOffsetGrowthSection < endOffsetStop
-                    ? endOffsetGrowthSection - startOffset
-                    : endOffsetStop - startOffset
-                } ${length}`
-              );
-              path?.setAttributeNS(
-                null,
-                "stroke-dashoffset",
-                `${-startOffset}`
-              );
-            } else if (i == 3) {
-              const startOffset = (length - third * 0.55) * diff;
-              const endOffsetGrowthSection = startOffset * 1.5;
-              const endOffsetStop = length - third * 0.3;
-              path?.setAttributeNS(
-                null,
-                "stroke-dasharray",
-                `${
-                  endOffsetGrowthSection < endOffsetStop
-                    ? endOffsetGrowthSection - startOffset
-                    : endOffsetStop - startOffset
-                } ${length}`
-              );
-              path?.setAttributeNS(
-                null,
-                "stroke-dashoffset",
-                `${-startOffset}`
-              );
-            }
-            path?.setAttributeNS(
-              null,
-              "filter",
-              `brightness(${0.5 + ((i / 4 + (1 - i / 4)) / 2) * diff})`
-            );
-            if (diff == 1) {
-              path?.setAttributeNS(null, "class", "animate-glowpulse");
-              path?.setAttributeNS(
-                null,
-                "style",
-                `transition: stroke 0.5s ease-in-out; stroke: #AAAAAA;`
-              );
-            } else {
-              path?.setAttributeNS(null, "class", "");
-              path?.setAttributeNS(
-                null,
-                "style",
-                `transition: stroke 0.5s ease-in-out; stroke: #AAAAAA;`
-              );
-            }
-          }
-          for (let i = 0; i < 4; i++) {
-            const path = document.getElementById(
-              `logo-path-for-work-${index}-path-${i}-background`
-            );
-            const length = parseFloat(
-              parseFloat(
-                path?.getAttribute("pathLength")?.valueOf() || "0"
-              ).toFixed(2)
-            );
-            const backLength = Math.max(0, diff * length - (length - third));
-            path?.setAttributeNS(
-              null,
-              "stroke-dasharray",
-              `${backLength} ${length}`
-            );
-            path?.setAttributeNS(
-              null,
-              "stroke-dashoffset",
-              `-${Math.min(length - third, Math.max(0, length - third))}`
-            );
           }
         }
       });
@@ -206,11 +237,11 @@ export default function WorkOutro({
   }, [scroll, index]);
 
   useEffect(() => {
-    if (ref.current) {
+    if (ref.current && size) {
       const a = [0, 1, 2, 3];
       a.sort(() => Math.random() - 0.5);
 
-      const third = document.documentElement.clientHeight / 3;
+      const third = size[1] / 3;
       const strokeWidth = (2 * third) / 11;
       const blurSize = 20;
 
@@ -220,10 +251,8 @@ export default function WorkOutro({
       for (let i = 0; i < 8; i++) {
         const moddedI = i % 4;
         const randomI = a[moddedI];
-        const sx = ((moddedI + 1) * document.documentElement.clientWidth) / 5;
-        const p0x =
-          (document.documentElement.clientWidth - third) / 2 +
-          (randomI * 3 + 1) * (third / 11);
+        const sx = ((moddedI + 1) * size[0]) / 5;
+        const p0x = (size[0] - third) / 2 + (randomI * 3 + 1) * (third / 11);
 
         const minX = Math.min(sx, p0x);
         const maxX = Math.max(sx, p0x);
@@ -236,21 +265,15 @@ export default function WorkOutro({
           {
             p0: {
               x: startX,
-              y: document.documentElement.clientHeight,
+              y: size[1],
             },
             p1: {
               x: startX,
-              y:
-                ((2.35 + randomI * 0.1) *
-                  document.documentElement.clientHeight) /
-                3,
+              y: ((2.35 + randomI * 0.1) * size[1]) / 3,
             },
             p2: {
               x: endX,
-              y:
-                ((2.35 + randomI * 0.1) *
-                  document.documentElement.clientHeight) /
-                3,
+              y: ((2.35 + randomI * 0.1) * size[1]) / 3,
             },
             p3: {
               x: endX,
@@ -300,11 +323,7 @@ export default function WorkOutro({
           }px; top: ${0}px`
         );
         svg.setAttributeNS(null, "width", `${width}`);
-        svg.setAttributeNS(
-          null,
-          "height",
-          `${document.documentElement.clientHeight}`
-        );
+        svg.setAttributeNS(null, "height", `${size[1]}`);
 
         const path = document.createElementNS(svgns, "path");
         path.setAttributeNS(null, "d", svgPath);
@@ -341,7 +360,7 @@ export default function WorkOutro({
       backSVGs.forEach((svg) => ref.current!.appendChild(svg));
       frontSVGs.forEach((svg) => ref.current!.appendChild(svg));
     }
-  }, [ref, index]);
+  }, [ref, index, size]);
 
   return (
     <div

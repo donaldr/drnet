@@ -12,6 +12,7 @@ import Matter from "matter-js";
 import "pathseg";
 import clsx from "clsx";
 import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { useDebounce } from "@/lib/customhooks";
 
 // module aliases
 const Engine = Matter.Engine,
@@ -63,6 +64,7 @@ export default function Chop({
   const { scroll } = useLocomotiveScroll();
   const offsetRef = useRef(0);
   const [active, setActive] = useState(false);
+  const debouncer = useDebounce();
 
   useEffect(() => {
     if (scroll) {
@@ -446,17 +448,20 @@ export default function Chop({
     }
   }, [children, font, engine, size]);
 
-  useLayoutEffect(() => {
-    function updateSize() {
+  const updateSize = useCallback(() => {
+    debouncer(() =>
       setSize([
         document.documentElement.clientWidth,
         document.documentElement.clientHeight,
-      ]);
-    }
+      ])
+    );
+  }, []);
+
+  useLayoutEffect(() => {
     window.addEventListener("resize", updateSize);
     updateSize();
     return () => window.removeEventListener("resize", updateSize);
-  }, []);
+  }, [updateSize]);
 
   useLayoutEffect(() => {
     function mousemove(e: MouseEvent) {
