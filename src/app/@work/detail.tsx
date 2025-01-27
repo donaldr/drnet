@@ -35,7 +35,7 @@ function Detail({
     if (scroll) {
       scroll.on("scroll", (obj: any) => {
         if (sizeRef.current && sizeRef.current[0] < 768) {
-          const key = `work-${index}-detail-main`;
+          const key = `work-${index}-detail-main-small`;
           if (key in obj.currentElements) {
             const el = obj.currentElements[key];
             if (el.progress > 0.25 && el.progress < 0.75) {
@@ -53,7 +53,7 @@ function Detail({
             }
           }
         } else {
-          const key = `work-${index}-detail-target-1`;
+          const key = `work-${index}-detail-target`;
           if (key in obj.currentElements) {
             const el = obj.currentElements[key];
             const progress = el.progress;
@@ -196,7 +196,7 @@ function Detail({
         data-scroll-repeat
         data-scroll-id={`work-${index}-detail-main`}
         data-scroll-sticky
-        data-scroll-target={`#work-${index}-detail-target-1`}
+        data-scroll-target={`#work-${index}-detail-target`}
         data-scroll-speed={1}
         style={{
           top: top,
@@ -227,7 +227,7 @@ function Detail({
       >
         <div
           data-scroll
-          data-scroll-id={`work-${index}-detail-main`}
+          data-scroll-id={`work-${index}-detail-main-small`}
           className="leading-[1.75] md:hidden"
         >
           {detailItem}

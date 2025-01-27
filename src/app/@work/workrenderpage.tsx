@@ -282,11 +282,11 @@ export default function WorkComponent({
         }}
       ></div>
       <div
-        id={`work-${index}-detail-target-1`}
+        id={`work-${index}-detail-target`}
         className="absolute w-screen h-[150dvh]"
         data-scroll
         data-scroll-repeat
-        data-scroll-id={`work-${index}-detail-target-1`}
+        data-scroll-id={`work-${index}-detail-target`}
         style={{
           top: `${150 + desc.length * 100 + 200}dvh`,
         }}
