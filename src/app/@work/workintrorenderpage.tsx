@@ -58,7 +58,7 @@ export default function WorkIntroComponent() {
   useEffect(() => {
     setTextContainerClasses(
       clsx({
-        "h-screen w-screen transition-[opacity] duration-1000 will-change-[opacity,transform] bg-[var(--dark)] absolute top-[-200dvh] flex items-center justify-center pointer-events-none":
+        "h-[100dvh] w-screen transition-[opacity] duration-1000 will-change-[opacity,transform] bg-[var(--dark)] absolute top-[-200dvh] flex items-center justify-center pointer-events-none":
           true,
         "opacity-100": active && refsAllSet,
         "opacity-0": !(active && refsAllSet),

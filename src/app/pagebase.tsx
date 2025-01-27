@@ -11,6 +11,7 @@ export default function PageBase({
   pathTest,
   render,
   index,
+  intersectionOffset = 0,
   overrideHeight,
   overridePaddingBottom,
   overrideContentTop,
@@ -20,6 +21,7 @@ export default function PageBase({
   pathTest: (pathname: string, thisPathname: string, index?: number) => boolean;
   render: (params: { index?: number }) => React.ReactNode;
   index?: number;
+  intersectionOffset?: number;
   overrideHeight?: string;
   overridePaddingBottom?: string;
   overrideContentTop?: string;
@@ -141,7 +143,11 @@ export default function PageBase({
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((value) => {
         if (value.target.id == id) {
-          if (value.isIntersecting) {
+          if (
+            value.isIntersecting &&
+            value.intersectionRect.top / value.rootBounds?.height! >=
+              intersectionOffset
+          ) {
             setCurrentInView((previousCurrentInView) => {
               if (!previousCurrentInView.includes(id)) {
                 return [id, ...previousCurrentInView];
@@ -159,7 +165,11 @@ export default function PageBase({
           }
         }
         if (value.target.id == `${id}-content`) {
-          if (value.isIntersecting) {
+          if (
+            value.isIntersecting &&
+            value.intersectionRect.top / value.rootBounds?.height! >=
+              intersectionOffset
+          ) {
             setActiveList((previousActiveList) => {
               if (!previousActiveList.includes(id)) {
                 return [...previousActiveList, id];
@@ -257,7 +267,7 @@ export default function PageBase({
   useEffect(() => {
     setPageClasses(
       clsx({
-        "relative transition-opacity duration-1000": true,
+        "relative will-change-opacity transition-opacity duration-1000": true,
         "pb-[100dvh]": !overridePaddingBottom,
         "opacity-100": active,
         "opacity-0": !active,

@@ -1,4 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { SplitText } from "@rigo-m/react-split-text";
 import clsx from "clsx";
 import { useLocomotiveScroll } from "react-locomotive-scroll";
@@ -13,11 +19,13 @@ export default function FitVariable({
 }>) {
   const [size, setSize] = useState([0, 0]);
   const [cursorPosition, setCursorPosition] = useState([0, 0]);
+  const animateToPositionRef = useRef<[number, number]>(null);
   const [fitClasses, setFitClasses] = useState("");
   const [reveal, setReveal] = useState(false);
   const [offset, setOffset] = useState<number>();
   const { scroll } = useLocomotiveScroll();
   const showRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestRef = useRef(0);
 
   useEffect(() => {
     if (scroll) {
@@ -41,7 +49,8 @@ export default function FitVariable({
         "duration-1000": true,
         "opacity-100": show && reveal,
         "opacity-0": (show && !reveal) || (!show && reveal),
-        "transition-all": true,
+        "transition-opacity": true,
+        "will-change-opacity": true,
         "bg-slate-300": true,
         "heavy-grain": true,
       })
@@ -79,30 +88,60 @@ export default function FitVariable({
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
+  const animate = useCallback(() => {
+    requestRef.current = requestAnimationFrame(animate);
+    setCursorPosition((prev) => {
+      if (prev) {
+        const newCoords = [
+          prev[0] * 0.9 + animateToPositionRef.current![0] * 0.1,
+          prev[1] * 0.9 + animateToPositionRef.current![1] * 0.1,
+        ];
+        if (
+          Math.round(newCoords[0]) ==
+            Math.round(animateToPositionRef.current![0]) &&
+          Math.round(newCoords[1]) ==
+            Math.round(animateToPositionRef.current![1])
+        ) {
+          cancelAnimationFrame(requestRef.current);
+        }
+        return [...newCoords];
+      } else {
+        cancelAnimationFrame(requestRef.current);
+        return [...animateToPositionRef.current!];
+      }
+    });
+  }, []);
+
   useLayoutEffect(() => {
-    function getMousePosition(e: MouseEvent) {
+    function mousemove(e: MouseEvent) {
       setCursorPosition([e.clientX, e.clientY]);
     }
-    function getTouchStart(e: TouchEvent) {
-      setCursorPosition([e.touches[0].clientX, e.touches[0].clientY]);
+    function touchstart(e: TouchEvent) {
+      animateToPositionRef.current = [
+        e.touches[0].clientX,
+        e.touches[0].clientY,
+      ];
+      cancelAnimationFrame(requestRef.current);
+      requestRef.current = requestAnimationFrame(animate);
     }
-    function getTouchMovePosition(e: TouchEvent) {
+    function touchmove(e: TouchEvent) {
+      cancelAnimationFrame(requestRef.current);
       setCursorPosition([
         e.changedTouches[0].clientX,
         e.changedTouches[0].clientY,
       ]);
     }
     if (show && reveal) {
-      window.addEventListener("mousemove", getMousePosition);
-      window.addEventListener("touchstart", getTouchStart);
-      window.addEventListener("touchmove", getTouchMovePosition);
+      window.addEventListener("mousemove", mousemove);
+      window.addEventListener("touchstart", touchstart);
+      window.addEventListener("touchmove", touchmove);
     }
     return () => {
-      window.removeEventListener("mousemove", getMousePosition);
-      window.removeEventListener("touchstart", getTouchStart);
-      window.removeEventListener("touchmove", getTouchMovePosition);
+      window.removeEventListener("mousemove", mousemove);
+      window.removeEventListener("touchstart", touchstart);
+      window.removeEventListener("touchmove", touchmove);
     };
-  }, [show, reveal]);
+  }, [show, reveal, animate]);
 
   const textLength = children!.toString().length;
 

@@ -51,7 +51,7 @@ export default function Video({
 
   return (
     <div
-      className={`absolute top-[100dvh] h-screen w-screen z-40 flex items-center justify-center ${
+      className={`absolute top-[100dvh] h-[100dvh] w-screen z-40 flex items-center justify-center ${
         isPast ? "" : "bg-[var(--dark)]"
       }`}
     >

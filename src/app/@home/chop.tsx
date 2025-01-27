@@ -32,7 +32,9 @@ export default function Chop({
   children: React.ReactNode;
 }>) {
   const [size, setSize] = useState<[number, number] | undefined>();
-  const [mousePosition, setMousePosition] = useState([0, 0]);
+  const [cursorPosition, setCursorPosition] = useState<
+    [number, number] | undefined
+  >();
   const requestRef = useRef<number>(0);
   const [font, setFont] = useState<ReturnType<typeof opentype.parse> | null>(
     null
@@ -43,7 +45,8 @@ export default function Chop({
   const [originalPositions, setOriginalPositions] = useState<
     Array<{ x: number; y: number }>
   >([]);
-  const mousePositionRef = useRef(mousePosition);
+  const cursorPositionRef = useRef(cursorPosition);
+  const animateToPositionRef = useRef<[number, number]>(null);
   const detailsRef = useRef<
     Array<{
       distance: number | null;
@@ -53,7 +56,7 @@ export default function Chop({
     }>
   >([]);
   const [engine] = useState(Engine.create());
-  const [mouseCircle, setMouseCircle] =
+  const [cursorCircle, setCursorCircle] =
     useState<ReturnType<typeof Bodies.circle>>();
   const [chopClasses, setChopClasses] = useState("");
   const [reveal, setReveal] = useState(false);
@@ -65,30 +68,59 @@ export default function Chop({
     if (scroll) {
       scroll.on("scroll", (obj: any) => {
         setActive("home-target" in obj.currentElements);
+        /*
         offsetRef.current = Math.min(
           1,
           obj.scroll.y / document.documentElement.clientHeight
         );
+        */
       });
     }
   }, [scroll]);
 
   const animate = useCallback(() => {
-    Body.setPosition(mouseCircle!, {
-      x: mousePositionRef.current[0],
-      y: mousePositionRef.current[1],
-    });
+    if (animateToPositionRef.current) {
+      setCursorPosition((prev) => {
+        if (animateToPositionRef.current) {
+          if (prev) {
+            const newCoords = [
+              prev[0] * 0.9 + animateToPositionRef.current![0] * 0.1,
+              prev[1] * 0.9 + animateToPositionRef.current![1] * 0.1,
+            ];
+            if (
+              Math.round(newCoords[0]) ==
+                Math.round(animateToPositionRef.current![0]) &&
+              Math.round(newCoords[1]) ==
+                Math.round(animateToPositionRef.current![1])
+            ) {
+              animateToPositionRef.current = null;
+            }
+            return newCoords as [number, number];
+          } else {
+            return [...animateToPositionRef.current!];
+          }
+        }
+        return prev;
+      });
+    }
+    if (cursorPositionRef.current) {
+      Body.setPosition(cursorCircle!, {
+        x: cursorPositionRef.current[0],
+        y: cursorPositionRef.current[1],
+      });
+    } else {
+    }
     if (pathMap.length) {
       pathMap.forEach((p, index) => {
         const op = originalPositions[index];
-        const mp = mousePositionRef.current;
-        const mouseVector = {
-          x: p[1].position.x - mp[0],
-          y: p[1].position.y - mp[1],
+        const mp = cursorPositionRef.current;
+        const cursorVector = {
+          x: p[1].position.x - (mp ? mp[0] : 0),
+          y: p[1].position.y - (mp ? mp[1] : 0),
         };
-        const mouseNorm = Vector.normalise(mouseVector);
-        const mouseMag =
-          1 / Math.pow(Math.max(20, Vector.magnitude(mouseVector)), 3);
+        const cursorNorm = Vector.normalise(cursorVector);
+        const cursorMag =
+          1 / Math.pow(Math.max(20, Vector.magnitude(cursorVector)), 3);
         const positionVector = {
           x: p[1].position.x - op.x,
           y:
@@ -136,11 +168,11 @@ export default function Chop({
             ? positionMag
             : d.distance * 0.9 + positionMag * 0.1;
 
-        if (mouseMag > 1 / 2000000) {
+        if (cursorMag > 1 / 2000000) {
           Body.applyForce(
             p[1],
             { x: p[1].position.x, y: p[1].position.y },
-            Vector.mult(mouseNorm, 100 * mouseMag)
+            Vector.mult(cursorNorm, 100 * cursorMag)
           );
         }
         Body.applyForce(
@@ -196,7 +228,7 @@ export default function Chop({
       });
       requestRef.current = requestAnimationFrame(animate);
     }
-  }, [requestRef, pathMap, mousePositionRef, mouseCircle, originalPositions]);
+  }, [requestRef, pathMap, cursorPositionRef, cursorCircle, originalPositions]);
 
   useEffect(() => {
     // either from an URL
@@ -320,7 +352,6 @@ export default function Chop({
         });
       });
 
-      console.log(size);
       allPaths.forEach((path: any) => {
         path.position.x += size[0] / 2 - fullWidth / 2;
         path.position.y += size[1] / 2 + fullHeight / 2;
@@ -382,7 +413,7 @@ export default function Chop({
 
       const mc = Bodies.circle(0, 0, 10, { isStatic: true });
 
-      setMouseCircle(mc);
+      setCursorCircle(mc);
 
       // add all of the bodies to the world
       Composite.add(engine.world, [
@@ -424,31 +455,68 @@ export default function Chop({
     }
     window.addEventListener("resize", updateSize);
     updateSize();
-    setMousePosition([0, 0]);
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
   useLayoutEffect(() => {
-    function getMousePosition(e: MouseEvent) {
-      setMousePosition([e.clientX, e.clientY]);
+    function mousemove(e: MouseEvent) {
+      if (!animateToPositionRef.current) {
+        setCursorPosition((prev) => {
+          if (prev === undefined) {
+            Composite.add(engine.world, cursorCircle!);
+          }
+          return [e.clientX, e.clientY];
+        });
+      }
+    }
+    function touchstart(e: TouchEvent) {
+      animateToPositionRef.current = [
+        e.touches[0].clientX,
+        e.touches[0].clientY,
+      ];
+    }
+    function touchend(e: TouchEvent) {
+      setCursorPosition(undefined);
+      Composite.remove(engine.world, cursorCircle!);
+    }
+    function touchmove(e: TouchEvent) {
+      animateToPositionRef.current = null;
+      setCursorPosition((prev) => {
+        if (prev === undefined) {
+          Composite.add(engine.world, cursorCircle!);
+        }
+        return [e.changedTouches[0].clientX, e.changedTouches[0].clientY];
+      });
     }
     if (show && reveal) {
-      window.addEventListener("mousemove", getMousePosition);
+      window.addEventListener("mousemove", mousemove);
+      window.addEventListener("touchstart", touchstart);
+      window.addEventListener("touchmove", touchmove);
+      //window.addEventListener("touchend", touchend);
+      //window.addEventListener("touchcancel", touchend);
     }
-    return () => window.removeEventListener("mousemove", getMousePosition);
+    return () => {
+      window.removeEventListener("mousemove", mousemove);
+      window.removeEventListener("touchstart", touchstart);
+      window.removeEventListener("touchmove", touchmove);
+      window.removeEventListener("touchend", touchend);
+      window.removeEventListener("touchcancel", touchend);
+    };
   }, [show, reveal]);
 
   useEffect(() => {
-    mousePositionRef.current = mousePosition;
-  }, [mousePosition]);
+    cursorPositionRef.current = cursorPosition;
+  }, [cursorPosition]);
 
   useLayoutEffect(() => {
     if (size) {
       engine.gravity.scale = 0.0;
-      engine.gravity.x = (mousePosition[0] - size[0] / 2) / size[0];
-      engine.gravity.y = (mousePosition[1] - size[1] / 2) / size[1];
+      if (cursorPosition) {
+        engine.gravity.x = (cursorPosition[0] - size[0] / 2) / size[0];
+        engine.gravity.y = (cursorPosition[1] - size[1] / 2) / size[1];
+      }
     }
-  }, [mousePosition, size, engine]);
+  }, [cursorPosition, size, engine]);
 
   useLayoutEffect(() => {
     setChopClasses(
@@ -457,7 +525,8 @@ export default function Chop({
         hidden: !show && !reveal,
         "opacity-100": show && reveal,
         "opacity-0": (show && !reveal) || (!show && reveal),
-        "transition-all": true,
+        "transition-opacity": true,
+        "will-change-opacity": true,
         "font-[mekon-block]": true,
         "tracking-[1dvw]": true,
         absolute: true,
@@ -467,7 +536,7 @@ export default function Chop({
         "items-center": true,
         "justify-center": true,
         "z-10": true,
-        "bg-black": true,
+        "bg-[var(--dark)]": true,
         "text-7xl": true,
         "font-bold": true,
         "cursor-none": true,
@@ -538,13 +607,15 @@ export default function Chop({
             </feMerge>
           </filter>
         </defs>
-        <circle
-          id="mouseCircle"
-          cx={mousePosition[0]}
-          cy={mousePosition[1]}
-          r={10}
-          fill="red"
-        />
+        {cursorPosition && (
+          <circle
+            id="mouseCircle"
+            cx={cursorPosition[0]}
+            cy={cursorPosition[1]}
+            r={10}
+            fill="red"
+          />
+        )}
       </svg>
     </div>
   );

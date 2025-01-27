@@ -23,9 +23,7 @@ export default function Content({
         getDirection: true,
         multiplier: 0.5,
         scrollFromAnywhere: true,
-        mobile: {
-          smooth: true,
-        },
+        touchMultiplier: 4,
         smartphone: {
           smooth: true,
         },

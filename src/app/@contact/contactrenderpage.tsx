@@ -21,7 +21,7 @@ export default function ContactRenderPage() {
       clsx({
         "top-[-200dvh]": true,
         absolute: true,
-        "h-screen": true,
+        "h-[100dvh]": true,
         "w-screen": true,
       })
     );
@@ -29,7 +29,7 @@ export default function ContactRenderPage() {
 
   return (
     <>
-      <div className="h-screen"></div>
+      <div className="h-[100dvh]"></div>
       <div
         id="contact-target"
         className="absolute top-[-200dvh] h-[300dvh] w-full"

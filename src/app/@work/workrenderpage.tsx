@@ -13,10 +13,11 @@ import VideoPull from "./videopull";
 import Detail from "./detail";
 import Slides from "./slides";
 import { useGlobalState } from "@/lib/state";
-//import { useWaitWheel } from "../../lib/customhooks";
 import WorkOutro from "./workoutro";
 import Squares from "../squares";
 import NoSSR from "react-no-ssr";
+import { useWaitWheel } from "@/lib/customhooks";
+import { RGBA_ASTC_10x10_Format } from "three";
 
 export default function WorkComponent({
   work,
@@ -36,6 +37,7 @@ export default function WorkComponent({
   const [descriptionState, setDescriptionState] = useState<Array<string>>(
     Array(desc.length).fill("exit")
   );
+  const descriptionStateRef = useRef(descriptionState);
   const [showTitle, setShowTitle] = useState(false);
   const { scroll } = useLocomotiveScroll();
   const [title2ShowBackground, setTitle2ShowBackground] = useState(false);
@@ -52,8 +54,19 @@ export default function WorkComponent({
   const [inColor, setInColor] = useState(false);
   const setImageSrcCallbackRef = useRef(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  //const { stop, wait } = useWaitWheel();
-  //const stoppedRef = useRef(false);
+  const { stop, wait } = useWaitWheel();
+  const [size, setSize] = useState<[number, number] | undefined>();
+  useLayoutEffect(() => {
+    function updateSize() {
+      setSize([
+        document.documentElement.clientWidth,
+        document.documentElement.clientHeight,
+      ]);
+    }
+    window.addEventListener("resize", updateSize);
+    updateSize();
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
 
   useEffect(() => {
     activeRef.current = active;
@@ -83,39 +96,10 @@ export default function WorkComponent({
   useEffect(() => {
     if (scroll) {
       scroll.on("call", (f: string, type: string, el: any) => {
-        if (f == `work${index}DescriptionInView`) {
-          const i = el.el.id.match(/work-\d+-description-(\d)-container/)[1];
-          if (type == "enter") {
-            scroll.stop();
-            //scroll.scrollTo(el.el);
-            setTimeout(() => {
-              scroll.start();
-            }, 500);
-            setDescriptionState((old) => {
-              const newDesc = [...old];
-              newDesc[i] = "enter";
-              return newDesc;
-            });
-          } else {
-            setDescriptionState((old) => {
-              const newDesc = [...old];
-              newDesc[i] = "exit";
-              return newDesc;
-            });
-          }
-        } else if (f == `work${index}TitleInView`) {
+        if (f == `work${index}TitleInView`) {
           setShowTitle(type == "enter");
-          /*
-            scroll.scrollTo(`#work-${index}`, {
-              callback: () => {
-                wait();
-              },
-              offset: -document.documentElement.clientHeight,
-              duration: 500,
-              disableLerp: true
-            });
-            */
-        } else if (f == `work${index}VideoElementInView`) {
+        }
+        if (f == `work${index}VideoElementInView`) {
           setVideoInView(type == "enter");
         }
       });
@@ -135,18 +119,83 @@ export default function WorkComponent({
           if (videoContainerKey in obj.currentElements) {
             if (obj.currentElements[videoContainerKey].progress > 0.5) {
               obj.currentElements[videoContainerKey].speed = -1;
-              obj.currentElements[videoPullContainerKey].speed = -1;
+              if (videoPullContainerKey in obj.currentElements) {
+                obj.currentElements[videoPullContainerKey].speed = -1;
+              }
             } else {
               obj.currentElements[videoContainerKey].speed = -0.5;
-              obj.currentElements[videoPullContainerKey].speed = -0.5;
+              if (videoPullContainerKey in obj.currentElements) {
+                obj.currentElements[videoPullContainerKey].speed = -0.5;
+              }
             }
           }
           const title2Key = `work-${index}-title-target-2`;
           setTitle2ShowBackground(title2Key in obj.currentElements);
+
+          const descriptionElKeys = Object.keys(obj.currentElements).filter(
+            (el: string) => el.match(/^work-\d+-description-(\d)$/)
+          );
+
+          descriptionElKeys.forEach((descriptionElKey) => {
+            const el = obj.currentElements[descriptionElKey];
+          });
+
+          const descriptionContainerElKeys = Object.keys(
+            obj.currentElements
+          ).filter((el: string) =>
+            el.match(/work-\d+-description-(\d)-container/)
+          );
+
+          descriptionElKeys.forEach((descriptionElKey) => {
+            const el = obj.currentElements[descriptionElKey];
+            const i = el.el.id.match(/work-\d+-description-(\d)/)[1];
+            const progress = el.progress * descriptionElKeys.length - i;
+            if (progress > 0.1 && progress < 0.9) {
+              if (descriptionStateRef.current[i] == "exit") {
+                /*
+                stop();
+                //scroll.scrollTo(el.el);
+                setTimeout(() => {
+                  wait();
+                }, 500);
+                */
+                setDescriptionState((old) => {
+                  const newDesc = [...old];
+                  newDesc[i] = "enter";
+                  return newDesc;
+                });
+              }
+            } else if (descriptionStateRef.current[i] == "enter") {
+              setDescriptionState((old) => {
+                const newDesc = [...old];
+                newDesc[i] = "exit";
+                return newDesc;
+              });
+            }
+          });
+
+          const entered = descriptionStateRef.current
+            .map((el, index) => [index, el])
+            .filter((el) => el[1] == "enter")
+            .forEach((entered) => {
+              const i = entered[0] as number;
+              const elName = `work-${index}-description-${i}`;
+              if (!(elName in obj.currentElements)) {
+                setDescriptionState((old) => {
+                  const newDesc = [...old];
+                  newDesc[i] = "exit";
+                  return newDesc;
+                });
+              }
+            });
         }
       });
     }
   }, [scroll, index, work]);
+
+  useEffect(() => {
+    descriptionStateRef.current = descriptionState;
+  }, [descriptionState]);
 
   useEffect(() => {
     setTitleClasses(
@@ -350,7 +399,7 @@ export default function WorkComponent({
           </HeaderTitle>
           <div
             id={`work-${index}-reveal-title`}
-            className="absolute top-[-100dvh] z-[45] w-full h-screen will-change-transform"
+            className="absolute top-[-100dvh] z-[45] w-full h-[100dvh] will-change-transform"
             data-scroll
             data-scroll-sticky
             data-scroll-target={`#work-${index}-title-target`}
@@ -369,7 +418,7 @@ export default function WorkComponent({
           </div>
           <div
             id={`description-${index}-target`}
-            className="relative w-screen text-2xl mt-[4rem]"
+            className="relative w-screen text-lg sm:text-2xl mt-[4rem]"
             style={{
               height: `calc(${100 + desc.length * 100}dvh - 7rem)`,
             }}
@@ -390,20 +439,23 @@ export default function WorkComponent({
             </NoSSR>
             {desc.map((d, i) => (
               <div
+                id={`work-${index}-description-${i}`}
                 key={`work-${index}-description-${i}`}
-                className="absolute px-[20%] top-0 left-0 w-screen h-screen will-change-transform"
+                className="absolute px-[20%] top-0 left-0 w-screen h-[100dvh] will-change-transform"
                 data-scroll
                 data-scroll-repeat
                 data-scroll-sticky
                 data-scroll-target={`#description-${index}-target`}
+                data-scroll-id={`work-${index}-description-${i}`}
               >
                 <div
                   id={`work-${index}-description-${i}-container`}
-                  className={`relative group h-screen flex items-center justify-center`}
+                  className={`relative group h-[100dvh] flex items-center justify-center`}
                   data-scroll
                   data-scroll-repeat
-                  data-scroll-offset={`${100 * (i + 1)}%,${50 - 100 * i}%`}
-                  data-scroll-call={`work${index}DescriptionInView`}
+                  //data-scroll-offset={`${100 * (i + 1)}%,${50 - 100 * i}%`}
+                  //data-scroll-call={`work${index}DescriptionInView`}
+                  data-scroll-id={`work-${index}-description-${i}-container`}
                 >
                   <div className={`group/action ${descriptionState[i]}`}>
                     <Description theme={work.theme || "dark"}>{d}</Description>
@@ -417,6 +469,7 @@ export default function WorkComponent({
           <div
             className="absolute h-[300dvh] box-content w-screen z-40"
             data-scroll
+            data-scroll-repeat
             data-scroll-speed={-5}
             data-scroll-id={`work-${index}-video-container`}
             style={{
@@ -426,10 +479,11 @@ export default function WorkComponent({
             <Video work={work} index={index!} videoRef={videoRef} />
           </div>
         )}
-        {work.video && (
+        {work.video && size && size[0] > 640 && (
           <div
             className="absolute h-[300dvh] box-content w-screen z-40 pointer-events-none"
             data-scroll
+            data-scroll-repeat
             data-scroll-speed={-5}
             data-scroll-id={`work-${index}-video-pull-container`}
             style={{

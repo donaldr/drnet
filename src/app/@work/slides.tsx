@@ -29,13 +29,13 @@ export default function Slides({
   const { scroll } = useLocomotiveScroll();
   const [showSlides, setShowSlides] = useState(false);
   const [slidesClasses, setSlidesClasses] = useState(
-    "text-xl w-full flex flex-col flex-wrap h-screen pt-[8rem] items-start justify-start content-start"
+    "text-xl w-full flex flex-col flex-wrap h-[100dvh] pt-[8rem] items-start justify-start content-start"
   );
 
   useEffect(() => {
     setSlidesClasses(
       clsx({
-        "relative h-screen w-screen flex flex-row items-center justify-center transition-all duration-1000":
+        "relative h-[100dvh] w-screen flex flex-row items-center justify-center transition-all duration-1000":
           true,
         "saturate-[0.2] brightness-[0.2] blur-sm": !showSlides,
         "saturate-100 brightness-100 blur-[0px]": showSlides,
@@ -116,7 +116,7 @@ export default function Slides({
               <SwiperSlide key={`image-${index}`}>
                 <Image
                   data-index={index}
-                  className="w-screen h-screen object-cover"
+                  className="w-screen h-[100dvh] object-cover"
                   alt="boop"
                   width={0}
                   height={0}

@@ -76,7 +76,7 @@ export default function VideoPull({
   useLayoutEffect(() => {
     setPullClasses(
       clsx({
-        "absolute top-[100dvh] z-50 w-screen h-screen": true,
+        "absolute top-[100dvh] z-50 w-screen h-[100dvh]": true,
         hidden: !pull,
       })
     );

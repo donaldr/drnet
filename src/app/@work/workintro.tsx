@@ -22,5 +22,6 @@ export default function WorkComponent() {
     id: "work-intro",
     overridePaddingBottom: "50dvh",
     overrideContentTop: "0",
+    intersectionOffset: 0.5,
   });
 }

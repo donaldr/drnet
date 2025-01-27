@@ -280,7 +280,7 @@ export default function HomeRenderPage() {
                 callback: () => {
                   wait();
                 },
-                offset: -document.documentElement.clientHeight,
+                offset: -document.documentElement.clientHeight + 1,
                 duration: 500,
                 disableLerp: true,
               });
@@ -296,7 +296,7 @@ export default function HomeRenderPage() {
                     callback: () => {
                       wait();
                     },
-                    offset: -document.documentElement.clientHeight,
+                    offset: -document.documentElement.clientHeight + 1,
                     duration: 50,
                     disableLerp: true,
                   });

@@ -99,7 +99,7 @@ export default function ScrollDown() {
         unshowRef.current = setTimeout(() => {
           setShowState(ShowState.HIDING);
         }, 5000);
-      }, 3000);
+      }, 1000);
     }
   }, [navigating]);
 
@@ -147,7 +147,7 @@ export default function ScrollDown() {
   useEffect(() => {
     setScrollDownClasses(
       clsx({
-        "absolute top-0 left-0 w-screen h-screen flex flex-col items-center justify-end pointer-events-none z-[200] transition-[opacity] duration-1000":
+        "absolute top-0 left-0 w-[100dvw] h-[100dvh] flex flex-col items-center justify-end pointer-events-none z-[200] transition-[opacity] will-change-opacity duration-1000":
           true,
         "opacity-100": !hidden && refsAllSet,
         "opacity-0": !(!hidden && refsAllSet),
@@ -163,7 +163,7 @@ export default function ScrollDown() {
         width={128}
         height={128}
         viewBox="0 0 128 128"
-        className=""
+        className="h-16 md:h-32"
       >
         <line
           ref={(el) => {

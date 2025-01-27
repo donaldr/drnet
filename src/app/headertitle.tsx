@@ -108,7 +108,7 @@ export default function HeaderTitle({
           </div>
           {imageSrc && (
             <Image
-              className={`absolute top-0 left-0 z-40 w-screen h-screen object-cover saturate-[0.2] brightness-[0.2] blur-sm ${
+              className={`absolute top-0 left-0 z-40 w-screen h-[100dvh] object-cover saturate-[0.2] brightness-[0.2] blur-sm will-change-opacity ${
                 showBackground
                   ? "opacity-100"
                   : "transition-opacity duration-1000 transition-none opacity-0"

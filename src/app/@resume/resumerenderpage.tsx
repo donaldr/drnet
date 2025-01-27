@@ -71,7 +71,7 @@ export default function ResumeRenderPage() {
       clsx({
         "top-[-100dvh]": true,
         absolute: true,
-        "h-screen": true,
+        "h-[100dvh]": true,
         "w-screen": true,
         flex: true,
         "flex-col": true,
@@ -139,7 +139,7 @@ export default function ResumeRenderPage() {
           />
         </NoSSR>
       </div>
-      <div className="absolute top-[calc(-100dvh-5rem)] w-screen z-50 overflow-hidden h-screen">
+      <div className="absolute top-[calc(-100dvh-5rem)] w-screen z-50 overflow-hidden h-[100dvh]">
         <HeaderTitle id="resume" color={"transparent"} theme={"dark"}>
           Resume
         </HeaderTitle>

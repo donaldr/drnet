@@ -42,7 +42,7 @@ export default function Hero({
     <>
       {work.heroType == "video" ? (
         <div
-          className={`h-screen w-screen absolute top-0 ${!show && "hidden"}`}
+          className={`h-[100dvh] w-screen absolute top-0 ${!show && "hidden"}`}
         >
           <video
             ref={videoRef}
@@ -54,7 +54,7 @@ export default function Hero({
           />
         </div>
       ) : (
-        <div className="h-screen w-screen absolute top-0">
+        <div className="h-[100dvh] w-screen absolute top-0">
           <Image
             className="object-cover w-full h-full"
             alt="_"
