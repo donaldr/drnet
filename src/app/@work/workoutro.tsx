@@ -77,7 +77,7 @@ export default function WorkOutro({
       setSize(newSize);
       sizeRef.current = newSize;
     });
-  }, []);
+  }, [debouncer]);
 
   useLayoutEffect(() => {
     window.addEventListener("resize", updateSize);

@@ -112,7 +112,7 @@ function Detail({
     resize();
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
-  }, []);
+  }, [resize]);
 
   const templateFnGenerator = useTemplateFunction(work.detailTemplate);
 

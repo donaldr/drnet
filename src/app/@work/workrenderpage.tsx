@@ -16,7 +16,7 @@ import { useGlobalState } from "@/lib/state";
 import WorkOutro from "./workoutro";
 import Squares from "../squares";
 import NoSSR from "react-no-ssr";
-import { useWaitWheel } from "@/lib/customhooks";
+//import { useWaitWheel } from "@/lib/customhooks";
 
 export default function WorkComponent({
   work,
@@ -53,7 +53,7 @@ export default function WorkComponent({
   const [inColor, setInColor] = useState(false);
   const setImageSrcCallbackRef = useRef(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { stop, wait } = useWaitWheel();
+  //const { stop, wait } = useWaitWheel();
   const [size, setSize] = useState<[number, number] | undefined>();
   useLayoutEffect(() => {
     function updateSize() {
@@ -94,7 +94,7 @@ export default function WorkComponent({
 
   useEffect(() => {
     if (scroll) {
-      scroll.on("call", (f: string, type: string, el: any) => {
+      scroll.on("call", (f: string, type: string) => {
         if (f == `work${index}TitleInView`) {
           setShowTitle(type == "enter");
         }
@@ -137,16 +137,6 @@ export default function WorkComponent({
 
           descriptionElKeys.forEach((descriptionElKey) => {
             const el = obj.currentElements[descriptionElKey];
-          });
-
-          const descriptionContainerElKeys = Object.keys(
-            obj.currentElements
-          ).filter((el: string) =>
-            el.match(/work-\d+-description-(\d)-container/)
-          );
-
-          descriptionElKeys.forEach((descriptionElKey) => {
-            const el = obj.currentElements[descriptionElKey];
             const i = el.el.id.match(/work-\d+-description-(\d)/)[1];
             const progress = el.progress * descriptionElKeys.length - i;
             if (progress > 0.1 && progress < 0.9) {
@@ -173,7 +163,7 @@ export default function WorkComponent({
             }
           });
 
-          const entered = descriptionStateRef.current
+          descriptionStateRef.current
             .map((el, index) => [index, el])
             .filter((el) => el[1] == "enter")
             .forEach((entered) => {

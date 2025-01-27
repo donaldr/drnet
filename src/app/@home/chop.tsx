@@ -455,7 +455,7 @@ export default function Chop({
         document.documentElement.clientHeight,
       ])
     );
-  }, []);
+  }, [debouncer]);
 
   useLayoutEffect(() => {
     window.addEventListener("resize", updateSize);
@@ -480,7 +480,7 @@ export default function Chop({
         e.touches[0].clientY,
       ];
     }
-    function touchend(e: TouchEvent) {
+    function touchend() {
       setCursorPosition(undefined);
       Composite.remove(engine.world, cursorCircle!);
     }
@@ -507,7 +507,7 @@ export default function Chop({
       window.removeEventListener("touchend", touchend);
       window.removeEventListener("touchcancel", touchend);
     };
-  }, [show, reveal]);
+  }, [show, reveal, cursorCircle, engine.world]);
 
   useEffect(() => {
     cursorPositionRef.current = cursorPosition;

@@ -142,10 +142,10 @@ export default function PageBase({
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((value) => {
-        if (value.target.id == id) {
+        if (value.target.id == id && value.rootBounds) {
           if (
             value.isIntersecting &&
-            value.intersectionRect.top / value.rootBounds?.height! >=
+            value.intersectionRect.top / value.rootBounds.height! >=
               intersectionOffset
           ) {
             setCurrentInView((previousCurrentInView) => {
@@ -164,10 +164,10 @@ export default function PageBase({
             });
           }
         }
-        if (value.target.id == `${id}-content`) {
+        if (value.target.id == `${id}-content` && value.rootBounds) {
           if (
             value.isIntersecting &&
-            value.intersectionRect.top / value.rootBounds?.height! >=
+            value.intersectionRect.top / value.rootBounds.height! >=
               intersectionOffset
           ) {
             setActiveList((previousActiveList) => {
@@ -190,7 +190,7 @@ export default function PageBase({
     });
     observer.observe(document.getElementById(id) as HTMLElement);
     observer.observe(document.getElementById(`${id}-content`) as HTMLElement);
-  }, [id, setActiveList, setCurrentInView]);
+  }, [id, setActiveList, setCurrentInView, intersectionOffset]);
 
   useEffect(() => {
     //console.log(`%c ${activeList[activeList.length - 1]}`, 'background: #222; color: #bada55');
