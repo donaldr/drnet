@@ -199,7 +199,7 @@ function Detail({
         data-scroll
         data-scroll-repeat
         data-scroll-id={`work-${index}-detail-roles`}
-        data-scroll-speed={10}
+        data-scroll-speed={size && size[0] > 640 ? 10 : 1}
         style={{
           top: top,
         }}
