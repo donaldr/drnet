@@ -31,6 +31,7 @@ function LinkText({
   const [width, setWidth] = useState(0);
 
   const textPathRef = useRef<Array<SVGPathElement | null>>([]);
+  const textPathRef2 = useRef<Array<SVGPathElement | null>>([]);
   const linkText = useLineText(text, width / (text.length * 0.75));
   const lineRef = useRef<SVGPathElement | null>(null);
   const requestRef = useRef<number>(0);
@@ -117,8 +118,34 @@ function LinkText({
           width={linkText.width}
           height={linkText.height! * 1.2}
           viewBox={`0 0 ${linkText.width} ${linkText.height! * 1.2}`}
-          className="z-[150]"
+          className="z-[150] relative"
         >
+          {linkText.paths.map((path: string, index: number) => (
+            <SVGStroke
+              key={`path${index}`}
+              fill="none"
+              stroke="#FFF"
+              startStroke={0}
+              strokeLength={1}
+              svgPath={textPathRef2.current[index]}
+              renderSVGPath={() => {
+                return (
+                  <path
+                    ref={(el) => {
+                      textPathRef2.current[index] = el;
+                    }}
+                    d={path}
+                    pathLength={1}
+                    style={{
+                      fill: "none",
+                      opacity: `${0.1 + Math.sin(t / 4) * 0.1}`,
+                      stroke: "#FFFFFF",
+                    }}
+                  />
+                );
+              }}
+            />
+          ))}
           {linkText.paths.map((path: string, index: number) => (
             <SVGStroke
               key={`path${index}`}
@@ -136,6 +163,7 @@ function LinkText({
                     d={path}
                     pathLength={1}
                     style={{
+                      zIndex: 20,
                       fill: "none",
                       stroke: color,
                       strokeDashoffset: `${-Math.max(
