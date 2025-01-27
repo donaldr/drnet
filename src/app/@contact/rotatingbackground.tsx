@@ -13,7 +13,7 @@ function RotatingBackground({
   active: boolean;
 }>) {
   const [t, setT] = useState(0);
-  const mouseRef = useRef<{ x?: number; y?: number }>({});
+  const cursorRef = useRef<{ x?: number; y?: number }>({});
   const leanRef = useRef(0.5);
   const topRef = useRef(true);
   const [smoothedLean, setSmoothedLean] = useState(0.5);
@@ -31,24 +31,24 @@ function RotatingBackground({
 
   const animate = useCallback(() => {
     setT(Date.now() / 100);
-    if (mouseRef.current.y !== undefined) {
+    if (cursorRef.current.y !== undefined) {
       setTimeout(() => {
         throttle(
           () =>
             (leanRef.current =
-              mouseRef.current.y! < 0.5
-                ? mouseRef.current.x!
-                : 1 - mouseRef.current.x!),
+              cursorRef.current.y! < 0.5
+                ? cursorRef.current.x!
+                : 1 - cursorRef.current.x!),
           10
         );
       }, 1000);
       setSmoothedLean((prev) => prev * 0.9 + leanRef.current * 0.1);
-      if (mouseRef.current.y) {
+      if (cursorRef.current.y) {
         setSmoothedVerticalLean(
-          (prev) => prev * 0.9 + mouseRef.current.y! * 0.1
+          (prev) => prev * 0.9 + cursorRef.current.y! * 0.1
         );
       }
-      if (mouseRef.current.y < 0.5) {
+      if (cursorRef.current.y < 0.5) {
         topRef.current = true;
         setSmoothedOffsetTop((prev) => prev * 0.98 + 0.02);
         setSmoothedOffsetBottom((prev) => prev * 0.99 + 0.01);
@@ -67,13 +67,33 @@ function RotatingBackground({
   const mouse = useCallback((e: MouseEvent) => {
     const x = e.clientX / document.documentElement.clientWidth;
     const y = e.clientY / document.documentElement.clientHeight;
-    mouseRef.current = { x, y };
+    cursorRef.current = { x, y };
+  }, []);
+
+  const touch = useCallback((e: TouchEvent) => {
+    const x = e.touches[0].clientX / document.documentElement.clientWidth;
+    const y = e.touches[0].clientY / document.documentElement.clientHeight;
+    cursorRef.current = { x, y };
+  }, []);
+
+  const touchmove = useCallback((e: TouchEvent) => {
+    const x =
+      e.changedTouches[0].clientX / document.documentElement.clientWidth;
+    const y =
+      e.changedTouches[0].clientY / document.documentElement.clientHeight;
+    cursorRef.current = { x, y };
   }, []);
 
   useEffect(() => {
     document.addEventListener("mousemove", mouse);
-    return () => document.removeEventListener("mousemove", mouse);
-  }, [mouse]);
+    document.addEventListener("touchstart", touch);
+    document.addEventListener("touchmove", touchmove);
+    return () => {
+      document.removeEventListener("mousemove", mouse);
+      document.removeEventListener("touchstart", touch);
+      document.removeEventListener("touchmove", touchmove);
+    };
+  }, [mouse, touch, touchmove]);
 
   useEffect(() => {
     if (active) {

@@ -104,8 +104,7 @@ function LinkText({
         onMouseEnter={() => (hoverRef.current = true)}
         onMouseLeave={() => (hoverRef.current = false)}
         onClick={async () => {
-          if (doCopy) {
-            await navigator.clipboard.writeText(text);
+          if (doCopy && navigator.clipboard) {
             setCopyText("copied");
             copiedRef.current = false;
             copyRef.current = setTimeout(() => {
