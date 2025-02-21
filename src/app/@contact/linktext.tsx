@@ -5,6 +5,10 @@ import { useLineText } from "@/lib/linetext";
 import React from "react";
 import { Hsluv } from "hsluv";
 import { useDebounce } from "@/lib/customhooks";
+import {
+  decrementEventHandlerCount,
+  incrementEventHandlerCount,
+} from "@/lib/state";
 
 const conv = new Hsluv();
 
@@ -48,8 +52,12 @@ function LinkText({
 
   useEffect(() => {
     resize();
+    incrementEventHandlerCount("resize-linktext");
     window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
+    return () => {
+      decrementEventHandlerCount("resize-linktext");
+      window.removeEventListener("resize", resize);
+    };
   }, [resize]);
 
   useEffect(() => {

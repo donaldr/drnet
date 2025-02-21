@@ -28,6 +28,7 @@ export interface WorkData {
   theme: string;
   titleOutline?: string;
   detailTemplate: string;
+  needsPadding?: boolean;
 }
 
 export default async function WorkItems() {
@@ -61,9 +62,9 @@ export default async function WorkItems() {
       <WorkIntro />
       {data.work.map(
         (work: WorkData, index: number) =>
-          index < 2 && <Work key={`work${index}`} index={index} work={work} />
+          index < 10 && <Work key={`work${index}`} index={index} work={work} />
       )}
-      <WorkNavigator works={data.work.slice(0, 2)} />
+      <WorkNavigator works={data.work.slice(0, 10)} />
     </>
   );
 }

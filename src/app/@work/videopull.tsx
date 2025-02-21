@@ -7,7 +7,7 @@ import {
   useLayoutEffect,
   useState,
 } from "react";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { useLocomotiveScroll } from "@/lib/locomotive";
 import { EffectComposer } from "@react-three/postprocessing";
 import { Canvas } from "@react-three/fiber";
 import { Vector4 } from "three";
@@ -15,6 +15,10 @@ import { PixelPull, PixelSelectionMode, PullDirection } from "./pixelpull";
 import { BlendScene } from "./blendscene";
 import clsx from "clsx";
 import { useDebounce } from "@/lib/customhooks";
+import {
+  decrementEventHandlerCount,
+  incrementEventHandlerCount,
+} from "@/lib/state";
 
 export default function VideoPull({
   index,
@@ -35,6 +39,7 @@ export default function VideoPull({
 
   useEffect(() => {
     if (scroll) {
+      incrementEventHandlerCount("scroll-videopull");
       scroll.on("scroll", (obj: any) => {
         const key = `work-${index}-video-target`;
         if (key in obj.currentElements) {
@@ -95,8 +100,12 @@ export default function VideoPull({
 
   useEffect(() => {
     resize();
+    incrementEventHandlerCount("resize-videopull");
     window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
+    return () => {
+      decrementEventHandlerCount("resize-videopull");
+      window.removeEventListener("resize", resize);
+    };
   }, [resize]);
 
   const windowAspect = screenDims.width / screenDims.height;
@@ -124,18 +133,20 @@ export default function VideoPull({
             width={screenDims.width}
             height={screenDims.height}
             frameWidth={
-              frameCondition
+              (frameCondition
                 ? 1
                 : screenDims.width /
                   screenDims.height /
-                  (videoRef.current.videoWidth / videoRef.current.videoHeight)
+                  (videoRef.current.videoWidth /
+                    videoRef.current.videoHeight)) *
+              (work.needsPadding ? 1 / 0.8 : 1)
             }
             frameHeight={
-              frameCondition
+              (frameCondition
                 ? videoRef.current.videoWidth /
                   videoRef.current.videoHeight /
                   (screenDims.width / screenDims.height)
-                : 1
+                : 1) * (work.needsPadding ? 1 / 0.8 : 1)
             }
           />
           <EffectComposer>

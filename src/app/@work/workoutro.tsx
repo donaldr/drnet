@@ -7,10 +7,14 @@ import {
   useRef,
   useState,
 } from "react";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { useLocomotiveScroll } from "@/lib/locomotive";
 import Path from "svg-path-generator";
 import { Bezier as BezierAnalyzer } from "bezier-js";
 import { useDebounce } from "@/lib/customhooks";
+import {
+  decrementEventHandlerCount,
+  incrementEventHandlerCount,
+} from "@/lib/state";
 
 type Point = {
   x: number;
@@ -80,13 +84,18 @@ export default function WorkOutro({
   }, [debouncer]);
 
   useLayoutEffect(() => {
+    incrementEventHandlerCount("resize-workoutro");
     window.addEventListener("resize", updateSize);
     updateSize();
-    return () => window.removeEventListener("resize", updateSize);
+    return () => {
+      decrementEventHandlerCount("resize-workoutro");
+      window.removeEventListener("resize", updateSize);
+    };
   }, [updateSize]);
 
   useEffect(() => {
     if (scroll) {
+      incrementEventHandlerCount("scroll-workoutro");
       scroll.on("scroll", (obj: any) => {
         if (sizeRef.current) {
           const key = `work-${index}-outro-animate`;
@@ -111,9 +120,6 @@ export default function WorkOutro({
                   path?.getAttribute("pathLength")?.valueOf() || "0"
                 ).toFixed(2)
               );
-
-              console.log(diff);
-
               if (i == 0) {
                 const startOffset = (length - third - 0.01) * diff;
                 const endOffsetGrowthSection = startOffset * 1.5;
@@ -238,6 +244,7 @@ export default function WorkOutro({
 
   useEffect(() => {
     if (ref.current && size) {
+      ref.current.innerHTML = "";
       const a = [0, 1, 2, 3];
       a.sort(() => Math.random() - 0.5);
 

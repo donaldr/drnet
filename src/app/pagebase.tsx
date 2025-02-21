@@ -2,8 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { useRouter, usePathname } from "next/navigation";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
-import { useGlobalState, manualPush, navigating, pathList } from "../lib/state";
+import { useLocomotiveScroll } from "@/lib/locomotive";
+import { useGlobalState, manualPush, navigating, pathList } from "@/lib/state";
 
 export default function PageBase({
   id,
@@ -38,6 +38,7 @@ export default function PageBase({
   const { scroll } = useLocomotiveScroll();
   const [pageClasses, setPageClasses] = useState("opacity-0");
   const [contentClasses, setContentClasses] = useState("");
+  const [doneLoading, setDoneLoading] = useGlobalState("doneLoading");
 
   const router = useRouter();
   const pathname = usePathname();
@@ -55,145 +56,61 @@ export default function PageBase({
   }, [pathname, thisPathName, index, pathTest]);
 
   useEffect(() => {
-    if (scroll) {
-      /*
-      scroll.on("scroll", (obj: any) => {
-        if (id in obj.currentElements) {
-          setCurrentInView((previousCurrentInView) => {
-            if (!previousCurrentInView.includes(id)) {
-              return [id, ...previousCurrentInView];
+    if (doneLoading) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((value) => {
+          if (value.target.id == id && value.rootBounds) {
+            if (
+              value.isIntersecting &&
+              value.intersectionRect.top / value.rootBounds.height! >=
+                intersectionOffset
+            ) {
+              setCurrentInView((previousCurrentInView) => {
+                if (!previousCurrentInView.includes(id)) {
+                  return [id, ...previousCurrentInView];
+                } else {
+                  return previousCurrentInView;
+                }
+              });
             } else {
-              return previousCurrentInView;
+              setCurrentInView((previousCurrentInView) => {
+                const result = [
+                  ...previousCurrentInView.filter((thisId) => thisId != id),
+                ];
+                return result;
+              });
             }
-          });
-        } else {
-          setCurrentInView((previousCurrentInView) => {
-            const result = [
-              ...previousCurrentInView.filter((thisId) => thisId != id),
-            ];
-            return result;
-          });
-        }
-
-        const contentKey = `${id}-content`;
-
-        if (contentKey in obj.currentElements) {
-          setActiveList((previousActiveList) => {
-            if (!previousActiveList.includes(id)) {
-              return [...previousActiveList, id];
+          }
+          if (value.target.id == `${id}-content` && value.rootBounds) {
+            if (
+              value.isIntersecting &&
+              value.intersectionRect.top / value.rootBounds.height! >=
+                intersectionOffset
+            ) {
+              setActiveList((previousActiveList) => {
+                if (!previousActiveList.includes(id)) {
+                  return [...previousActiveList, id];
+                } else {
+                  return previousActiveList;
+                }
+              });
             } else {
-              return previousActiveList;
+              setActiveList((previousActiveList) => {
+                const result = [
+                  ...previousActiveList.filter((thisId) => thisId != id),
+                ];
+                return result;
+              });
             }
-          });
-        } else {
-          setActiveList((previousActiveList) => {
-            const result = [
-              ...previousActiveList.filter((thisId) => thisId != id),
-            ];
-            return result;
-          });
-        }
-      });
-      */
-      /*
-      scroll.on("call", (f: string, type: string, el: any) => {
-        if (el.el.id == id && f == "inView") {
-          if (type == "enter") {
-            setCurrentInView((previousCurrentInView) => {
-              if (!previousCurrentInView.includes(id)) {
-                return [id, ...previousCurrentInView];
-              } else {
-                return previousCurrentInView;
-              }
-            });
-          } else {
-            setCurrentInView((previousCurrentInView) => {
-              const result = [
-                ...previousCurrentInView.filter((thisId) => thisId != id),
-              ];
-              return result;
-            });
           }
-        } else if (el.el.id == `${id}-content` && f == "active") {
-          if (type == "enter") {
-            //console.log(`Entering ${el.el.id}`);
-            setActiveList((previousActiveList) => {
-              if (!previousActiveList.includes(id)) {
-                return [...previousActiveList, id];
-              } else {
-                return previousActiveList;
-              }
-            });
-          } else {
-            //console.log(`Exiting ${el.el.id}`);
-            setActiveList((previousActiveList) => {
-              const result = [
-                ...previousActiveList.filter((thisId) => thisId != id),
-              ];
-              return result;
-            });
-          }
-        }
+        });
       });
-      */
+      observer.observe(document.getElementById(id) as HTMLElement);
+      observer.observe(document.getElementById(`${id}-content`) as HTMLElement);
     }
-  }, [scroll, id, setActiveList, setCurrentInView]);
+  }, [id, setActiveList, setCurrentInView, intersectionOffset, doneLoading]);
 
   useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((value) => {
-        if (value.target.id == id && value.rootBounds) {
-          if (
-            value.isIntersecting &&
-            value.intersectionRect.top / value.rootBounds.height! >=
-              intersectionOffset
-          ) {
-            setCurrentInView((previousCurrentInView) => {
-              if (!previousCurrentInView.includes(id)) {
-                return [id, ...previousCurrentInView];
-              } else {
-                return previousCurrentInView;
-              }
-            });
-          } else {
-            setCurrentInView((previousCurrentInView) => {
-              const result = [
-                ...previousCurrentInView.filter((thisId) => thisId != id),
-              ];
-              return result;
-            });
-          }
-        }
-        if (value.target.id == `${id}-content` && value.rootBounds) {
-          if (
-            value.isIntersecting &&
-            value.intersectionRect.top / value.rootBounds.height! >=
-              intersectionOffset
-          ) {
-            setActiveList((previousActiveList) => {
-              if (!previousActiveList.includes(id)) {
-                return [...previousActiveList, id];
-              } else {
-                return previousActiveList;
-              }
-            });
-          } else {
-            setActiveList((previousActiveList) => {
-              const result = [
-                ...previousActiveList.filter((thisId) => thisId != id),
-              ];
-              return result;
-            });
-          }
-        }
-      });
-    });
-    observer.observe(document.getElementById(id) as HTMLElement);
-    observer.observe(document.getElementById(`${id}-content`) as HTMLElement);
-  }, [id, setActiveList, setCurrentInView, intersectionOffset]);
-
-  useEffect(() => {
-    //console.log(`%c ${activeList[activeList.length - 1]}`, 'background: #222; color: #bada55');
     setCurrentActive(() => {
       currentActiveRef.current = activeList[activeList.length - 1];
       return activeList[activeList.length - 1];
@@ -213,6 +130,7 @@ export default function PageBase({
           navigating.current = true;
           setNavigating(true);
           if (scrollMatchRef.current) {
+            setDoneLoading(true);
             scroll.scrollTo(`#${id}`, {
               callback: () => {
                 setTimeout(() => {
@@ -226,6 +144,7 @@ export default function PageBase({
               disableLerp: true,
             });
           } else {
+            setDoneLoading(true);
             scroll.setScroll(
               0,
               Math.max(
@@ -257,12 +176,12 @@ export default function PageBase({
 
   useEffect(() => {
     if (active) {
-      router.push(thisPathName, { scroll: false });
+      window.history.pushState(null, "", thisPathName);
       if (!navigating.current) {
         manualPush.current = true;
       }
     }
-  }, [thisPathName, active, id, router]);
+  }, [scroll, thisPathName, active, id, router]);
 
   useEffect(() => {
     setPageClasses(

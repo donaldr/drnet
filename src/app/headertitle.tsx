@@ -1,7 +1,21 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
+import { useLocomotiveScroll } from "@/lib/locomotive";
 import Image from "next/image";
+import clsx from "clsx";
+import { WorkData } from "./@work/workitems";
+import {
+  decrementEventHandlerCount,
+  incrementEventHandlerCount,
+} from "@/lib/state";
+import { useDebounce } from "@/lib/customhooks";
 
 export default function HeaderTitle({
   children,
@@ -10,6 +24,8 @@ export default function HeaderTitle({
   showBackground = true,
   theme,
   setImageSrcCallbackRef,
+  activeRef,
+  work,
 }: Readonly<{
   children: React.ReactNode;
   id: string;
@@ -17,11 +33,31 @@ export default function HeaderTitle({
   showBackground?: boolean;
   theme: string;
   setImageSrcCallbackRef?: any;
+  activeRef: RefObject<boolean>;
+  work?: WorkData;
 }>) {
   const { scroll } = useLocomotiveScroll();
   const [show, setShow] = useState(false);
   const [titlePosition, setTitlePosition] = useState(0);
   const [imageSrc, setImageSrc] = useState<string>();
+  const screenHeightRef = useRef(0);
+  const debouncer = useDebounce();
+
+  const resize = useCallback(() => {
+    debouncer(() => {
+      screenHeightRef.current = document.documentElement.clientHeight;
+    });
+  }, [debouncer]);
+
+  useEffect(() => {
+    resize();
+    incrementEventHandlerCount("resize-headertitle");
+    window.addEventListener("resize", resize);
+    return () => {
+      decrementEventHandlerCount("resize-headertitle");
+      window.removeEventListener("resize", resize);
+    };
+  }, [resize]);
 
   useEffect(() => {
     if (setImageSrcCallbackRef) {
@@ -31,24 +67,27 @@ export default function HeaderTitle({
 
   useEffect(() => {
     if (scroll) {
+      incrementEventHandlerCount("scroll-headertitle");
       scroll.on("scroll", (scroll: any) => {
-        const el: any = Object.values(scroll.currentElements).filter(
-          (el: any) => el.el.id == `${id}-title-background-target`
-        );
-        if (el.length) {
-          const position = Math.min(
-            88,
-            Math.max(
-              0,
-              el[0].progress *
-                (el[0].el.offsetHeight +
-                  document.documentElement.clientHeight) -
-                document.documentElement.clientHeight
-            )
+        if (activeRef.current) {
+          const el: any = Object.values(scroll.currentElements).filter(
+            (el: any) => el.el.id == `${id}-title-background-target`
           );
-          setTitlePosition(position);
+          if (el.length) {
+            const position = Math.min(
+              88,
+              Math.max(
+                0,
+                el[0].progress *
+                  (el[0].el.offsetHeight + screenHeightRef.current) -
+                  screenHeightRef.current
+              )
+            );
+            setTitlePosition(position);
+          }
         }
       });
+      incrementEventHandlerCount("scroll-call-headertitle");
       scroll.on("call", (f: string, type: string) => {
         if (f == `showTitleBackground${id}`) {
           if (type == "enter") {
@@ -59,7 +98,7 @@ export default function HeaderTitle({
         }
       });
     }
-  }, [scroll, id]);
+  }, [scroll, id, activeRef]);
 
   return (
     <>
@@ -84,15 +123,18 @@ export default function HeaderTitle({
         data-scroll-sticky
         data-scroll-target={`#${id}-title-background-target`}
         data-scroll-repeat
-        className="relative h-[3rem] w-full z-[46] flex pl-[calc(5dvw+4rem)] text-2xl overflow-hidden will-change-transform"
+        className={`relative h-[3rem] w-full z-[46] flex pl-[calc(5dvw+4rem)] text-2xl overflow-hidden will-change-transform ${clsx(
+          { "light-grain": showBackground && (!work || !work.needsPadding) }
+        )}`}
         style={{
           fontVariationSettings: `"wdth" 100, "wght" ${
             theme == "dark" ? 600 : 600
           }`,
           ...(showBackground && {
-            backgroundColor: imageSrc ? "var(--dark)" : color,
+            backgroundColor:
+              imageSrc && (!work || !work.needsPadding) ? "var(--dark)" : color,
           }),
-          opacity: show ? 1 : 0,
+          opacity: show ? "1" : "0",
         }}
       >
         <div
@@ -106,7 +148,7 @@ export default function HeaderTitle({
           >
             {children}
           </div>
-          {imageSrc && (
+          {imageSrc && (!work || !work.needsPadding) && (
             <Image
               className={`absolute top-0 left-0 z-40 w-screen h-[100dvh] object-cover saturate-[0.2] brightness-[0.2] blur-sm will-change-opacity ${
                 showBackground
@@ -118,6 +160,8 @@ export default function HeaderTitle({
               height={0}
               sizes="100dvw"
               src={imageSrc}
+              priority={false}
+              unoptimized
             />
           )}
         </div>

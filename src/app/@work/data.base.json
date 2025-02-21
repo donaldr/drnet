@@ -5,7 +5,7 @@
       "client": "Verizon",
       "employer": "Gensler",
       "position": "Technology Director, New York Studio",
-      "date": "202?",
+      "date": "2022",
       "roles": [
         "Technical Lead",
         "Software Architect",
@@ -19,11 +19,11 @@
       "slug": "verizon-innovation-center-boston",
       "heroType": "video",
       "videoAspect": 1.77777777778,
-      "thumbStartFocus": { "x": 384, "y": 209 },
+      "thumbStartFocus": { "x": 0, "y": 0 },
       "thumbStartScale": 0.6,
-      "thumbEndFocus": { "x": 385, "y": 200 },
-      "thumbEndScale": 0.5,
-      "thumbSize": { "width": 1089, "height": 613 },
+      "thumbEndFocus": { "x": 0, "y": 0 },
+      "thumbEndScale": 0.6,
+      "thumbSize": { "width": 560, "height": 96 },
       "primaryColor": "#CD040B",
       "theme": "dark",
       "description": [
@@ -37,51 +37,244 @@
       "client": "Confidential Consulting Client",
       "employer": "Gensler",
       "position": "Technology Director, New York Studio",
-      "date": "202?",
+      "date": "2021",
       "roles": [
         "Technical Lead",
         "Software Architect",
         "Individual Contributor"
       ],
       "responsibilities": [
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+        "Responsible for overall technical aspects including budget, timeline, software architecture, internal teams, coordination with hardware lead and AV integrator, contract negotation, infosec and data privacy planning and coordination, and content management strategy.",
+        "Developed and deployed a content management, content distribution, and event handling system to manage all digital experience content in a holistic and integrated ecosystem.",
+        "Created a dynamic presence-based interactive welcome moment highlighted by generative art techniques, developed a generative presence-based landscape art-piece for the a 20-ft long curved digital display, developed a dynamic signage and information system providing scheduled and content-managed video and templated content displayed on over twenty screens on over a dozen floors."
       ],
-      "slug": "confidential-consulting-client",
+      "slug": "consulting-workspace-experiences",
       "heroType": "image",
       "videoAspect": 1.77777777778,
-      "thumbStartFocus": { "x": 882, "y": 312 },
+      "thumbStartFocus": { "x": 110, "y": -5 },
       "thumbStartScale": 1,
-      "thumbEndFocus": { "x": 772, "y": 317 },
+      "thumbEndFocus": { "x": 0, "y": 0 },
       "thumbEndScale": 1.2,
-      "thumbSize": { "width": 1089, "height": 613 },
+      "thumbSize": { "width": 280, "height": 48 },
       "primaryColor": "#FFE600",
       "titleOutline": true,
       "theme": "light",
-      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "description": [
+        "A leading consulting firm partnered with Gensler to design a tech-forward workplace experience at their new Manhattan headquarters, bringing to life their latest brand evolution and stories of global impact.",
+        "The new HQ celebrates the consulting firm's transformational impact while celebrating its local connection to New York City. Visitors and employees find a delightful mix of dynamic communication, featured stories and artful activations across 18 floors and 637,000 square feet."
+      ],
       "detailTemplate": "${project} for ${client}, completed in ${date}, while working as ${position} for ${employer}."
     },
     {
-      "client": "National Archives",
-      "project": "Record of Rights",
-      "employer": "Second Story",
-      "slug": "national-archives-record-of-rights",
-      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+      "project": "Lobby Experiences & Wayfinding",
+      "client": "Confidential Financial Services Client",
+      "employer": "Gensler",
+      "position": "Technology Director, New York Studio",
+      "date": "2020",
+      "roles": ["Technical Lead", "Individual Contributor"],
+      "responsibilities": [
+        "Managing the technical aspects of the project including budget, timeline, and technical feasibility. Working closely with internal teams to realize the design vision. Coordinating with vendors, and the client to integrate solutions with existing technical infrastructure.",
+        "Created a prototyping system to test lettering design, and content development for the Sky Lobby Reception installation. Created a dynamic generative art system to help design content for the Media Pillars."
+      ],
+      "slug": "confidential-financial-services-lobby-digital-elements",
+      "heroType": "image",
+      "videoAspect": 1.77777777778,
+      "thumbStartFocus": { "x": 0, "y": 0 },
+      "thumbStartScale": 1,
+      "thumbEndFocus": { "x": 0, "y": 0 },
+      "thumbEndScale": 1,
+      "thumbSize": { "width": 269, "height": 48 },
+      "primaryColor": "#0018A8",
+      "titleOutline": true,
+      "theme": "dark",
+      "description": [
+        "A global financial services company moved their North American headquarters to a new location with over 1.1 million square feet of space. As a modern and world-class workplace, the client's goal was to showcase its culture and positive impact through thoughtful digital touchpoints throughout their North American Headquarters. We developed a holistic digital strategy that resulted in the execution of a series of digital interventions – both expressive and functional – throughout the campus to add brand and business value, and elevate the employee and visitor experience.",
+        "The activations include the Sky Lobby Reception installation, a 30-foot-long dynamic digital art piece, swashes of color emanating from behind a metal facade covered in letter cutouts. Hidden amongst the letters names and dates important to the client provide moments of discovery. The Media Pillars, large imposing vertical LED screens displaying artful branded generative content in the lobby, providing visitors with a welcome moment. Finally, we designed a cohesive digital signage system with a variety of templates designed with their brand guidelines and integrated with their digital signage system."
+      ],
+      "detailTemplate": "${project} for ${client}, completed in ${date}, while working as ${position} for ${employer}."
     },
     {
-      "client": "AIGA",
-      "project": "Design Archives",
-      "employer": "Second Story",
-      "slug": "aiga-design-archives",
-      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+      "project": "Architectural Wall System Prototype",
+      "client": "Confidential Architectural Client",
+      "employer": "Gensler",
+      "position": "Platform Techology Director",
+      "date": "2022",
+      "roles": ["Software Technical Lead"],
+      "responsibilities": [
+        "Helped created a prototyping system to explore real-time generative content as well as video content, including sequencing, dynamic parameter modification, presence-sensing interaction, and various image-processing techniques to provide the correct light values to the individual LEDs."
+      ],
+      "slug": "confidential-architectural-client-wall-system-prototype",
+      "heroType": "video",
+      "videoAspect": 1.77777777778,
+      "thumbStartFocus": { "x": 0, "y": 0 },
+      "thumbStartScale": 1,
+      "thumbEndFocus": { "x": 0, "y": 0 },
+      "thumbEndScale": 1,
+      "thumbSize": { "width": 298, "height": 48 },
+      "primaryColor": "#CCCCCC",
+      "titleOutline": true,
+      "theme": "dark",
+      "description": "We worked with a market-leading architectural system manufacturer to develop a new product combining a modular-wall system and cutting-edge lighting technology. The result was stunning felt wall panel system with dynamic lighting providing ambient, dynamic, and informational modes.",
+      "detailTemplate": "${project} for ${client}, completed in ${date}, while working as ${position} for ${employer}."
     },
     {
-      "client": "SFMoMA",
+      "project": "CIBC Lobby Wall",
+      "client": "CIBC",
+      "employer": "Gensler",
+      "position": "Technology Director, New York Studio",
+      "date": "2019",
+      "roles": ["Technical Lead", "Individual Contributor"],
+      "responsibilities": [
+        "Responsible for technical planning, coordinating with internal design teams, extensive prototyping, coordinating with fabricator, AV integrator, and client, managing technical budget and deadlines.",
+        "Created a content management and deployment system, a scheduling and content sequencing playback system, and a custom projection mapping system to properly map the graphics on to hundreds of dimensional triangles on the wall."
+      ],
+      "slug": "cibc-lobby-wall",
+      "heroType": "video",
+      "videoAspect": 1.77777777778,
+      "thumbStartFocus": { "x": 0, "y": 0 },
+      "thumbStartScale": 1,
+      "thumbEndFocus": { "x": 0, "y": 0 },
+      "thumbEndScale": 1,
+      "thumbSize": { "width": 156, "height": 48 },
+      "primaryColor": "#B00B1C",
+      "titleOutline": true,
+      "theme": "dark",
+      "description": "CIBC wanted to create a unique moment for clients visiting CIBC Square, a prominent office complex housing their new headquarters. We created a Welcome Wall that features a 3D geometric design consisting of triangles based on CIBC's branding. Dynamic graphics, including ambient visuals, event content, and brand messaging, are projected onto the wall and can be scheduled seamlessly.",
+      "detailTemplate": "${project} for ${client}, completed in ${date}, while working as ${position} for ${employer}."
+    },
+    {
+      "project": "Impact of the Bible",
+      "client": "Museum of the Bible",
+      "employer": "C&G Partners LLC",
+      "position": "Freelance Technologist",
+      "date": "2018",
+      "roles": ["Backend System Lead"],
+      "responsibilities": [
+        "Responsible for the entire back-end system for content management, distribution, and workflow management, including client and user-generated content, as well as data syndication from external APIs. Created a software deployment system to manage software updates to 22 different digital experiences. Collaborated with a multiple vendors to integrate the back-end systems."
+      ],
+      "slug": "impact-of-the-bible",
+      "heroType": "image",
+      "videoAspect": 1.77777777778,
+      "thumbStartFocus": { "x": 132, "y": -8 },
+      "thumbStartScale": 1,
+      "thumbEndFocus": { "x": 0, "y": -8 },
+      "thumbEndScale": 1,
+      "thumbSize": { "width": 174, "height": 48 },
+      "primaryColor": "#F19100",
+      "titleOutline": true,
+      "theme": "dark",
+      "description": [
+        "The Impact of the Bible floor is 30,000 square feet of permanent galleries for the Museum of the Bible, dubbed the most technologically advanced museum in the world. The galleries examine the cultural and historical influence of the most read, most loved, most hated book in the world.",
+        "Perhaps the most unexpected gallery on that floor is, “Bible Now.” The gallery explores the impact of the Bible in real-time. A 360-degree, full height, constantly changing panorama of digital information shows the Bible’s impact in actual time. The immersive digital experience is sourced from multiple channels. Live information is streamed from social media feeds around the world, readings of tens of millions of Bible app users, a 24-hour time-lapse view of the biblical city of Jerusalem, and current contributions by museum visitors on the three interactive tables, allowing visitors to express their creativity in real-time."
+      ],
+      "detailTemplate": "${project} for ${client}, completed in ${date}, while working as a ${position} for ${employer}."
+    },
+    {
+      "project": "Website Ecosystem Redesign",
+      "client": "The Art Institute of Chicago",
+      "employer": "self-employed",
+      "position": "Technical Consultant",
+      "date": "2017",
+      "roles": ["Technical Consultant"],
+      "responsibilities": [
+        "Conducted a comprehensive technical audit of the existing system, analyzing its architecture and infrastructure, including servers, software components, CMS, databases, third-party integrations, API dependencies, and content workflows. Based on these findings, collaborated closely with AIC stakeholders to develop a proposal for a new system architecture that addressed previous challenges, aligned with modern best practices, and provided future scalability. Additionally, formulated a strategic migration plan to implement the new architecture seamlessly."
+      ],
+      "slug": "aic-website-ecosystem-redesign",
+      "heroType": "image",
+      "videoAspect": 1.77777777778,
+      "thumbStartFocus": { "x": 102, "y": 0 },
+      "thumbStartScale": 1,
+      "thumbEndFocus": { "x": 0, "y": 0 },
+      "thumbEndScale": 1,
+      "thumbSize": { "width": 247, "height": 48 },
+      "primaryColor": "#B50938",
+      "titleOutline": true,
+      "theme": "dark",
+      "description": "The Art Institute of Chicago was seeking a partner to help redesign the technical architecture and ecosystem supporting the artic.edu website. It was a rich information repository built on a complex, interconnected system. Web development had been fragmented across multiple environments rather than a unified system. The goal was to centralize development into a cohesive platform. I was brought in to assess content and technology, recommend a new environment, and outline the migration effort. This evaluation informed the redesign of artic.edu, focusing on flexible CMS solutions, sustainable strategies, and API services for internal and external publishing.",
+      "detailTemplate": "${project} for ${client}, completed in ${date}, while working as a ${employer} ${position}."
+    },
+    {
       "project": "Photography Interpretive Center",
+      "client": "SFMoMA",
       "employer": "Second Story",
+      "position": "Technical Lead",
       "slug": "sfmoma-photography-interpretive-center",
-      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+      "date": "2016",
+      "roles": ["Technical Lead"],
+      "responsibilities": [
+        "Oversee the project's technical execution, including planning for budget, timeline, and risk management. Lead the software development team while coordinating with internal design and content teams, as well as client technical teams, to ensure seamless integration and collaboration."
+      ],
+      "heroType": "image",
+      "videoAspect": 1.77777777778,
+      "thumbStartFocus": { "x": 0, "y": 0 },
+      "thumbStartScale": 1,
+      "thumbEndFocus": { "x": 0, "y": 0 },
+      "thumbEndScale": 1,
+      "thumbSize": { "width": 271, "height": 48 },
+      "primaryColor": "#FF483B",
+      "titleOutline": true,
+      "theme": "dark",
+      "description": [
+        "The Photography Interpretive Gallery at SFMOMA serves as an exhibition space, educational center, and gathering place, inviting visitors to discover, learn, create, and reflect. Designed by Second Story, the gallery seamlessly blends digital and physical elements to create an experience that is both familiar and unexpected. Through interactive installations, visitors are encouraged to engage critically with photography—examining how images shape our perceptions and the stories they tell.",
+        "Three key installations bring this concept to life. The View from Here explores photography’s role in shaping California’s history and mythology, allowing visitors to navigate narratives using dials reminiscent of a camera’s mechanics. In Their Own Words delves into the diverse creative processes of contemporary photographers, offering themed video playlists with candid artist interviews, enhanced by a seamlessly integrated speaker array. Self Composed, developed in collaboration with Adobe, invites visitors to create self-representations using only the contents of their pockets, prompting reflection on how images define identity. Together, these installations transform the gallery into an immersive space for exploration and discovery."
+      ],
+      "detailTemplate": "${project} for ${client}, completed in ${date}, while working as ${position} for ${employer}."
+    },
+    {
+      "project": "Record of Rights",
+      "client": "The National Archives",
+      "employer": "Second Story",
+      "position": "Software Developer",
+      "slug": "record-of-rights",
+      "date": "2013",
+      "roles": ["Software Lead"],
+      "responsibilities": [
+        "Primary developer for the table, key highlights include: a dynamic generative visual wave at its center, reacting to user actions, synced across six separate computers; and a system that generated images from web-based templates ensuring high-performance visualization for thousands of documents."
+      ],
+      "heroType": "image",
+      "videoAspect": 1.77777777778,
+      "thumbStartFocus": { "x": 50, "y": 0 },
+      "thumbStartScale": 1,
+      "thumbEndFocus": { "x": 0, "y": 0 },
+      "thumbEndScale": 1,
+      "thumbSize": { "width": 157, "height": 48 },
+      "primaryColor": "#134571",
+      "titleOutline": true,
+      "theme": "dark",
+      "description": [
+        "The Records of Rights exhibit at the National Archives’ David M. Rubenstein Gallery explores America’s ongoing struggle for freedom through historic documents, images, and videos. At its center, a 15-foot multi-touch table allows visitors to navigate diverse content using intuitive, color-coded themes, searchable categories, and interactive timelines.",
+        "Encouraging dialogue, the table lets users tag records with emotional reactions, which appear on nearby wall monitors to spark discussion. An accompanying online exhibition extends access beyond the gallery, enabling exploration from anywhere in the world."
+      ],
+      "detailTemplate": "${project} for ${client}, completed in ${date}, while working as ${position} for ${employer}."
+    },
+    {
+      "project": "AIGA Design Archives",
+      "client": "AIGA",
+      "employer": "Second Story",
+      "position": "Software Developer",
+      "slug": "aiga-design-archives",
+      "date": "2005",
+      "roles": ["Front-end Developer", "Back-end Developer"],
+      "responsibilities": [
+        "Developed the website's front-end, ensuring a high-performance, responsive experience on desktop while precisely adhering to our internal team's designs.",
+        "Developed a high-performance search engine enabling rapid retrieval of thousands of records, featuring advanced capabilities such as word stemming, faceted search, and even color-based search."
+      ],
+      "heroType": "image",
+      "videoAspect": 1.77777777778,
+      "thumbStartFocus": { "x": 8, "y": -8 },
+      "thumbStartScale": 0.7,
+      "thumbEndFocus": { "x": -20, "y": -25 },
+      "thumbEndScale": 0.5,
+      "thumbSize": { "width": 386, "height": 96 },
+      "primaryColor": "#17183b",
+      "titleOutline": true,
+      "theme": "dark",
+      "description": [
+        "In early 2009, AIGA again collaborated with the studio to re-envision the AIGA Design Archives web site. The redesign incorporates myriad tools for browsing and offers endless possibilities for discovery.",
+        "With over 20,000 records, 50,000 images, and 300 collections, the AIGA Design Archives is a portal for students, a vast resource for educators, and a mecca for designers. The archival selections are colorful and eclectic, featuring posters, book design, information graphics, logotypes, packaging, and typography from almost a century of American design. The site presents nothing less than the evolution of an art form."
+      ],
+      "detailTemplate": "${project} for ${client}, completed in ${date}, while working as ${position} for ${employer}.",
+      "needsPadding": true
     }
   ]
 }

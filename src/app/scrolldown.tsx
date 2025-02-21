@@ -1,7 +1,11 @@
 "use client";
 
 import { useLineText } from "@/lib/linetext";
-import { useGlobalState } from "@/lib/state";
+import {
+  decrementEventHandlerCount,
+  incrementEventHandlerCount,
+  useGlobalState,
+} from "@/lib/state";
 import clsx from "clsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import SVGStroke from "@/lib/svgstroke";
@@ -66,9 +70,13 @@ export default function ScrollDown() {
   }, [activeName]);
 
   useEffect(() => {
+    incrementEventHandlerCount("wheel");
+    incrementEventHandlerCount("touchmove");
     window.addEventListener("wheel", wheel);
     window.addEventListener("touchmove", wheel);
     return () => {
+      decrementEventHandlerCount("wheel");
+      decrementEventHandlerCount("touchmove");
       window.removeEventListener("wheel", wheel);
       window.removeEventListener("touchmove", wheel);
     };

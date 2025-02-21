@@ -1,12 +1,28 @@
 "use client";
 import { WorkData } from "@/app/@work/workitems";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  Profiler,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import clsx from "clsx";
-import { useDebounce, useTemplateFunction } from "@/lib/customhooks";
+import {
+  useDebounce,
+  useProfilerRender,
+  useTemplateFunction,
+} from "@/lib/customhooks";
 import interpolateComponents from "@automattic/interpolate-components";
 import DetailItem from "./detailitem";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { useLocomotiveScroll } from "@/lib/locomotive";
 import DetailRoles from "./detailroles";
+import {
+  decrementEventHandlerCount,
+  incrementEventHandlerCount,
+} from "@/lib/state";
 
 function Detail({
   index,
@@ -28,12 +44,26 @@ function Detail({
   const [size, setSize] = useState<[number, number] | undefined>();
   const sizeRef = useRef(size);
   const debouncer = useDebounce();
+  const profilerRender = useProfilerRender({ minDuration: 10 });
+  const previousScrollYRef = useRef<number | null>(null);
 
   const { scroll } = useLocomotiveScroll();
 
   useEffect(() => {
     if (scroll) {
+      incrementEventHandlerCount("scroll-detail");
       scroll.on("scroll", (obj: any) => {
+        let direction;
+        if (
+          previousScrollYRef.current == null ||
+          previousScrollYRef.current < obj.scroll.y
+        )
+          direction = "down";
+        else if (
+          previousScrollYRef.current != null &&
+          previousScrollYRef.current > obj.scroll.y
+        )
+          direction = "up";
         if (sizeRef.current && sizeRef.current[0] < 768) {
           const key = `work-${index}-detail-main-small`;
           if (key in obj.currentElements) {
@@ -58,21 +88,19 @@ function Detail({
             const el = obj.currentElements[key];
             const progress = el.progress;
             if (
-              (progress > 0.28 && progress < 0.6 && obj.direction == "down") ||
-              (progress > 0.4 && progress < 0.7 && obj.direction == "up")
+              (progress > 0.28 && progress < 0.6 && direction == "down") ||
+              (progress > 0.4 && progress < 0.7 && direction == "up")
             ) {
               setReveal(true);
             } else if (
-              (progress < 0.4 && obj.direction == "up") ||
-              (progress > 0.6 && obj.direction == "down")
+              (progress < 0.4 && direction == "up") ||
+              (progress > 0.6 && direction == "down")
             ) {
               setReveal(false);
             }
             if (
-              (progress > 0.281 &&
-                progress < 0.599 &&
-                obj.direction == "down") ||
-              (progress > 0.401 && progress < 0.699 && obj.direction == "up")
+              (progress > 0.281 && progress < 0.599 && direction == "down") ||
+              (progress > 0.401 && progress < 0.699 && direction == "up")
             ) {
               setClientReveal(true);
               setDateReveal(true);
@@ -80,8 +108,8 @@ function Detail({
               setProjectReveal(true);
               setEmployerReveal(true);
             } else if (
-              (progress < 0.401 && obj.direction == "up") ||
-              (progress > 0.599 && obj.direction == "down")
+              (progress < 0.401 && direction == "up") ||
+              (progress > 0.599 && direction == "down")
             ) {
               setClientReveal(false);
               setDateReveal(false);
@@ -91,6 +119,7 @@ function Detail({
             }
           }
         }
+        previousScrollYRef.current = obj.scroll.y;
       });
     }
   }, [scroll, index]);
@@ -110,8 +139,12 @@ function Detail({
 
   useEffect(() => {
     resize();
+    incrementEventHandlerCount("resize-detail");
     window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
+    return () => {
+      decrementEventHandlerCount("resize-detail");
+      window.removeEventListener("resize", resize);
+    };
   }, [resize]);
 
   const templateFnGenerator = useTemplateFunction(work.detailTemplate);
@@ -230,9 +263,13 @@ function Detail({
           data-scroll-id={`work-${index}-detail-main-small`}
           className="leading-[1.75] md:hidden"
         >
-          {detailItem}
+          <Profiler id="detail-item" onRender={profilerRender}>
+            {detailItem}
+          </Profiler>
         </div>
-        <DetailRoles work={work} index={index} />
+        <Profiler id="detail-roles" onRender={profilerRender}>
+          <DetailRoles work={work} index={index} />
+        </Profiler>
       </div>
     </>
   );

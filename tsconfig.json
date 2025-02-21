@@ -22,6 +22,15 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "new-types.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "next.config.js"],
+  "include": [
+    "next-env.d.ts",
+    "new-types.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "next.config.js",
+    "src/lib/locomotive-scroll",
+    "src/lib/locomotive-scroll"
+  ],
   "exclude": ["node_modules"]
 }

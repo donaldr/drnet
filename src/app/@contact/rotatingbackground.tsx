@@ -4,6 +4,10 @@ import { useThrottle } from "@/lib/customhooks";
 import React from "react";
 import { Hsluv } from "hsluv";
 import LinkText from "./linktext";
+import {
+  decrementEventHandlerCount,
+  incrementEventHandlerCount,
+} from "@/lib/state";
 
 const conv = new Hsluv();
 
@@ -85,15 +89,23 @@ function RotatingBackground({
   }, []);
 
   useEffect(() => {
-    document.addEventListener("mousemove", mouse);
-    document.addEventListener("touchstart", touch);
-    document.addEventListener("touchmove", touchmove);
+    if (active) {
+      incrementEventHandlerCount("mousemove-rotating");
+      incrementEventHandlerCount("touchstart");
+      incrementEventHandlerCount("touchmove");
+      document.addEventListener("mousemove", mouse);
+      document.addEventListener("touchstart", touch);
+      document.addEventListener("touchmove", touchmove);
+    }
     return () => {
+      decrementEventHandlerCount("mousemove-rotating");
+      decrementEventHandlerCount("touchstart");
+      decrementEventHandlerCount("touchmove");
       document.removeEventListener("mousemove", mouse);
       document.removeEventListener("touchstart", touch);
       document.removeEventListener("touchmove", touchmove);
     };
-  }, [mouse, touch, touchmove]);
+  }, [mouse, touch, touchmove, active]);
 
   useEffect(() => {
     if (active) {

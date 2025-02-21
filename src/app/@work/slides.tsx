@@ -1,7 +1,7 @@
 "use client";
 import { WorkData } from "@/app/@work/workitems";
-import { useEffect, useState } from "react";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { Suspense, useEffect, useState } from "react";
+import { useLocomotiveScroll } from "@/lib/locomotive";
 import clsx from "clsx";
 import Image from "next/image";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -35,10 +35,16 @@ export default function Slides({
   useEffect(() => {
     setSlidesClasses(
       clsx({
-        "relative h-[100dvh] w-screen flex flex-row items-center justify-center transition-all duration-1000":
+        "relative flex flex-row items-center justify-center transition-[filter] duration-1000":
           true,
         "saturate-[0.2] brightness-[0.2] blur-sm": !showSlides,
         "saturate-100 brightness-100 blur-[0px]": showSlides,
+        "mx-[10dvw]": work.needsPadding,
+        "my-[10dvh]": work.needsPadding,
+        "w-[80dvw]": work.needsPadding,
+        "h-[80dvh]": work.needsPadding,
+        "w-[100dvw]": !work.needsPadding,
+        "h-[100dvh]": !work.needsPadding,
       })
     );
     if (showSlides) {
@@ -116,12 +122,21 @@ export default function Slides({
               <SwiperSlide key={`image-${index}`}>
                 <Image
                   data-index={index}
-                  className="w-screen h-[100dvh] object-cover"
+                  className={clsx({
+                    "w-screen h-[100dvh]": !work.needsPadding,
+                    "w-[80dvw] h-[80dvh]": work.needsPadding,
+                    "object-contain": work.needsPadding,
+                    "object-cover": !work.needsPadding,
+                  })}
                   alt="boop"
                   width={0}
                   height={0}
                   sizes="100dvw"
                   src={image}
+                  loading="lazy"
+                  fetchPriority="low"
+                  priority={false}
+                  unoptimized
                 />
               </SwiperSlide>
             ))}

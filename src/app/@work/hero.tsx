@@ -1,8 +1,9 @@
 "use client";
 import { WorkData } from "@/app/@work/workitems";
-import { useEffect, useRef, useState } from "react";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useLocomotiveScroll } from "@/lib/locomotive";
 import Image from "next/image";
+import { incrementEventHandlerCount } from "@/lib/state";
 
 export default function Hero({
   index,
@@ -17,6 +18,7 @@ export default function Hero({
 
   useEffect(() => {
     if (scroll) {
+      incrementEventHandlerCount("scroll-hero");
       scroll.on("scroll", (obj: any) => {
         const showKey = `work-${index}-hero-show-target`;
         if (showKey in obj.currentElements) {
@@ -50,7 +52,7 @@ export default function Hero({
             src={work.hero}
             muted
             loop
-            preload="auto"
+            preload="none"
           />
         </div>
       ) : (
@@ -61,7 +63,10 @@ export default function Hero({
             width={0}
             height={0}
             sizes="100dvw"
+            loading="lazy"
             src={work.hero!}
+            priority={false}
+            unoptimized
           />
         </div>
       )}

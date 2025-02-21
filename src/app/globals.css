@@ -21,6 +21,10 @@
   --detail-progress: 0;
 }
 
+html {
+  overflow: hidden;
+}
+
 body {
   color: var(--foreground);
   background-color: var(--background);

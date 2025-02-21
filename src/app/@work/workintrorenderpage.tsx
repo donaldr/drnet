@@ -1,12 +1,16 @@
 "use client";
 
 import { useLineText } from "@/lib/linetext";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Profiler, useCallback, useEffect, useRef, useState } from "react";
 import SVGStroke from "@/lib/svgstroke";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
-import { useGlobalState } from "@/lib/state";
+import { useLocomotiveScroll } from "@/lib/locomotive";
+import {
+  decrementEventHandlerCount,
+  incrementEventHandlerCount,
+  useGlobalState,
+} from "@/lib/state";
 import clsx from "clsx";
-import { useDebounce } from "@/lib/customhooks";
+import { useProfilerRender, useDebounce } from "@/lib/customhooks";
 
 export default function WorkIntroComponent() {
   const pathRefs = useRef<Array<SVGPathElement | null>>([]);
@@ -35,8 +39,12 @@ export default function WorkIntroComponent() {
 
   useEffect(() => {
     resize();
+    incrementEventHandlerCount("resize-workintrorender");
     window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
+    return () => {
+      decrementEventHandlerCount("resize-workintrorender");
+      window.removeEventListener("resize", resize);
+    };
   }, [resize]);
 
   const checkAllRefs = useCallback(() => {
@@ -56,6 +64,8 @@ export default function WorkIntroComponent() {
   const [activeList] = useGlobalState("activeList");
   const [active, setActive] = useState(false);
 
+  const profilerRender = useProfilerRender({ minDuration: 10 });
+
   useEffect(() => {
     setActive(activeList[activeList.length - 1] == "work-intro");
   }, [activeList]);
@@ -74,6 +84,7 @@ export default function WorkIntroComponent() {
 
   useEffect(() => {
     if (scroll) {
+      incrementEventHandlerCount("scroll-workintrorender");
       scroll.on("scroll", (obj: any) => {
         const key = `work-intro-container`;
         if (key in obj.currentElements) {
@@ -102,111 +113,113 @@ export default function WorkIntroComponent() {
   }, [scroll]);
 
   return (
-    <div
-      className={textContainerClasses}
-      data-scroll="true"
-      data-scroll-sticky="true"
-      data-scroll-target="#full"
-      data-scroll-id="work-intro-container"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        xmlSpace="preserve"
-        width={workIntroText.width}
-        height={
-          workIntroText.height ? Math.floor(workIntroText.height * 1.2) : 0
-        }
-        className="mb-1"
-        style={{
-          transform: `translateY(${-50 * offset!}dvh)`,
-        }}
+    <Profiler id="work-intro" onRender={profilerRender}>
+      <div
+        className={textContainerClasses}
+        data-scroll="true"
+        data-scroll-sticky="true"
+        data-scroll-target="#full"
+        data-scroll-id="work-intro-container"
       >
-        {workIntroText &&
-          workIntroText.paths &&
-          workIntroText.paths.map((path: string, index: number) => (
-            <SVGStroke
-              key={`path${index}`}
-              fill="none"
-              stroke="#999999"
-              strokeWidth={1}
-              startStroke={0}
-              strokeLength={length}
-              svgPath={pathRefs.current[index]}
-              renderSVGPath={(pathCSS: React.CSSProperties) => {
-                return (
-                  <path
-                    ref={(el) => {
-                      pathRefs.current[index] = el;
-                      checkAllRefs();
-                    }}
-                    d={path}
-                    style={pathCSS}
-                  />
-                );
-              }}
-            />
-          ))}
-        {workIntroText.width && workIntroText.height && (
-          <>
-            <SVGStroke
-              fill="none"
-              stroke="#999999"
-              strokeWidth={1}
-              startStroke={0}
-              strokeLength={length}
-              svgPath={lineRefs.current[0]}
-              renderSVGPath={(pathCSS: React.CSSProperties) => {
-                return (
-                  <path
-                    ref={(el) => {
-                      lineRefs.current[0] = el;
-                      checkAllRefs();
-                    }}
-                    d={
-                      workIntroText.width
-                        ? `M ${Math.floor(
-                            workIntroText.width / 2
-                          )} ${Math.floor(
-                            workIntroText.height! * 1.1
-                          )}L 0 ${Math.floor(workIntroText.height! * 1.1)}`
-                        : ""
-                    }
-                    style={pathCSS}
-                  />
-                );
-              }}
-            />
-            <SVGStroke
-              fill="none"
-              stroke="#999999"
-              strokeWidth={1}
-              startStroke={0}
-              strokeLength={length}
-              svgPath={lineRefs.current[1]}
-              renderSVGPath={(pathCSS: React.CSSProperties) => {
-                return (
-                  <path
-                    ref={(el) => {
-                      lineRefs.current[1] = el;
-                      checkAllRefs();
-                    }}
-                    d={
-                      workIntroText.width
-                        ? `M ${Math.floor(
-                            workIntroText.width / 2
-                          )} ${Math.floor(workIntroText.height! * 1.1)}L ${
-                            workIntroText.width
-                          } ${Math.floor(workIntroText.height! * 1.1)}`
-                        : ""
-                    }
-                    style={pathCSS}
-                  />
-                );
-              }}
-            />
-          </>
-        )}
-      </svg>
-    </div>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          xmlSpace="preserve"
+          width={workIntroText.width}
+          height={
+            workIntroText.height ? Math.floor(workIntroText.height * 1.2) : 0
+          }
+          className="mb-1"
+          style={{
+            transform: `translateY(${-50 * offset!}dvh)`,
+          }}
+        >
+          {workIntroText &&
+            workIntroText.paths &&
+            workIntroText.paths.map((path: string, index: number) => (
+              <SVGStroke
+                key={`path${index}`}
+                fill="none"
+                stroke="#999999"
+                strokeWidth={1}
+                startStroke={0}
+                strokeLength={length}
+                svgPath={pathRefs.current[index]}
+                renderSVGPath={(pathCSS: React.CSSProperties) => {
+                  return (
+                    <path
+                      ref={(el) => {
+                        pathRefs.current[index] = el;
+                        checkAllRefs();
+                      }}
+                      d={path}
+                      style={pathCSS}
+                    />
+                  );
+                }}
+              />
+            ))}
+          {workIntroText.width && workIntroText.height && (
+            <>
+              <SVGStroke
+                fill="none"
+                stroke="#999999"
+                strokeWidth={1}
+                startStroke={0}
+                strokeLength={length}
+                svgPath={lineRefs.current[0]}
+                renderSVGPath={(pathCSS: React.CSSProperties) => {
+                  return (
+                    <path
+                      ref={(el) => {
+                        lineRefs.current[0] = el;
+                        checkAllRefs();
+                      }}
+                      d={
+                        workIntroText.width
+                          ? `M ${Math.floor(
+                              workIntroText.width / 2
+                            )} ${Math.floor(
+                              workIntroText.height! * 1.1
+                            )}L 0 ${Math.floor(workIntroText.height! * 1.1)}`
+                          : ""
+                      }
+                      style={pathCSS}
+                    />
+                  );
+                }}
+              />
+              <SVGStroke
+                fill="none"
+                stroke="#999999"
+                strokeWidth={1}
+                startStroke={0}
+                strokeLength={length}
+                svgPath={lineRefs.current[1]}
+                renderSVGPath={(pathCSS: React.CSSProperties) => {
+                  return (
+                    <path
+                      ref={(el) => {
+                        lineRefs.current[1] = el;
+                        checkAllRefs();
+                      }}
+                      d={
+                        workIntroText.width
+                          ? `M ${Math.floor(
+                              workIntroText.width / 2
+                            )} ${Math.floor(workIntroText.height! * 1.1)}L ${
+                              workIntroText.width
+                            } ${Math.floor(workIntroText.height! * 1.1)}`
+                          : ""
+                      }
+                      style={pathCSS}
+                    />
+                  );
+                }}
+              />
+            </>
+          )}
+        </svg>
+      </div>
+    </Profiler>
   );
 }

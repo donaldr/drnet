@@ -15,7 +15,7 @@ function Title({
 }>) {
   return (
     <h1
-      className={`mt-4 overflow-hidden leading-none ${clsx({
+      className={`mt-4 overflow-hidden leading-[1.2] ${clsx({
         "drop-shadow-outline": titleOutline,
       })}`}
       style={{

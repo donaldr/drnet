@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { WorkData } from "./workitems";
 import clsx from "clsx";
-import Link from "next/link";
-import { useGlobalState } from "@/lib/state";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { incrementEventHandlerCount, useGlobalState } from "@/lib/state";
+import { useLocomotiveScroll } from "@/lib/locomotive";
+import { useThrottle } from "@/lib/customhooks";
 
 export default function WorkNavigationItem({
   work,
@@ -21,6 +21,7 @@ export default function WorkNavigationItem({
   const [activeName] = useGlobalState("active");
   const [active, setActive] = useState(false);
   const [progress, setProgress] = useState(0);
+  const throttle = useThrottle();
 
   useEffect(() => {
     setActive(activeName == `work-${index}`);
@@ -28,16 +29,29 @@ export default function WorkNavigationItem({
 
   useEffect(() => {
     if (scroll) {
+      incrementEventHandlerCount("scroll-worknavitem");
       scroll.on("scroll", (obj: any) => {
         if (`work-${index}-content` in obj.currentElements) {
-          setProgress(obj.currentElements[`work-${index}-content`].progress);
+          throttle(
+            () =>
+              setProgress(
+                obj.currentElements[`work-${index}-content`].progress
+              ),
+            10
+          );
         }
       });
     }
-  }, [scroll, index]);
+  }, [scroll, index, setProgress, throttle]);
 
   return (
-    <Link href={`/work/${work.slug}`} shallow={true} scroll={false}>
+    <a
+      href={`/work/${work.slug}`}
+      onClick={(e: React.MouseEvent<HTMLElement>) => {
+        e.preventDefault();
+        window.history.pushState(null, "", `/work/${work.slug}`);
+      }}
+    >
       <div
         id={`work-navigation-work-${index}`}
         key={work.project}
@@ -77,7 +91,7 @@ export default function WorkNavigationItem({
         </div>
         <div
           id={`work-navigation-work-${index}-main-icon`}
-          className={`rounded-full flex items-center justify-center group-hover:max-w-full transition-all z-30 mb-[0.5rem] relative cursor-pointer ${clsx(
+          className={`rounded-full flex items-center justify-center group-hover:max-w-full duration-250 transition-all z-30 mb-[0.5rem] relative cursor-pointer ${clsx(
             {
               "max-w-[3rem]": active,
               "h-[3rem]": active,
@@ -96,17 +110,17 @@ export default function WorkNavigationItem({
           <div className="relative opacity-100 group-hover:opacity-100 group-hover:brightness-50 group-hover:blur-sm delay-500 duration-500 w-full px-[0.25rem] h-[4rem] z-20">
             <div
               id={`work-navigation-work-${index}-main-icon-image`}
-              className="relative w-auto rounded-full transition-all whitespace-nowrap leading-[4rem] box-content overflow-hidden duration-500 z-20"
+              className="relative w-auto rounded-full transition-all whitespace-nowrap leading-[4rem] box-content overflow-hidden delay-0 duration-0 z-20"
               style={{
                 backgroundImage: `url(${work.thumb})`,
-                backgroundPosition: `-${
+                backgroundPosition: `${
                   hover
-                    ? work.thumbEndFocus.x * work.thumbEndScale
-                    : work.thumbStartFocus.x * work.thumbStartScale
-                }px -${
+                    ? -work.thumbEndFocus.x * work.thumbEndScale
+                    : -work.thumbStartFocus.x * work.thumbStartScale
+                }px ${
                   hover
-                    ? work.thumbEndFocus.y * work.thumbEndScale
-                    : work.thumbStartFocus.y * work.thumbStartScale
+                    ? -work.thumbEndFocus.y * work.thumbEndScale
+                    : -work.thumbStartFocus.y * work.thumbStartScale
                 }px`,
                 backgroundSize: `${
                   work.thumbSize.width *
@@ -127,14 +141,14 @@ export default function WorkNavigationItem({
               className="rounded-full top-0 z-10 h-[2rem] box-border w-full"
               style={{
                 backgroundImage: `url(${work.thumb})`,
-                backgroundPosition: `-${
+                backgroundPosition: `${
                   hover
-                    ? work.thumbEndFocus.x * work.thumbEndScale
-                    : work.thumbStartFocus.x * work.thumbStartScale
-                }px -${
+                    ? -work.thumbEndFocus.x * work.thumbEndScale
+                    : -work.thumbStartFocus.x * work.thumbStartScale
+                }px ${
                   hover
-                    ? work.thumbEndFocus.y * work.thumbEndScale
-                    : work.thumbStartFocus.y * work.thumbStartScale
+                    ? -work.thumbEndFocus.y * work.thumbEndScale
+                    : -work.thumbStartFocus.y * work.thumbStartScale
                 }px`,
                 backgroundSize: `${
                   work.thumbSize.width *
@@ -159,6 +173,6 @@ export default function WorkNavigationItem({
           </div>
         </div>
       </div>
-    </Link>
+    </a>
   );
 }

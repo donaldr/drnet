@@ -1,8 +1,15 @@
 "use client";
-import React, { createContext, RefObject, useRef } from "react";
-import { LocomotiveScrollProvider } from "react-locomotive-scroll";
-import { WaitWheelProvider } from "../lib/customhooks";
+import React, {
+  createContext,
+  RefObject,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { LocomotiveScrollProvider } from "@/lib/locomotive";
+import { WaitWheelProvider } from "@/lib/customhooks";
 import ScrollDown from "./scrolldown";
+import NoSSR from "react-no-ssr";
 
 export const ScrollContext =
   createContext<RefObject<HTMLDivElement | null> | null>(null);
@@ -13,12 +20,18 @@ export default function Content({
   children: React.ReactNode;
 }>) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const [start, setStart] = useState(false);
+
+  useLayoutEffect(() => {
+    setStart(true);
+  }, []);
 
   return (
     <LocomotiveScrollProvider
       options={{
         repeat: true,
         smooth: true,
+        //@ts-expect-error
         lerp: 0.1,
         getDirection: true,
         multiplier: 0.5,
@@ -39,6 +52,7 @@ export default function Content({
         ]
       }
       containerRef={ref}
+      start={start}
     >
       <WaitWheelProvider>
         <div data-scroll-container className="h-full">

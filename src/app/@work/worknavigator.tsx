@@ -2,9 +2,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { WorkData } from "./workitems";
 import WorkNavigationItem from "./worknavigationitem";
-import { useGlobalState, navigating } from "@/lib/state";
+import {
+  useGlobalState,
+  navigating,
+  incrementEventHandlerCount,
+  decrementEventHandlerCount,
+} from "@/lib/state";
 import clsx from "clsx";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { useLocomotiveScroll } from "@/lib/locomotive";
 
 export default function WorkNavigator({
   works,
@@ -64,12 +69,19 @@ export default function WorkNavigator({
       }, 500);
     }
 
-    document.addEventListener("mousemove", mousemove);
-    return () => document.removeEventListener("mousemove", mousemove);
+    if (active) {
+      incrementEventHandlerCount("mousemove-worknav");
+      document.addEventListener("mousemove", mousemove);
+    }
+    return () => {
+      decrementEventHandlerCount("mousemove-worknav");
+      document.removeEventListener("mousemove", mousemove);
+    };
   }, [active, mousemove]);
 
   useEffect(() => {
     if (scroll) {
+      incrementEventHandlerCount("scroll-worknav");
       scroll.on("scroll", () => {
         if (!navigating.current) {
           if (!stoppingMoveRef.current) {

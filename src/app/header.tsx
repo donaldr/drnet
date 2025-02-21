@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { usePrevious } from "@/lib/customhooks";
@@ -11,6 +10,7 @@ export default function Header() {
   const [workClasses, setWorkClasses] = useState("mt-2");
   const [resumeClasses, setResumeClasses] = useState("mt-2");
   const [contactClasses, setContactClasses] = useState("mt-2");
+  const [headerClasses, setHeaderClasses] = useState("opacity-0");
 
   useEffect(() => {
     if (pathname.startsWith("/work")) {
@@ -66,11 +66,26 @@ export default function Header() {
     }
   }, [previousPathName, pathname]);
 
+  useEffect(() => {
+    setHeaderClasses(
+      clsx({
+        "fixed h-header w-full z-50 flex justify-between items-center px-[5dvw] transition-[opacity] opacity-100":
+          true,
+      })
+    );
+  }, []);
+
   return (
     <>
-      <header className="fixed h-header w-full z-50 flex justify-between items-center px-[5dvw]">
+      <header className={headerClasses}>
         <div className="flex gap-8">
-          <Link href="/" shallow={true} scroll={false}>
+          <a
+            href="/"
+            onClick={(e: React.MouseEvent<HTMLElement>) => {
+              e.preventDefault();
+              window.history.pushState(null, "", "/");
+            }}
+          >
             <div className="h-[4em] py-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -115,34 +130,40 @@ export default function Header() {
                 />
               </svg>
             </div>
-          </Link>
+          </a>
           <h1></h1>
         </div>
         <div className="flex gap-8">
-          <Link
+          <a
             className={workClasses}
             href="/work"
-            shallow={true}
-            scroll={false}
+            onClick={(e: React.MouseEvent<HTMLElement>) => {
+              e.preventDefault();
+              window.history.pushState(null, "", "/work");
+            }}
           >
             Work
-          </Link>
-          <Link
+          </a>
+          <a
             className={resumeClasses}
             href="/resume"
-            shallow={true}
-            scroll={false}
+            onClick={(e: React.MouseEvent<HTMLElement>) => {
+              e.preventDefault();
+              window.history.pushState(null, "", "/resume");
+            }}
           >
             Resume
-          </Link>
-          <Link
+          </a>
+          <a
             className={contactClasses}
             href="/contact"
-            shallow={true}
-            scroll={false}
+            onClick={(e: React.MouseEvent<HTMLElement>) => {
+              e.preventDefault();
+              window.history.pushState(null, "", "/contact");
+            }}
           >
             Contact
-          </Link>
+          </a>
         </div>
       </header>
     </>

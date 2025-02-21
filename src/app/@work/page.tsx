@@ -1,12 +1,10 @@
-import WorkSection from "@/app/@work/section"
-import WorkItems from "@/app/@work/workitems"
+import WorkSection from "@/app/@work/section";
+import WorkItems from "@/app/@work/workitems";
 
-
-export default function Work()
-{
+export default function Work() {
   return (
     <WorkSection>
-      <WorkItems/>
+      <WorkItems />
     </WorkSection>
   );
 }

@@ -1,7 +1,10 @@
 "use client";
 import { WorkData } from "@/app/@work/workitems";
-import { RefObject, useEffect, useState } from "react";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { RefObject, Suspense, useEffect, useState } from "react";
+import { useLocomotiveScroll } from "@/lib/locomotive";
+import { useThrottle } from "@/lib/customhooks";
+import clsx from "clsx";
+import { incrementEventHandlerCount } from "@/lib/state";
 
 export default function Video({
   index,
@@ -15,17 +18,23 @@ export default function Video({
   const [offset, setOffset] = useState(0);
   const { scroll } = useLocomotiveScroll();
   const [isPast, setIsPast] = useState(false);
+  const throttle = useThrottle();
 
   useEffect(() => {
     if (scroll) {
+      incrementEventHandlerCount("scroll-video");
       scroll.on("scroll", (obj: any) => {
         const key = `work-${index}-video-target`;
         if (key in obj.currentElements) {
-          setOffset(
-            (obj.scroll.y -
-              obj.currentElements[key].top -
-              document.documentElement.clientHeight * 0.5) /
-              document.documentElement.clientHeight
+          throttle(
+            () =>
+              setOffset(
+                (obj.scroll.y -
+                  obj.currentElements[key].top -
+                  document.documentElement.clientHeight * 0.5) /
+                  document.documentElement.clientHeight
+              ),
+            10
           );
         }
       });
@@ -51,9 +60,13 @@ export default function Video({
 
   return (
     <div
-      className={`absolute top-[100dvh] h-[100dvh] w-screen z-40 flex items-center justify-center ${
-        isPast ? "" : "bg-[var(--dark)]"
-      }`}
+      className={`absolute top-[100dvh] h-[100dvh] w-screen z-40 flex items-center justify-center ${clsx(
+        {
+          "bg-[var(--dark)]": !isPast,
+          "px-[10dvw]": work.needsPadding,
+          "py-[10dvh]": work.needsPadding,
+        }
+      )}`}
     >
       {work.video && (
         <video
@@ -64,6 +77,7 @@ export default function Video({
           width="100%"
           height="100%"
           muted
+          preload="none"
           crossOrigin="anonymous"
           style={{
             opacity: 1 - offset * 2,

@@ -4,7 +4,7 @@
       "slug": "verizon-innovation-center-boston",
       "hero": "/work/verizon/intro.mp4",
       "video": "/work/verizon/detail.mp4",
-      "thumb": "/work/verizon/atmosphere.jpg",
+      "thumb": "/work/thumbs/verizon.jpg",
       "images": [
         "/work/verizon/smart-ecosystems.jpg",
         "/work/verizon/smart-ecosystems2.jpg",
@@ -21,10 +21,10 @@
       ]
     },
     {
-      "slug": "confidential-consulting-client",
+      "slug": "consulting-workspace-experiences",
       "hero": "/work/ccc/ccc_hero.jpg",
       "video": "/work/ccc/ccc.mp4",
-      "thumb": "/work/ccc/ccc2.jpg",
+      "thumb": "/work/thumbs/ccc.jpg",
       "images": [
         "/work/ccc/ccc1.jpg",
         "/work/ccc/ccc2.jpg",
@@ -33,13 +33,119 @@
       ]
     },
     {
-      "slug": "national-archives-record-of-rights"
+      "slug": "confidential-financial-services-lobby-digital-elements",
+      "hero": "/work/cfsc/hero.jpg",
+      "video": "/work/cfsc/skylobby.mp4",
+      "thumb": "/work/thumbs/cfsc.jpg",
+      "images": [
+        "/work/cfsc/front-desk.jpg",
+        "/work/cfsc/hero.jpg",
+        "/work/cfsc/pillar3.png",
+        "/work/cfsc/type-detail.jpg",
+        "/work/cfsc/prototype.png",
+        "/work/cfsc/template.png",
+        "/work/cfsc/wayfinding.jpg"
+      ]
     },
     {
-      "slug": "aiga-design-archives"
+      "slug": "confidential-architectural-client-wall-system-prototype",
+      "hero": "/work/cac/hero.mp4",
+      "video": "/work/cac/pips-video.mp4",
+      "thumb": "/work/thumbs/cac.jpg",
+      "images": [
+        "/work/cac/pips1.jpg",
+        "/work/cac/pips2.jpg",
+        "/work/cac/pips3.jpg"
+      ]
     },
     {
-      "slug": "sfmoma-photography-interpretive-center"
+      "slug": "cibc-lobby-wall",
+      "hero": "/work/cibc/loop.mp4",
+      "video": "/work/cibc/video.mp4",
+      "thumb": "/work/thumbs/cibc.jpg",
+      "images": [
+        "/work/cibc/cibc1.jpg",
+        "/work/cibc/cibc2.jpg",
+        "/work/cibc/cibc3.jpg",
+        "/work/cibc/cibc4.jpg",
+        "/work/cibc/cibc5.jpg",
+        "/work/cibc/cibc6.jpg",
+        "/work/cibc/cibc7.jpg",
+        "/work/cibc/cibc8.jpg",
+        "/work/cibc/cibc9.jpg"
+      ]
+    },
+    {
+      "slug": "impact-of-the-bible",
+      "hero": "/work/motb/motb.jpg",
+      "video": "/work/motb/biblenow.mp4",
+      "thumb": "/work/thumbs/motb.jpg",
+      "images": [
+        "/work/motb/motb.jpg",
+        "/work/motb/motb2.jpg",
+        "/work/motb/motb3.jpg",
+        "/work/motb/motb4.jpg",
+        "/work/motb/motb5.jpg",
+        "/work/motb/motb6.jpg",
+        "/work/motb/motb7.jpg"
+      ]
+    },
+    {
+      "slug": "aic-website-ecosystem-redesign",
+      "hero": "/work/aic/aic.jpg",
+      "video": "/work/aic/video.mp4",
+      "thumb": "/work/thumbs/aic.jpg",
+      "images": ["/work/aic/technical-audit.png"]
+    },
+    {
+      "slug": "sfmoma-photography-interpretive-center",
+      "hero": "/work/sfmoma/sfmoma2.jpg",
+      "video": "/work/sfmoma/pic.mp4",
+      "thumb": "/work/thumbs/sfmoma.jpg",
+      "images": [
+        "/work/sfmoma/sfmoma1.jpg",
+        "/work/sfmoma/sfmoma2.jpg",
+        "/work/sfmoma/sfmoma3.jpg",
+        "/work/sfmoma/sfmoma4.jpg",
+        "/work/sfmoma/sfmoma5.jpg",
+        "/work/sfmoma/sfmoma6.jpg",
+        "/work/sfmoma/sfmoma7.jpg",
+        "/work/sfmoma/sfmoma8.jpg",
+        "/work/sfmoma/sfmoma9.jpg",
+        "/work/sfmoma/sfmoma10.jpg"
+      ]
+    },
+    {
+      "slug": "record-of-rights",
+      "hero": "/work/rights/rights.png",
+      "video": "/work/rights/rights.mp4",
+      "thumb": "/work/thumbs/rights.png",
+      "images": [
+        "/work/rights/rights10.jpg",
+        "/work/rights/rights.png",
+        "/work/rights/rights1.jpg",
+        "/work/rights/rights2.jpg",
+        "/work/rights/rights3.jpg",
+        "/work/rights/rights4.jpg",
+        "/work/rights/rights5.jpg",
+        "/work/rights/rights6.jpg",
+        "/work/rights/rights7.jpg",
+        "/work/rights/rights8.jpg",
+        "/work/rights/rights9.jpg"
+      ]
+    },
+    {
+      "slug": "aiga-design-archives",
+      "hero": "/work/aiga/aiga.png",
+      "video": "/work/aiga/aiga.mp4",
+      "thumb": "/work/thumbs/aiga.png",
+      "images": [
+        "/work/aiga/aiga1.png",
+        "/work/aiga/aiga2.png",
+        "/work/aiga/aiga3.png",
+        "/work/aiga/aiga4.png",
+        "/work/aiga/aiga5.png"
+      ]
     }
   ]
 }

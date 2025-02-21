@@ -7,7 +7,11 @@ import {
 } from "react";
 import { SplitText } from "@rigo-m/react-split-text";
 import clsx from "clsx";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { useLocomotiveScroll } from "@/lib/locomotive";
+import {
+  decrementEventHandlerCount,
+  incrementEventHandlerCount,
+} from "@/lib/state";
 //import { useOffset } from "@/lib/customHooks";
 
 export default function FitVariable({
@@ -29,6 +33,7 @@ export default function FitVariable({
 
   useEffect(() => {
     if (scroll) {
+      incrementEventHandlerCount("scroll-fit");
       scroll.on("scroll", (obj: any) => {
         if ("home-target" in obj.currentElements) {
           setOffset(
@@ -79,13 +84,17 @@ export default function FitVariable({
         document.documentElement.clientHeight,
       ]);
     }
+    incrementEventHandlerCount("resize-fit");
     window.addEventListener("resize", updateSize);
     updateSize();
     setCursorPosition([
       document.documentElement.clientWidth / 2,
       document.documentElement.clientHeight / 2,
     ]);
-    return () => window.removeEventListener("resize", updateSize);
+    return () => {
+      decrementEventHandlerCount("resize-fit");
+      window.removeEventListener("resize", updateSize);
+    };
   }, []);
 
   const animate = useCallback(() => {
@@ -132,11 +141,17 @@ export default function FitVariable({
       ]);
     }
     if (show && reveal) {
+      incrementEventHandlerCount("mousemove-fit");
+      incrementEventHandlerCount("touchstart-fit");
+      incrementEventHandlerCount("touchmove-fit");
       window.addEventListener("mousemove", mousemove);
       window.addEventListener("touchstart", touchstart);
       window.addEventListener("touchmove", touchmove);
     }
     return () => {
+      decrementEventHandlerCount("mousemove-fit");
+      decrementEventHandlerCount("touchstart-fit");
+      decrementEventHandlerCount("touchmove-fit");
       window.removeEventListener("mousemove", mousemove);
       window.removeEventListener("touchstart", touchstart);
       window.removeEventListener("touchmove", touchmove);

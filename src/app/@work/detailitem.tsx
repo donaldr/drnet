@@ -2,7 +2,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 /*
 import { useEffect, useMemo, useRef, useState, memo } from "react";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { useLocomotiveScroll } from "@/lib/locomotive";
 import { useLineText } from "@/lib/linetext";
 import SVGStroke from "@/lib/svgstroke";
 import clsx from "clsx";
@@ -10,6 +10,10 @@ import clsx from "clsx";
 import { SplitText } from "@rigo-m/react-split-text";
 import clsx from "clsx";
 import { useDebounce } from "@/lib/customhooks";
+import {
+  decrementEventHandlerCount,
+  incrementEventHandlerCount,
+} from "@/lib/state";
 
 function DetailItem({
   children,
@@ -40,8 +44,12 @@ function DetailItem({
 
   useEffect(() => {
     resize();
+    incrementEventHandlerCount("resize-detailitem");
     window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
+    return () => {
+      decrementEventHandlerCount("resize-detailitem");
+      window.removeEventListener("resize", resize);
+    };
   }, [resize]);
 
   const setDelay = useCallback((ref: HTMLDivElement) => {

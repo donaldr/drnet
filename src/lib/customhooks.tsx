@@ -8,10 +8,14 @@ import {
   useRef,
   useState,
 } from "react";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { useLocomotiveScroll } from "@/lib/locomotive";
 
 import { WheelGestures } from "wheel-gestures";
 import MA from "moving-average";
+import {
+  decrementEventHandlerCount,
+  incrementEventHandlerCount,
+} from "./state";
 
 const wheelGestures = WheelGestures();
 const ma = MA(5);
@@ -47,7 +51,6 @@ function useWaitWheelInitial() {
   }, [intentionalWheel, intentionalTouchStart, scroll]);
 
   const wait = useCallback(() => {
-    console.log("WAIT!");
     waitingRef.current = true;
   }, []);
 
@@ -67,6 +70,7 @@ function useWaitWheelInitial() {
 
   useEffect(() => {
     const throttleWheel = () => throttler(test, 10);
+    incrementEventHandlerCount("wheel");
     document.documentElement.addEventListener("wheel", throttleWheel);
     wheelGestures.observe(document.documentElement);
     wheelGestures.on("wheel", (wheelEventState) => {
@@ -97,6 +101,10 @@ function useWaitWheelInitial() {
       previousMaRef.current = currentMa;
       countRef.current += 1;
     });
+    return () => {
+      decrementEventHandlerCount("wheel");
+      document.documentElement.removeEventListener("wheel", throttleWheel);
+    };
   }, [throttler]);
 
   const touchstart = useCallback(() => {
@@ -104,8 +112,12 @@ function useWaitWheelInitial() {
   }, []);
 
   useEffect(() => {
+    incrementEventHandlerCount("touchstart");
     document.addEventListener("touchstart", touchstart);
-    return () => document.removeEventListener("touchstart", touchstart);
+    return () => {
+      decrementEventHandlerCount("touchstart");
+      document.removeEventListener("touchstart", touchstart);
+    };
   }, [touchstart]);
 
   return { wait, stop, readyRef };
@@ -178,4 +190,15 @@ export function useTemplateFunction(template: string) {
       map: Record<string, any>
     ) => string;
   }, [template]);
+}
+
+export function useProfilerRender({ minDuration = 0 }) {
+  return useCallback(
+    (id: string, phase: any, actualDuration: number) => {
+      if (actualDuration > minDuration) {
+        //console.log(`${id} ${actualDuration.toFixed(2)}`);
+      }
+    },
+    [minDuration]
+  );
 }

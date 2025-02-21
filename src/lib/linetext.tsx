@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import opentype from "opentype.js";
-import { useGlobalState } from "./state";
+import { useGlobalState, fontFetching } from "./state";
 
 export const useLineText = (text: string, size: number) => {
   const [font, setFont] = useState<ReturnType<typeof opentype.parse>>();
@@ -10,22 +10,24 @@ export const useLineText = (text: string, size: number) => {
   const [fonts, setFonts] = useGlobalState("fonts");
 
   useEffect(() => {
-    if (!font) {
+    if (!font && !fontFetching.current["/fonts/mecsoft.ttf"]) {
       if (fonts["/fonts/mecsoft.ttf"]) {
         setFont(fonts["/fonts/mecsoft.ttf"]);
       } else {
-        const buffer = fetch("/fonts/mecsoft.ttf").then((res) =>
-          res.arrayBuffer()
-        );
+        fontFetching.current["/fonts/mecsoft.ttf"] = true;
+        const buffer = fetch("/fonts/mecsoft.ttf").then((res) => {
+          return res.arrayBuffer();
+        });
         buffer.then((data) => {
           setFont(opentype.parse(data));
         });
       }
     }
-  }, [fonts, font]);
+  }, [fonts, font, fontFetching]);
 
   useEffect(() => {
     if (font) {
+      fontFetching.current["/fonts/mecsoft.ttf"] = false;
       setFonts((oldFonts) => ({
         ...oldFonts,
         ...("/fonts/mecsoft.ttf" in oldFonts && { "/fonts/mecsoft.ttf": font }),

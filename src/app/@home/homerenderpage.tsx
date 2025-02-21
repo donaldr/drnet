@@ -7,15 +7,28 @@ import {
   useLayoutEffect,
   useMemo,
   useCallback,
+  Profiler,
+  Suspense,
 } from "react";
 import clsx from "clsx";
 import FitVariable from "@/app/@home/fit";
 import Chop from "@/app/@home/chop";
 import React from "react";
 import Footer from "./footer";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
-import { useGlobalState, navigating } from "../../lib/state";
-import { useDebounce, useWaitWheel } from "../../lib/customhooks";
+import { useLocomotiveScroll } from "@/lib/locomotive";
+import {
+  useGlobalState,
+  navigating,
+  incrementEventHandlerCount,
+  decrementEventHandlerCount,
+} from "@/lib/state";
+import {
+  useProfilerRender,
+  useDebounce,
+  useWaitWheel,
+} from "@/lib/customhooks";
+import NoSSR from "react-no-ssr";
+import Loading from "../loading";
 
 export type Effect = ({
   show,
@@ -55,7 +68,7 @@ const enum TouchOrWheel {
   WHEEL = "wheel",
 }
 
-const effects: Array<EffectDetails> = [
+const effectDetails: Array<EffectDetails> = [
   {
     name: "Fit Lighting",
     description:
@@ -93,6 +106,8 @@ export default function HomeRenderPage() {
   const homeExitRef = useRef(false);
   const [size, setSize] = useState<[number, number] | undefined>();
   const debouncer = useDebounce();
+  const profilerRender = useProfilerRender({ minDuration: 10 });
+  const previousScrollYRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
     if (playEvent == PlayEvent.STOP) {
@@ -124,7 +139,7 @@ export default function HomeRenderPage() {
         } else if (playEvent == PlayEvent.DONE_PLAYING) {
           setEffectIndex((previousIndex) => {
             setPreviousEffectIndex(previousIndex);
-            return (previousIndex + 1) % effects.length;
+            return (previousIndex + 1) % effectDetails.length;
           });
           setPlayState(PlayState.DONE_PLAYING);
         } else if (playEvent == PlayEvent.PAUSE) {
@@ -136,7 +151,7 @@ export default function HomeRenderPage() {
             timeoutRef.current = undefined;
             setEffectIndex((previousIndex) => {
               setPreviousEffectIndex(previousIndex);
-              return (previousIndex + 1) % effects.length;
+              return (previousIndex + 1) % effectDetails.length;
             });
           } else {
             setPlayEvent(PlayEvent.NULL);
@@ -148,7 +163,10 @@ export default function HomeRenderPage() {
             timeoutRef.current = undefined;
             setEffectIndex((previousIndex) => {
               setPreviousEffectIndex(previousIndex);
-              return (effects.length + (previousIndex - 1)) % effects.length;
+              return (
+                (effectDetails.length + (previousIndex - 1)) %
+                effectDetails.length
+              );
             });
           } else {
             setPlayEvent(PlayEvent.NULL);
@@ -178,7 +196,7 @@ export default function HomeRenderPage() {
             timeoutRef.current = undefined;
             setEffectIndex((previousIndex) => {
               setPreviousEffectIndex(previousIndex);
-              return (previousIndex + 1) % effects.length;
+              return (previousIndex + 1) % effectDetails.length;
             });
           } else {
             setPlayEvent(PlayEvent.NULL);
@@ -190,7 +208,10 @@ export default function HomeRenderPage() {
             timeoutRef.current = undefined;
             setEffectIndex((previousIndex) => {
               setPreviousEffectIndex(previousIndex);
-              return (effects.length + (previousIndex - 1)) % effects.length;
+              return (
+                (effectDetails.length + (previousIndex - 1)) %
+                effectDetails.length
+              );
             });
           } else {
             setPlayEvent(PlayEvent.NULL);
@@ -222,10 +243,14 @@ export default function HomeRenderPage() {
   }, [touchOrWheel]);
 
   useEffect(() => {
+    incrementEventHandlerCount("touchmove");
+    incrementEventHandlerCount("wheel");
     document.addEventListener("touchmove", touchmove);
     document.addEventListener("wheel", wheel);
 
     return () => {
+      decrementEventHandlerCount("touchmove");
+      decrementEventHandlerCount("wheel");
       document.removeEventListener("touchmove", touchmove);
       document.removeEventListener("wheel", wheel);
     };
@@ -260,12 +285,17 @@ export default function HomeRenderPage() {
 
   useEffect(() => {
     resize();
+    incrementEventHandlerCount("resize-homerender");
     window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
+    return () => {
+      decrementEventHandlerCount("resize-homerender");
+      window.removeEventListener("resize", resize);
+    };
   }, [resize]);
 
   useEffect(() => {
     if (scroll) {
+      incrementEventHandlerCount("scroll-homerender");
       scroll.on("scroll", (obj: any) => {
         if (
           activeRef.current &&
@@ -273,7 +303,10 @@ export default function HomeRenderPage() {
           obj.scroll.y > 0 &&
           readyRef.current
         ) {
-          if (obj.direction == "down") {
+          if (
+            previousScrollYRef.current == null ||
+            previousScrollYRef.current < obj.scroll.y
+          ) {
             if (
               obj.scroll.y < document.documentElement.clientHeight &&
               touchOrMoveRef.current == TouchOrWheel.WHEEL
@@ -322,6 +355,7 @@ export default function HomeRenderPage() {
             */
           }
         }
+        previousScrollYRef.current = obj.scroll.y;
       });
     }
   }, [scroll, readyRef, wait, stop]);
@@ -338,51 +372,57 @@ export default function HomeRenderPage() {
     }
   }, [size]);
 
+  const effects = useMemo(() => {
+    return effectDetails.map((effect, index) =>
+      React.createElement(
+        effect.effect,
+        index == effectIndex
+          ? {
+              show: active,
+              children: text,
+              key: index,
+            }
+          : {
+              show: false,
+              children: text,
+              key: index,
+            }
+      )
+    );
+  }, [effectDetails, active, text, effectIndex]);
+
   return (
-    <>
-      <div
-        className={homeClasses}
-        data-scroll
-        data-scroll-repeat
-        data-scroll-id="home-target"
-      >
+    <NoSSR>
+      <Profiler id="home" onRender={profilerRender}>
         <div
-          id="home-sticky"
+          className={homeClasses}
           data-scroll
-          data-scroll-sticky
-          data-scroll-target="#full"
-          className={homeContentClasses}
           data-scroll-repeat
-          data-scroll-id="home-sticky"
+          data-scroll-id="home-target"
         >
-          {effects.map((effect, index) =>
-            React.createElement(
-              effect.effect,
-              index == effectIndex
-                ? {
-                    show: active,
-                    children: text,
-                    key: index,
-                  }
-                : {
-                    show: false,
-                    children: text,
-                    key: index,
-                  }
-            )
-          )}
+          <div
+            id="home-sticky"
+            data-scroll
+            data-scroll-sticky
+            data-scroll-target="#full"
+            className={homeContentClasses}
+            data-scroll-repeat
+            data-scroll-id="home-sticky"
+          >
+            {effects}
+          </div>
+          <Footer
+            effectIndex={effectIndex}
+            previousEffectIndex={previousEffectIndex}
+            effects={effectDetails}
+            playEvent={playEvent}
+            playState={playState}
+            setText={setText}
+            setPlayEvent={setPlayEvent}
+            elapsedPlayDuration={elapsedPlayDuration}
+          />
         </div>
-        <Footer
-          effectIndex={effectIndex}
-          previousEffectIndex={previousEffectIndex}
-          effects={effects}
-          playEvent={playEvent}
-          playState={playState}
-          setText={setText}
-          setPlayEvent={setPlayEvent}
-          elapsedPlayDuration={elapsedPlayDuration}
-        />
-      </div>
-    </>
+      </Profiler>
+    </NoSSR>
   );
 }

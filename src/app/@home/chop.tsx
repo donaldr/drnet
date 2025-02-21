@@ -11,8 +11,12 @@ import paper from "paper-jsdom-canvas";
 import Matter from "matter-js";
 import "pathseg";
 import clsx from "clsx";
-import { useLocomotiveScroll } from "react-locomotive-scroll";
+import { useLocomotiveScroll } from "@/lib/locomotive";
 import { useDebounce } from "@/lib/customhooks";
+import {
+  decrementEventHandlerCount,
+  incrementEventHandlerCount,
+} from "@/lib/state";
 
 // module aliases
 const Engine = Matter.Engine,
@@ -68,6 +72,7 @@ export default function Chop({
 
   useEffect(() => {
     if (scroll) {
+      incrementEventHandlerCount("scroll-chop");
       scroll.on("scroll", (obj: any) => {
         setActive("home-target" in obj.currentElements);
         /*
@@ -458,9 +463,13 @@ export default function Chop({
   }, [debouncer]);
 
   useLayoutEffect(() => {
+    incrementEventHandlerCount("resize-chop");
     window.addEventListener("resize", updateSize);
     updateSize();
-    return () => window.removeEventListener("resize", updateSize);
+    return () => {
+      decrementEventHandlerCount("resize");
+      window.removeEventListener("resize", updateSize);
+    };
   }, [updateSize]);
 
   useLayoutEffect(() => {
@@ -480,10 +489,12 @@ export default function Chop({
         e.touches[0].clientY,
       ];
     }
+    /*
     function touchend() {
       setCursorPosition(undefined);
       Composite.remove(engine.world, cursorCircle!);
     }
+    */
     function touchmove(e: TouchEvent) {
       animateToPositionRef.current = null;
       setCursorPosition((prev) => {
@@ -494,6 +505,9 @@ export default function Chop({
       });
     }
     if (show && reveal) {
+      incrementEventHandlerCount("mousemove-chop");
+      incrementEventHandlerCount("touchstart-chop");
+      incrementEventHandlerCount("touchmove-chop");
       window.addEventListener("mousemove", mousemove);
       window.addEventListener("touchstart", touchstart);
       window.addEventListener("touchmove", touchmove);
@@ -501,11 +515,14 @@ export default function Chop({
       //window.addEventListener("touchcancel", touchend);
     }
     return () => {
+      decrementEventHandlerCount("mousemove-chop");
+      decrementEventHandlerCount("touchstart-chop");
+      decrementEventHandlerCount("touchmove-chop");
       window.removeEventListener("mousemove", mousemove);
       window.removeEventListener("touchstart", touchstart);
       window.removeEventListener("touchmove", touchmove);
-      window.removeEventListener("touchend", touchend);
-      window.removeEventListener("touchcancel", touchend);
+      //window.removeEventListener("touchend", touchend);
+      //window.removeEventListener("touchcancel", touchend);
     };
   }, [show, reveal, cursorCircle, engine.world]);
 
