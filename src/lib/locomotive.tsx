@@ -1,7 +1,6 @@
 import { LocomotiveScrollOptions, Scroll } from "locomotive-scroll";
 import {
   createContext,
-  DependencyList,
   RefObject,
   useContext,
   useEffect,
@@ -29,7 +28,6 @@ export const LocomotiveScrollContext =
 export interface LocomotiveScrollProviderProps {
   options: LocomotiveScrollOptions;
   containerRef: RefObject<HTMLDivElement | null>;
-  watch: DependencyList | undefined;
   onUpdate?: (scroll: Scroll) => void;
   location?: string;
   onLocationChange?: (scroll: Scroll) => void;
@@ -40,7 +38,6 @@ export function LocomotiveScrollProvider({
   children,
   options,
   containerRef,
-  watch,
   onUpdate,
   location,
   onLocationChange,
@@ -54,12 +51,6 @@ export function LocomotiveScrollProvider({
   const LocomotiveScrollLibRef = useRef<typeof Scroll | null>(null);
   const LocomotiveScrollRef = useRef<Scroll | null>(null);
   const [height] = useDebounce(containerHeight, 100);
-
-  if (!watch) {
-    console.warn(
-      "react-locomotive-scroll: you did not add any props to watch. Scroll may have weird behaviours if the instance is not updated when the route changes"
-    );
-  }
 
   useEffect(() => {
     (async () => {
@@ -102,22 +93,19 @@ export function LocomotiveScrollProvider({
         throw Error(`react-locomotive-scroll: ${error}`);
       }
     }
-  }, [start, libset]);
+  }, [start, libset, options]);
 
-  useEffect(
-    () => {
-      if (!LocomotiveScrollRef.current) {
-        return;
-      }
+  useEffect(() => {
+    if (!LocomotiveScrollRef.current) {
+      return;
+    }
 
-      LocomotiveScrollRef.current.update();
+    LocomotiveScrollRef.current.update();
 
-      if (onUpdate) {
-        onUpdate(LocomotiveScrollRef.current);
-      }
-    },
-    watch ? [...watch, height, start] : [height, start]
-  );
+    if (onUpdate) {
+      onUpdate(LocomotiveScrollRef.current);
+    }
+  }, [height, start, onUpdate]);
 
   useEffect(() => {
     if (!LocomotiveScrollRef.current || !location) {
@@ -129,7 +117,7 @@ export function LocomotiveScrollProvider({
     if (onLocationChange) {
       onLocationChange(LocomotiveScrollRef.current);
     }
-  }, [location]);
+  }, [location, onLocationChange]);
 
   return (
     <LocomotiveScrollContext.Provider

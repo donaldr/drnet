@@ -1,6 +1,6 @@
 "use client";
 import { WorkData } from "@/app/@work/workitems";
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocomotiveScroll } from "@/lib/locomotive";
 import clsx from "clsx";
 import Image from "next/image";

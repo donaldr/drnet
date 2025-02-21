@@ -139,7 +139,7 @@ function DetailRoles({
         </div>
       );
     });
-  }, [work]);
+  }, [work, index]);
 
   return (
     <div ref={ref} className="w-full md:px-0">

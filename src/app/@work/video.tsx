@@ -1,6 +1,6 @@
 "use client";
 import { WorkData } from "@/app/@work/workitems";
-import { RefObject, Suspense, useEffect, useState } from "react";
+import { RefObject, useEffect, useState } from "react";
 import { useLocomotiveScroll } from "@/lib/locomotive";
 import { useThrottle } from "@/lib/customhooks";
 import clsx from "clsx";
@@ -48,7 +48,7 @@ export default function Video({
         }
       });
     }
-  }, [scroll, index, videoRef]);
+  }, [scroll, index, videoRef, throttle]);
 
   useEffect(() => {
     if (offset >= 0.5) {

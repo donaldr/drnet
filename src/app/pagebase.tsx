@@ -172,7 +172,7 @@ export default function PageBase({
         }
       }
     }
-  }, [pathMatch, scroll, id, setNavigating]);
+  }, [pathMatch, scroll, id, setNavigating, setDoneLoading]);
 
   useEffect(() => {
     if (active) {

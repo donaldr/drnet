@@ -1,6 +1,5 @@
 "use client";
 import React, {
-  Suspense,
   useCallback,
   useEffect,
   useRef,

@@ -5,7 +5,6 @@ import { useGlobalState } from "@/lib/state";
 import HeaderTitle from "../headertitle";
 import RotatingBackground from "./rotatingbackground";
 import { useProfilerRender } from "@/lib/customhooks";
-import NoSSR from "react-no-ssr";
 
 export default function ContactRenderPage() {
   const [contactClasses, setContactClasses] = useState("opacity-0");

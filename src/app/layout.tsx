@@ -2,9 +2,7 @@ import type { Viewport, Metadata } from "next";
 import "./globals.css";
 import Content from "./content";
 import Header from "./header";
-import { Suspense } from "react";
 import Loading from "./loading";
-import NoSSR from "react-no-ssr";
 
 export const metadata: Metadata = {
   title: "Donald Richardson",

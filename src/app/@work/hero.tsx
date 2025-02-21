@@ -1,6 +1,6 @@
 "use client";
 import { WorkData } from "@/app/@work/workitems";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocomotiveScroll } from "@/lib/locomotive";
 import Image from "next/image";
 import { incrementEventHandlerCount } from "@/lib/state";

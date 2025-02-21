@@ -8,7 +8,6 @@ import {
   useMemo,
   useCallback,
   Profiler,
-  Suspense,
 } from "react";
 import clsx from "clsx";
 import FitVariable from "@/app/@home/fit";
@@ -28,7 +27,6 @@ import {
   useWaitWheel,
 } from "@/lib/customhooks";
 import NoSSR from "react-no-ssr";
-import Loading from "../loading";
 
 export type Effect = ({
   show,
@@ -389,7 +387,7 @@ export default function HomeRenderPage() {
             }
       )
     );
-  }, [effectDetails, active, text, effectIndex]);
+  }, [active, text, effectIndex]);
 
   return (
     <NoSSR>

@@ -9,7 +9,6 @@ import React, {
 import { LocomotiveScrollProvider } from "@/lib/locomotive";
 import { WaitWheelProvider } from "@/lib/customhooks";
 import ScrollDown from "./scrolldown";
-import NoSSR from "react-no-ssr";
 
 export const ScrollContext =
   createContext<RefObject<HTMLDivElement | null> | null>(null);
@@ -31,7 +30,7 @@ export default function Content({
       options={{
         repeat: true,
         smooth: true,
-        //@ts-expect-error
+        //@ts-expect-error lerp isn't defined in ts but it's used
         lerp: 0.1,
         getDirection: true,
         multiplier: 0.5,

@@ -23,7 +23,7 @@ export const useLineText = (text: string, size: number) => {
         });
       }
     }
-  }, [fonts, font, fontFetching]);
+  }, [fonts, font]);
 
   useEffect(() => {
     if (font) {

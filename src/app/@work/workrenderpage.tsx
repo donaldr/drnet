@@ -6,7 +6,6 @@ import {
   useRef,
   useState,
   Profiler,
-  Suspense,
 } from "react";
 import clsx from "clsx";
 import { WorkData } from "@/app/@work/workitems";
@@ -386,7 +385,6 @@ export default function WorkComponent({
           >
             <div className={titleClasses}>
               <Profiler id={`title-${index}`} onRender={profilerRender}>
-                {/*<Suspense>*/}
                 <NoSSR>
                   <Title
                     theme={work.theme || "dark"}
@@ -396,7 +394,6 @@ export default function WorkComponent({
                     {work.project}
                   </Title>
                 </NoSSR>
-                {/*</Suspense>*/}
               </Profiler>
             </div>
           </div>
@@ -408,7 +405,6 @@ export default function WorkComponent({
             }}
           >
             <Profiler id={`header-title-${index}`} onRender={profilerRender}>
-              {/*<Suspense>*/}
               <HeaderTitle
                 id={`work-${index!.toString()}-1`}
                 color={work.primaryColor}
@@ -418,7 +414,6 @@ export default function WorkComponent({
               >
                 {work.project}
               </HeaderTitle>
-              {/*</Suspense>*/}
             </Profiler>
             <div
               id={`work-${index}-reveal-title`}
@@ -447,7 +442,6 @@ export default function WorkComponent({
               }}
             >
               <Profiler id={`squares-${index}`} onRender={profilerRender}>
-                {/*<Suspense>*/}
                 <NoSSR>
                   <Squares
                     count={20}
@@ -462,9 +456,7 @@ export default function WorkComponent({
                     top={0}
                   />
                 </NoSSR>
-                {/*</Suspense>*/}
               </Profiler>
-              {/*<Suspense>*/}
               <NoSSR>
                 {desc.map((d, i) => (
                   <div
@@ -500,7 +492,6 @@ export default function WorkComponent({
                   </div>
                 ))}
               </NoSSR>
-              {/*</Suspense>*/}
             </div>
           </div>
           {work.video && (
@@ -515,9 +506,7 @@ export default function WorkComponent({
               }}
             >
               <Profiler id={`video-${index}`} onRender={profilerRender}>
-                {/*<Suspense>*/}
                 <Video work={work} index={index!} videoRef={videoRef} />
-                {/*</Suspense>*/}
               </Profiler>
             </div>
           )}
@@ -533,9 +522,7 @@ export default function WorkComponent({
               }}
             >
               <Profiler id={`video-pull-${index}`} onRender={profilerRender}>
-                {/*<Suspense>*/}
                 <VideoPull work={work} index={index!} videoRef={videoRef} />
-                {/*</Suspense>*/}
               </Profiler>
             </div>
           )}
@@ -547,7 +534,6 @@ export default function WorkComponent({
             }}
           >
             <Profiler id={`header-title-2-${index}`} onRender={profilerRender}>
-              {/*<Suspense>*/}
               <HeaderTitle
                 id={`work-${index!.toString()}-2`}
                 color="transparent"
@@ -559,11 +545,9 @@ export default function WorkComponent({
               >
                 {work.project}
               </HeaderTitle>
-              {/*</Suspense>*/}
             </Profiler>
           </div>
           <Profiler id={`detail-and-slides-${index}`} onRender={profilerRender}>
-            {/*<Suspense>*/}
             <NoSSR>
               <Detail
                 work={work}
@@ -572,7 +556,6 @@ export default function WorkComponent({
                 videoInView={videoInView}
               />
             </NoSSR>
-            {/*</Suspense>*/}
             <div
               data-scroll
               data-scroll-sticky
@@ -587,7 +570,6 @@ export default function WorkComponent({
               }}
             >
               <Profiler id={`slides-${index}`} onRender={profilerRender}>
-                {/*<Suspense>*/}
                 <NoSSR>
                   <Slides
                     work={work}
@@ -595,7 +577,6 @@ export default function WorkComponent({
                     setImageSrcCallbackRef={setImageSrcCallbackRef}
                   />
                 </NoSSR>
-                {/*</Suspense>*/}
               </Profiler>
             </div>
           </Profiler>
@@ -613,9 +594,7 @@ export default function WorkComponent({
             }}
           >
             <Profiler id={`outro-${index}`} onRender={profilerRender}>
-              {/*<Suspense>*/}
               <WorkOutro index={index} />
-              {/*</Suspense>*/}
             </Profiler>
           </div>
         </div>

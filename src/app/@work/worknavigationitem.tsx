@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { WorkData } from "./workitems";
 import clsx from "clsx";
 import { incrementEventHandlerCount, useGlobalState } from "@/lib/state";
