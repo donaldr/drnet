@@ -2,7 +2,10 @@
 
 export default function Loading() {
   return (
-    <div className="absolute w-[100dvw] h-[100dvh] bg-[var(--dark)] light-grain top-0 left-0 flex items-center justify-center">
+    <div
+      id="loading"
+      className="absolute w-[100dvw] h-[100dvh] bg-[var(--dark)] light-grain top-0 left-0 flex items-center justify-center"
+    >
       <div className="h-[4em] py-4 animate-pulse">
         <svg
           xmlns="http://www.w3.org/2000/svg"
