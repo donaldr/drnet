@@ -9,9 +9,13 @@ import { useThrottle } from "@/lib/customhooks";
 export default function WorkNavigationItem({
   work,
   index,
+  parentHover,
+  setParentHover,
 }: Readonly<{
   work: WorkData;
   index: number;
+  parentHover: boolean;
+  setParentHover: React.Dispatch<React.SetStateAction<boolean>>;
 }>) {
   const [hover, setHover] = useState(false);
   const hoverRef = useRef(hover);
@@ -49,9 +53,22 @@ export default function WorkNavigationItem({
     hoverRef.current = hover;
   }, [hover]);
 
+  useEffect(() => {
+    setHover((hover) => {
+      if (hover && !parentHover) {
+        if (showTextRef.current) clearTimeout(showTextRef.current);
+        setShowText(false);
+        return false;
+      } else {
+        return hover;
+      }
+    });
+  }, [parentHover]);
+
   const pointerDown = useCallback(
     (e: React.PointerEvent<HTMLElement>) => {
       if (e.pointerType == "touch" && !hoverRef.current) {
+        setParentHover(true);
         setHover(true);
         if (showTextRef.current) clearTimeout(showTextRef.current);
         showTextRef.current = setTimeout(() => {

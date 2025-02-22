@@ -21,6 +21,7 @@ export default function WorkNavigator({
   const [active, setActive] = useState(false);
   const [moving, setMoving] = useState(false);
   const [hover, setHover] = useState(false);
+  const hoverRef = useRef(hover);
 
   const [workNavigatorClasses, setWorkNavigatorClasses] = useState(
     "opacity-0 transition-[opacity]"
@@ -32,6 +33,10 @@ export default function WorkNavigator({
   const { scroll } = useLocomotiveScroll();
 
   useEffect(() => {
+    hoverRef.current = hover;
+  }, [hover]);
+
+  useEffect(() => {
     if (activeName) {
       setActive(!!activeName.match(/work-\d+/));
     } else {
@@ -39,21 +44,23 @@ export default function WorkNavigator({
     }
   }, [activeName]);
 
-  const mousemove = useCallback((e: MouseEvent) => {
-    mouseRef.current.x = e.clientX;
-    mouseRef.current.y = e.clientY;
-    if (!stoppingMoveRef.current) {
-      if (moveRef.current) {
-        clearTimeout(moveRef.current);
-      }
-      setMoving(true);
-      moveRef.current = setTimeout(() => {
-        setMoving(false);
-        stoppingMoveRef.current = true;
-        setTimeout(() => {
-          stoppingMoveRef.current = false;
+  const pointermove = useCallback((e: PointerEvent) => {
+    if (e.pointerType == "mouse") {
+      mouseRef.current.x = e.clientX;
+      mouseRef.current.y = e.clientY;
+      if (!stoppingMoveRef.current) {
+        if (moveRef.current) {
+          clearTimeout(moveRef.current);
+        }
+        setMoving(true);
+        moveRef.current = setTimeout(() => {
+          setMoving(false);
+          stoppingMoveRef.current = true;
+          setTimeout(() => {
+            stoppingMoveRef.current = false;
+          }, 500);
         }, 500);
-      }, 500);
+      }
     }
   }, []);
 
@@ -70,14 +77,14 @@ export default function WorkNavigator({
     }
 
     if (active) {
-      incrementEventHandlerCount("mousemove-worknav");
-      document.addEventListener("mousemove", mousemove);
+      incrementEventHandlerCount("pointermove-worknav");
+      document.addEventListener("pointermove", pointermove);
     }
     return () => {
-      decrementEventHandlerCount("mousemove-worknav");
-      document.removeEventListener("mousemove", mousemove);
+      decrementEventHandlerCount("pointermove-worknav");
+      document.removeEventListener("pointermove", pointermove);
     };
-  }, [active, mousemove]);
+  }, [active, pointermove]);
 
   useEffect(() => {
     if (scroll) {
@@ -114,6 +121,31 @@ export default function WorkNavigator({
     );
   }, [active, show, moving, hover]);
 
+  const pointerDownElsewhere = useCallback((e: PointerEvent) => {
+    const target: HTMLElement = e.target as HTMLElement;
+    if (
+      e.pointerType == "touch" &&
+      hoverRef.current &&
+      (!target || target.closest("#work-navigator"))
+    ) {
+      console.log("hover false!");
+      setHover(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.addEventListener(
+      "pointerdown",
+      pointerDownElsewhere
+    );
+    return () => {
+      document.documentElement.removeEventListener(
+        "pointerdown",
+        pointerDownElsewhere
+      );
+    };
+  }, [pointerDownElsewhere]);
+
   return (
     <div
       id="work-navigator-container"
@@ -121,8 +153,16 @@ export default function WorkNavigator({
       data-scroll
       data-scroll-sticky
       data-scroll-target="#full"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      onPointerEnter={(e: React.PointerEvent<HTMLElement>) => {
+        if (e.pointerType == "mouse") {
+          setHover(true);
+        }
+      }}
+      onPointerLeave={(e: React.PointerEvent<HTMLElement>) => {
+        if (e.pointerType == "mouse") {
+          setHover(false);
+        }
+      }}
     >
       <div
         id="work-navigator"
@@ -132,7 +172,13 @@ export default function WorkNavigator({
       >
         {works &&
           works.map((work, index) => (
-            <WorkNavigationItem key={work.project} work={work} index={index} />
+            <WorkNavigationItem
+              parentHover={hover}
+              setParentHover={setHover}
+              key={work.project}
+              work={work}
+              index={index}
+            />
           ))}
       </div>
     </div>
