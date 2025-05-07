@@ -6,7 +6,7 @@ import { EffectComposer, FXAA } from "@react-three/postprocessing";
 import { OrthographicCamera } from "@react-three/drei";
 import { ShaderMaterial } from "./material";
 import NoSSR from "react-no-ssr";
-import RaymarchingUI, { Uniforms } from "./ui";
+import RaymarchingUI, { UiData } from "./ui";
 
 function useWindowSize() {
   const [size, setSize] = useState({ innerWidth: 400, innerHeight: 400 });
@@ -46,7 +46,7 @@ function debounce<T extends (...args: any[]) => any>(
 export default function ShaderCanvas() {
   const { innerWidth, innerHeight } = useWindowSize();
   const [key, setKey] = useState(`${innerWidth}-${innerHeight}`);
-  const [uiUniforms, setUniforms] = useState<Uniforms>();
+  const [uiUniforms, setUniforms] = useState<UiData>();
 
   // The shaders tend to be brittle and tend to break when we
   // change the window size or the underlying shader material.

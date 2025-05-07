@@ -104,33 +104,6 @@ export interface UiData {
   lights: Light[];
 }
 
-function deepAssignLiterals(target: any, source: any) {
-  for (const key in target) {
-    if (!source.hasOwnProperty(key)) continue;
-
-    const tVal = target[key];
-    const sVal = source[key];
-
-    const tType = typeof tVal;
-    const sType = typeof sVal;
-
-    if (tType === "object" && sType === "object" && tVal && sVal) {
-      deepAssignLiterals(tVal, sVal);
-    } else if (isLiteral(sVal)) {
-      target[key] = sVal;
-    }
-  }
-}
-
-function isLiteral(val: any) {
-  return (
-    typeof val === "string" ||
-    typeof val === "number" ||
-    typeof val === "boolean" ||
-    val === null
-  );
-}
-
 export class RaymarchingUI {
   container: HTMLElement;
   pane: Pane;
