@@ -10,8 +10,8 @@ import {
   Profiler,
 } from "react";
 import clsx from "clsx";
-import FitVariable from "@/app/@home/fit";
-import Chop from "@/app/@home/chop";
+import FitVariable from "@/app/(default)/@home/fit";
+import Chop from "@/app/(default)/@home/chop";
 import React from "react";
 import Footer from "./footer";
 import { useLocomotiveScroll } from "@/lib/locomotive";

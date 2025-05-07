@@ -1,5 +1,5 @@
 "use client";
-import { WorkData } from "@/app/@work/workitems";
+import { WorkData } from "@/app/(default)/@work/workitems";
 import { RefObject, useEffect, useState } from "react";
 import { useLocomotiveScroll } from "@/lib/locomotive";
 import { useThrottle } from "@/lib/customhooks";

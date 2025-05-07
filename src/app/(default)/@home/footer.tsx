@@ -6,10 +6,10 @@ import {
 } from "./homerenderpage";
 import Markdown from "react-markdown";
 import Image from "next/image";
-import play from "../../../public/icons/play.svg";
-import pause from "../../../public/icons/pause.svg";
-import next from "../../../public/icons/next.svg";
-import back from "../../../public/icons/back.svg";
+import play from "@/../public/icons/play.svg";
+import pause from "@/../public/icons/pause.svg";
+import next from "@/../public/icons/next.svg";
+import back from "@/../public/icons/back.svg";
 import { useLayoutEffect, useState } from "react";
 import clsx from "clsx";
 

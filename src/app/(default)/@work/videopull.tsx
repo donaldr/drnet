@@ -1,5 +1,5 @@
 "use client";
-import { WorkData } from "@/app/@work/workitems";
+import { WorkData } from "@/app/(default)/@work/workitems";
 import {
   RefObject,
   useCallback,

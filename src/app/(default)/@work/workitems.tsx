@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
-import Work from "@/app/@work/work";
-import WorkIntro from "@/app/@work/workintro";
+import Work from "@/app/(default)/@work/work";
+import WorkIntro from "@/app/(default)/@work/workintro";
 import WorkNavigator from "./worknavigator";
 
 export interface WorkData {
@@ -33,11 +33,11 @@ export interface WorkData {
 
 export default async function WorkItems() {
   const baseFile = await fs.readFile(
-    process.cwd() + "/src/app/@work/data.base.json",
+    process.cwd() + "/src/app/(default)/@work/data.base.json",
     "utf8"
   );
   const assetsFile = await fs.readFile(
-    `${process.cwd()}/src/app/@work/data.${
+    `${process.cwd()}/src/app/(default)/@work/data.${
       process.env.NODE_ENV == "production" ? "prod" : "dev"
     }.json`,
     "utf8"
