@@ -93,7 +93,7 @@ export interface Light {
   pos: Vec3;
 }
 
-export interface Uniforms {
+export interface UiData {
   globals: GlobalSettings;
   shapes: Shape[];
   materials: Material[];
@@ -128,23 +128,43 @@ function isLiteral(val: any) {
 }
 
 export class RaymarchingUI {
+  container: HTMLElement;
   pane: Pane;
-  globals: GlobalSettings;
+  globals: GlobalSettings = {} as GlobalSettings;
   shapes: Shape[] = [];
   materials: Material[] = [];
   lights: Light[] = [];
   shapeFolder: FolderApi | null = null;
   materialFolder: FolderApi | null = null;
   lightFolder: FolderApi | null = null;
-  setUniforms?: React.Dispatch<React.SetStateAction<Uniforms | undefined>>;
+  setUniforms?: React.Dispatch<React.SetStateAction<UiData | undefined>>;
 
   constructor(
-    container?: HTMLElement,
-    setUniforms?: React.Dispatch<React.SetStateAction<Uniforms | undefined>>
+    container: HTMLElement,
+    setUniforms?: React.Dispatch<React.SetStateAction<UiData | undefined>>
   ) {
     this.pane = new Pane({
       title: "Raymarching Config",
       container: container ?? undefined,
+    });
+
+    const stored = localStorage.getItem("uidata");
+    let data;
+    if (stored) {
+      data = JSON.parse(stored) as UiData;
+    }
+    this.container = container;
+    this.setUniforms = setUniforms;
+
+    this.rebuild(data);
+    if (!stored) {
+      this.save();
+    }
+  }
+
+  rebuild(data?: UiData) {
+    this.pane.children.forEach((child) => {
+      this.pane.remove(child);
     });
 
     this.globals = {
@@ -156,9 +176,9 @@ export class RaymarchingUI {
       giStrength: 0.01,
       aoStrength: 0.4,
       camTgt: { x: 0, y: 0, z: 0 },
-      camHeight: 1.0,
-      camDist: 1.0,
-      orbit: 0.0,
+      camHeight: 5.0,
+      camDist: 5.0,
+      orbit: 1.0,
     };
 
     this.shapes = [this.defaultShape(0)];
@@ -166,16 +186,12 @@ export class RaymarchingUI {
     floorMaterial.name = "Floor Material";
     this.materials = [floorMaterial, this.defaultMaterial()];
     this.lights = [this.defaultLight(LightType.OMNI)];
-    this.setUniforms = setUniforms;
 
-    const uniforms = localStorage.getItem("uniforms");
-
-    if (uniforms) {
-      const parsedUniforms = JSON.parse(uniforms) as Uniforms;
-      this.globals = Object.assign(this.globals, parsedUniforms.globals);
-      this.shapes = Object.assign(this.shapes, parsedUniforms.shapes);
-      this.materials = Object.assign(this.materials, parsedUniforms.materials);
-      this.lights = Object.assign(this.lights, parsedUniforms.lights);
+    if (data) {
+      this.globals = Object.assign(this.globals, data.globals);
+      this.shapes = Object.assign(this.shapes, data.shapes);
+      this.materials = Object.assign(this.materials, data.materials);
+      this.lights = Object.assign(this.lights, data.lights);
     }
 
     this.pane.addButton({ title: "Export" }).on("click", () => {
@@ -214,11 +230,7 @@ export class RaymarchingUI {
         reader.onload = (e) => {
           try {
             const json = JSON.parse(e.target!.result as string);
-            deepAssignLiterals(this.globals, json.globals);
-            deepAssignLiterals(this.shapes, json.shapes);
-            deepAssignLiterals(this.materials, json.materials);
-            deepAssignLiterals(this.lights, json.lights);
-            this.pane.refresh();
+            this.rebuild(json);
           } catch (err) {
             console.error("Invalid JSON:", err);
           }
@@ -235,8 +247,8 @@ export class RaymarchingUI {
     this.setupShapesFolder();
     this.setupMaterialsFolder();
     this.setupLightsFolder();
-    if (setUniforms) {
-      setUniforms({
+    if (this.setUniforms) {
+      this.setUniforms({
         globals: this.globals,
         shapes: this.shapes,
         materials: this.materials,
@@ -258,7 +270,7 @@ export class RaymarchingUI {
       });
     }
     localStorage.setItem(
-      "uniforms",
+      "uidata",
       JSON.stringify({
         globals: this.globals,
         shapes: this.shapes,
@@ -721,7 +733,12 @@ export class RaymarchingUI {
       step: 0.01,
       label: "Index of Refraction",
     });
-    f.addBinding(mat, "reflectivity", { min: 0, max: 1, step: 0.01 });
+    f.addBinding(mat, "reflectivity", {
+      min: 0,
+      max: 1,
+      step: 0.01,
+      label: "Reflectivity",
+    });
     mat.intRef = mat.intRef ?? false;
     f.addBinding(mat, "intRef", { label: "Internal Reflection" });
     f.addBinding(mat, "roughness", {
@@ -870,7 +887,7 @@ export class RaymarchingUI {
       n: { x: 0, y: 0, z: 0 },
       pos: { x: 0, y: 0.5, z: 0 },
       h: 0,
-      r: 0,
+      r: 0.5,
       r1: 0,
       r2: 0,
       mat: 1,
@@ -885,7 +902,7 @@ export class RaymarchingUI {
       color: { r: 1, g: 1, b: 1 },
       innerColor: { r: 1, g: 1, b: 1 },
       glowColor: { r: 1, g: 1, b: 1 },
-      kd: 1,
+      kd: 0.5,
       ior: 1.5,
       reflectivity: 0.5,
       intRef: false,
@@ -916,7 +933,7 @@ export class RaymarchingUI {
 const RaymarchingUIWrapper = ({
   setUniforms,
 }: Readonly<{
-  setUniforms?: React.Dispatch<React.SetStateAction<Uniforms | undefined>>;
+  setUniforms?: React.Dispatch<React.SetStateAction<UiData | undefined>>;
 }>) => {
   // This component wraps the RaymarchingUI and handles the rendering
   // of the UI in a React-friendly way. It uses a ref to attach the UI
