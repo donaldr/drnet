@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from "react";
 import { Pane, FolderApi } from "tweakpane";
 import * as THREE from "three";
+import { v4 as uuidv4 } from "uuid";
 
 type Vec2 = { x: number; y: number };
 type Vec3 = { x: number; y: number; z: number };
@@ -61,6 +62,7 @@ export interface Shape {
   r2?: number;
   mat?: number;
   rot: Vec3;
+  uuid: string;
 }
 
 export interface Material {
@@ -81,6 +83,7 @@ export interface Material {
   attenuation: number;
   attenuationStrength: number;
   glow: number;
+  uuid: string;
 }
 
 export interface Light {
@@ -91,6 +94,7 @@ export interface Light {
   r: number;
   dir: Vec3;
   pos: Vec3;
+  uuid: string;
 }
 
 export interface UiData {
@@ -184,6 +188,7 @@ export class RaymarchingUI {
     this.shapes = [this.defaultShape(0)];
     const floorMaterial = this.defaultMaterial();
     floorMaterial.name = "Floor Material";
+    floorMaterial.uuid = "FLOOR";
     this.materials = [floorMaterial, this.defaultMaterial()];
     this.lights = [this.defaultLight(LightType.OMNI)];
 
@@ -636,8 +641,8 @@ export class RaymarchingUI {
     });
   }
 
-  addShape(shape: Shape, idx: number) {
-    const f = this.shapeFolder!.addFolder({ title: `Shape ${idx}` });
+  addShape(shape: Shape) {
+    const f = this.shapeFolder!.addFolder({ title: `Shape ${shape.uuid}` });
     f.addBinding(shape, "type", {
       options: Object.keys(ShapeType)
         .filter((v) => isNaN(Number(v)) === false)
@@ -663,11 +668,14 @@ export class RaymarchingUI {
     });
     this.addShapeMaterial(f, shape);
 
-    if (idx !== 0) {
+    if (shape.uuid !== "DEFAULT") {
       const rmBtn = f.addButton({ title: "Remove" });
       rmBtn.on("click", () => {
         if (this.shapes.length <= 1) return;
-        this.shapes.splice(idx, 1);
+        this.shapes.splice(
+          this.shapes.findIndex((el) => el.uuid == shape.uuid),
+          1
+        );
         this.globals.numberOfShapes = this.shapes.length;
         this.shapeFolder!.remove(f);
         this.pane.refresh();
@@ -686,14 +694,22 @@ export class RaymarchingUI {
       const id = this.shapes.length;
       const shape = this.defaultShape(id);
       this.shapes.push(shape);
-      this.addShape(shape, id);
+      shape.uuid = uuidv4();
+      this.addShape(shape);
       this.globals.numberOfShapes = this.shapes.length;
       this.pane.refresh();
       this.save();
     });
 
-    this.shapes.forEach((shape, idx) => {
-      this.addShape(shape, idx);
+    this.shapes.forEach((shape, index) => {
+      if (!shape.uuid) {
+        if (index == 0) {
+          shape.uuid = "DEFAULT";
+        } else {
+          shape.uuid = uuidv4();
+        }
+      }
+      this.addShape(shape);
     });
   }
 
@@ -711,8 +727,8 @@ export class RaymarchingUI {
     });
   }
 
-  addMaterial(mat: Material, idx: number) {
-    const f = this.materialFolder!.addFolder({ title: `Material ${idx}` });
+  addMaterial(mat: Material) {
+    const f = this.materialFolder!.addFolder({ title: `Material ${mat.uuid}` });
     f.addBinding(mat, "name", { label: "Name" }).on("change", () => {
       this.updateShapeMaterial();
     });
@@ -786,11 +802,14 @@ export class RaymarchingUI {
       label: "Attenuation Strength",
     });
 
-    if (idx >= 2) {
+    if (mat.uuid != "DEFAULT" && mat.uuid != "FLOOR") {
       const rmBtn = f.addButton({ title: "Remove" });
       rmBtn.on("click", () => {
         if (this.materials.length <= 1) return;
-        this.materials.splice(idx, 1);
+        this.materials.splice(
+          this.materials.findIndex((el) => el.uuid == mat.uuid),
+          1
+        );
         this.globals.numberOfMaterials = this.materials.length;
         this.materialFolder!.remove(f);
         this.updateShapeMaterial();
@@ -807,7 +826,8 @@ export class RaymarchingUI {
     addBtn.on("click", () => {
       const material = this.defaultMaterial();
       material.name = `Material ${this.materials.length}`;
-      this.addMaterial(material, this.materials.length);
+      material.uuid = uuidv4();
+      this.addMaterial(material);
       this.materials.push(material);
       this.updateShapeMaterial();
       this.globals.numberOfMaterials = this.materials.length;
@@ -815,13 +835,22 @@ export class RaymarchingUI {
       this.save();
     });
 
-    this.materials.forEach((mat, idx) => {
-      this.addMaterial(mat, idx);
+    this.materials.forEach((mat, index) => {
+      if (!mat.uuid) {
+        if (index == 0) {
+          mat.uuid = "FLOOR";
+        } else if (index == 1) {
+          mat.uuid = "DEFAULT";
+        } else {
+          mat.uuid = uuidv4();
+        }
+      }
+      this.addMaterial(mat);
     });
   }
 
-  addLight(light: Light, idx: number) {
-    const f = this.lightFolder!.addFolder({ title: `Light ${idx}` });
+  addLight(light: Light) {
+    const f = this.lightFolder!.addFolder({ title: `Light ${light.uuid}` });
     f.addBinding(light, "type", {
       label: "Type",
       options: Object.keys(LightType)
@@ -842,11 +871,14 @@ export class RaymarchingUI {
     f.addBinding(light, "ranged", { label: "Ranged" });
     f.addBinding(light, "r", { min: 0, max: 10, label: "Radius" });
 
-    if (idx !== 0) {
+    if (light.uuid !== "DEFAULT") {
       const rmBtn = f.addButton({ title: "Remove" });
       rmBtn.on("click", () => {
         if (light.type === LightType.OMNI || this.lights.length <= 1) return;
-        this.lights.splice(idx, 1);
+        this.lights.splice(
+          this.lights.findIndex((el) => el.uuid == light.uuid),
+          1
+        );
         this.globals.numberOfLights = this.lights.length;
         this.lightFolder!.remove(f);
         this.pane.refresh();
@@ -864,15 +896,23 @@ export class RaymarchingUI {
       const light = this.defaultLight(
         hasOmni ? LightType.POINT : LightType.OMNI
       );
-      this.addLight(light, this.lights.length);
+      light.uuid = uuidv4();
+      this.addLight(light);
       this.lights.push(light);
       this.globals.numberOfLights = this.lights.length;
       this.pane.refresh();
       this.save();
     });
 
-    this.lights.forEach((light, idx) => {
-      this.addLight(light, idx);
+    this.lights.forEach((light, index) => {
+      if (!light.uuid) {
+        if (index == 0) {
+          light.uuid = "DEFAULT";
+        } else {
+          light.uuid = uuidv4();
+        }
+      }
+      this.addLight(light);
     });
   }
 
@@ -892,6 +932,7 @@ export class RaymarchingUI {
       r2: 0,
       mat: 1,
       rot: { x: 0, y: 0, z: 0 },
+      uuid: "DEFAULT",
     };
   }
 
@@ -914,6 +955,7 @@ export class RaymarchingUI {
       attenuation: 0.0,
       attenuationStrength: 0.0,
       glow: 0.0,
+      uuid: "DEFAULT",
     };
   }
 
@@ -926,6 +968,7 @@ export class RaymarchingUI {
       r: 5.0,
       dir: { x: 0, y: 0, z: 0 },
       pos: { x: 0, y: 0, z: 0 },
+      uuid: "DEFAULT",
     };
   }
 }

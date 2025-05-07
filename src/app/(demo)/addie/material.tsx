@@ -8,7 +8,7 @@ import * as THREE from "three";
 import fragmentShader from "./addie.frag";
 import vertexShader from "./addie.vert";
 
-import { Uniforms, type Shape, type Material, type Light } from "./ui";
+import { UiData, type Shape, type Material, type Light } from "./ui";
 
 const MAX_SHAPES = 20;
 const MAX_MATERIALS = 20;
@@ -17,7 +17,7 @@ const MAX_LIGHTS = 5;
 export function ShaderMaterial({
   uiUniforms,
 }: Readonly<{
-  uiUniforms: Uniforms;
+  uiUniforms: UiData;
 }>) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
