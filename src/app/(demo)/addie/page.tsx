@@ -8,7 +8,7 @@ import { ShaderMaterial } from "./material";
 import NoSSR from "react-no-ssr";
 import RaymarchingUI, { Uniforms } from "./ui";
 
-export function useWindowSize() {
+function useWindowSize() {
   const [size, setSize] = useState({ innerWidth: 400, innerHeight: 400 });
 
   useEffect(() => {
@@ -160,7 +160,7 @@ export default function ShaderCanvas() {
             </p>
             <h2>GI Length</h2>
             <p>
-              This stands for Global Illumination length. It's how far a ray
+              This stands for Global Illumination length. It is how far a ray
               goes to determine global illumination. See <i>GI Strength</i> and{" "}
               <i>AO Strength</i> for more details.
             </p>
@@ -232,7 +232,7 @@ export default function ShaderCanvas() {
             <h2>Shape Properties</h2>
             <p>
               Each shape has a set of properties that are specific to the shape.
-              If when creating a shape you can't see it, it may be that one of
+              If when creating a shape you cannot see it, it may be that one of
               these settings is set to zero.
             </p>
             <h1>Materials</h1>
@@ -260,9 +260,9 @@ export default function ShaderCanvas() {
             </p>
             <h2>Index of Refraction</h2>
             <p>
-              This is how "bendy" the light behaves in a transparent material. A
-              value of 1 does not bend the light at all. Glass has a value of
-              1.5.
+              This is how <i>bendy</i> the light behaves in a transparent
+              material. A value of 1 does not bend the light at all. Glass has a
+              value of 1.5.
             </p>
             <h2>Reflectivity</h2>
             <p>

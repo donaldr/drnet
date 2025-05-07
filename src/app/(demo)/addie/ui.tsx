@@ -806,6 +806,7 @@ export class RaymarchingUI {
   addLight(light: Light, idx: number) {
     const f = this.lightFolder!.addFolder({ title: `Light ${idx}` });
     f.addBinding(light, "type", {
+      label: "Type",
       options: Object.keys(LightType)
         .filter((v) => isNaN(Number(v)) === false)
         .map((v) => ({ text: LightType[parseInt(v)], value: parseInt(v) })),
@@ -932,7 +933,7 @@ const RaymarchingUIWrapper = ({
         // Perform any necessary cleanup of the RaymarchingUI instance if needed
       };
     }
-  }, []);
+  }, [setUniforms]);
 
   return <div ref={containerRef} />; // This is where the UI will be rendered
 };
