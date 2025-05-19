@@ -36,6 +36,8 @@ const nextConfig: NextConfig = {
     });
     if (options.isServer) {
       config.resolve.alias["paper"] = false;
+    } else {
+      config.resolve.fallback.fs = false;
     }
 
     return config;

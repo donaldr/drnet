@@ -33,11 +33,22 @@ export enum LightType {
   POINT = 2,
 }
 
+export enum PerformanceMode {
+  STEP_COUNT = 0,
+  EFFICIENCY = 1,
+  TERMINATION = 2,
+  STALLS = 3,
+  PROXIMITY = 4,
+}
+
 export interface GlobalSettings {
+  perf: "LOW" | "MEDIUM" | "HIGH";
   numberOfShapes: number;
   numberOfMaterials: number;
   numberOfLights: number;
   maxRays: number;
+  marchingSteps: number;
+  distanceThreshold: number;
   giLength: number;
   giStrength: number;
   aoStrength: number;
@@ -45,6 +56,14 @@ export interface GlobalSettings {
   camHeight: number;
   camDist: number;
   orbit: number;
+  globalIllumination: boolean;
+  reflection: boolean;
+  transparency: boolean;
+  lighting: boolean;
+  showPerformance: boolean;
+  perfMode: number;
+  perfScale: number;
+  showBoxes: boolean;
 }
 
 export interface Shape {
@@ -104,6 +123,10 @@ export interface UiData {
   lights: Light[];
 }
 
+export interface TemplateData {
+  shapes: any[];
+}
+
 export class RaymarchingUI {
   container: HTMLElement;
   pane: Pane;
@@ -115,10 +138,16 @@ export class RaymarchingUI {
   materialFolder: FolderApi | null = null;
   lightFolder: FolderApi | null = null;
   setUniforms?: React.Dispatch<React.SetStateAction<UiData | undefined>>;
+  setTemplateVariables?: React.Dispatch<
+    React.SetStateAction<TemplateData | undefined>
+  >;
 
   constructor(
     container: HTMLElement,
-    setUniforms?: React.Dispatch<React.SetStateAction<UiData | undefined>>
+    setUniforms?: React.Dispatch<React.SetStateAction<UiData | undefined>>,
+    setTemplateVariables?: React.Dispatch<
+      React.SetStateAction<TemplateData | undefined>
+    >
   ) {
     this.pane = new Pane({
       title: "Raymarching Config",
@@ -132,6 +161,7 @@ export class RaymarchingUI {
     }
     this.container = container;
     this.setUniforms = setUniforms;
+    this.setTemplateVariables = setTemplateVariables;
 
     this.rebuild(data);
     if (!stored) {
@@ -145,10 +175,13 @@ export class RaymarchingUI {
     });
 
     this.globals = {
+      perf: "LOW",
       numberOfShapes: 1,
       numberOfMaterials: 1,
       numberOfLights: 1,
       maxRays: 10,
+      marchingSteps: 150,
+      distanceThreshold: 0.0001,
       giLength: 0.6,
       giStrength: 0.01,
       aoStrength: 0.4,
@@ -156,6 +189,14 @@ export class RaymarchingUI {
       camHeight: 5.0,
       camDist: 5.0,
       orbit: 1.0,
+      globalIllumination: true,
+      reflection: true,
+      transparency: true,
+      lighting: true,
+      showPerformance: false,
+      perfMode: 0,
+      perfScale: 1.0,
+      showBoxes: false,
     };
 
     this.shapes = [this.defaultShape(0)];
@@ -225,12 +266,35 @@ export class RaymarchingUI {
     this.setupShapesFolder();
     this.setupMaterialsFolder();
     this.setupLightsFolder();
-    if (this.setUniforms) {
+    if (this.setUniforms && this.setTemplateVariables) {
       this.setUniforms({
         globals: this.globals,
         shapes: this.shapes,
         materials: this.materials,
         lights: this.lights,
+      });
+      const shapes: any[] = [];
+      this.shapes.forEach((shape) => {
+        shapes.push({
+          ...shape,
+          rot: new THREE.Matrix3()
+            .setFromMatrix4(
+              new THREE.Matrix4()
+                .makeRotationFromEuler(
+                  new THREE.Euler(
+                    (shape.rot.x / 180) * Math.PI,
+                    (shape.rot.y / 180) * Math.PI,
+                    (shape.rot.z / 180) * Math.PI
+                  )
+                )
+                .invert()
+            )
+            .toArray(),
+          isRot: shape.rot.x != 0 || shape.rot.y != 0 || shape.rot.z != 0,
+        });
+      });
+      this.setTemplateVariables({
+        shapes,
       });
     }
     this.pane.on("change", () => {
@@ -239,12 +303,35 @@ export class RaymarchingUI {
   }
 
   save() {
-    if (this.setUniforms) {
+    if (this.setUniforms && this.setTemplateVariables) {
       this.setUniforms({
         globals: this.globals,
         shapes: this.shapes,
         materials: this.materials,
         lights: this.lights,
+      });
+      const shapes: any[] = [];
+      this.shapes.forEach((shape) => {
+        shapes.push({
+          ...shape,
+          rot: new THREE.Matrix3()
+            .setFromMatrix4(
+              new THREE.Matrix4()
+                .makeRotationFromEuler(
+                  new THREE.Euler(
+                    (shape.rot.x / 180) * Math.PI,
+                    (shape.rot.y / 180) * Math.PI,
+                    (shape.rot.z / 180) * Math.PI
+                  )
+                )
+                .invert()
+            )
+            .toArray(),
+          isRot: shape.rot.x != 0 || shape.rot.y != 0 || shape.rot.z != 0,
+        });
+      });
+      this.setTemplateVariables({
+        shapes,
       });
     }
     localStorage.setItem(
@@ -260,11 +347,35 @@ export class RaymarchingUI {
 
   setupGlobalFolder() {
     const f = this.pane.addFolder({ title: "Global Settings" });
+    this.globals.perf = this.globals.perf || "LOW";
+    f.addBinding(this.globals, "perf", {
+      label: "Detail",
+      options: [
+        { text: "Low", value: "LOW" },
+        { text: "Medium", value: "MEDIUM" },
+        { text: "High", value: "HIGH" },
+      ],
+    });
+    this.globals.maxRays = this.globals.maxRays || 16;
     f.addBinding(this.globals, "maxRays", {
       min: 1,
       max: 40,
       step: 1,
       label: "Max Rays",
+    });
+    this.globals.marchingSteps = this.globals.marchingSteps || 150;
+    f.addBinding(this.globals, "marchingSteps", {
+      min: 0,
+      max: 200,
+      step: 1,
+      label: "Marching Steps",
+    });
+    this.globals.distanceThreshold = this.globals.distanceThreshold || 0.0001;
+    f.addBinding(this.globals, "distanceThreshold", {
+      min: 0.00001,
+      max: 0.001,
+      step: 0.00001,
+      label: "Distance Threshold",
     });
     f.addBinding(this.globals, "giLength", {
       min: 0,
@@ -305,6 +416,67 @@ export class RaymarchingUI {
       max: 2.0,
       step: 0.1,
       label: "Orbit",
+    });
+    f.addBlade({
+      view: "separator",
+    });
+    this.globals.globalIllumination =
+      this.globals.globalIllumination === undefined
+        ? false
+        : this.globals.globalIllumination;
+    f.addBinding(this.globals, "globalIllumination", {
+      label: "Global Illumination",
+    });
+    this.globals.reflection =
+      this.globals.reflection === undefined ? false : this.globals.reflection;
+    f.addBinding(this.globals, "reflection", {
+      label: "Reflection",
+    });
+    this.globals.transparency =
+      this.globals.transparency === undefined
+        ? false
+        : this.globals.transparency;
+    f.addBinding(this.globals, "transparency", {
+      label: "Transparency",
+    });
+    this.globals.lighting =
+      this.globals.lighting === undefined ? false : this.globals.lighting;
+    f.addBinding(this.globals, "lighting", {
+      label: "Lighting",
+    });
+    f.addBlade({
+      view: "separator",
+    });
+    this.globals.showPerformance =
+      this.globals.showPerformance === undefined
+        ? false
+        : this.globals.showPerformance;
+    f.addBinding(this.globals, "showPerformance", {
+      label: "Show Debug",
+    });
+    this.globals.perfMode =
+      this.globals.perfMode === undefined ? 0 : this.globals.perfMode;
+    f.addBinding(this.globals, "perfMode", {
+      label: "Debug Mode",
+      options: Object.keys(PerformanceMode)
+        .filter((v) => isNaN(Number(v)) === false)
+        .map((v) => ({
+          text: PerformanceMode[parseInt(v)],
+          value: parseInt(v),
+        })),
+    });
+    this.globals.perfScale =
+      this.globals.perfScale === undefined ? 1.0 : this.globals.perfScale;
+    f.addBinding(this.globals, "perfScale", {
+      min: 0.0,
+      max: 2.0,
+      step: 0.1,
+      label: "Heatmap Scale",
+    });
+    this.globals.showBoxes =
+      this.globals.showBoxes === undefined ? false : this.globals.showBoxes;
+    f.addBinding(this.globals, "showBoxes", {
+      label: "Show Boxes",
     });
   }
 
@@ -479,7 +651,7 @@ export class RaymarchingUI {
           shape.r1 = 0.125;
         }
         if (shape.h === undefined) {
-          shape.h = 1.0;
+          shape.h = 0.1;
         }
         f.addBinding(shape, "r", {
           label: "Radius",
@@ -948,8 +1120,12 @@ export class RaymarchingUI {
 
 const RaymarchingUIWrapper = ({
   setUniforms,
+  setTemplateVariables,
 }: Readonly<{
   setUniforms?: React.Dispatch<React.SetStateAction<UiData | undefined>>;
+  setTemplateVariables?: React.Dispatch<
+    React.SetStateAction<TemplateData | undefined>
+  >;
 }>) => {
   // This component wraps the RaymarchingUI and handles the rendering
   // of the UI in a React-friendly way. It uses a ref to attach the UI
@@ -959,14 +1135,18 @@ const RaymarchingUIWrapper = ({
   useEffect(() => {
     if (containerRef.current) {
       // Initialize the RaymarchingUI instance and pass the container reference
-      new RaymarchingUI(containerRef.current, setUniforms);
+      new RaymarchingUI(
+        containerRef.current,
+        setUniforms,
+        setTemplateVariables
+      );
 
       // Cleanup when the component is unmounted
       return () => {
         // Perform any necessary cleanup of the RaymarchingUI instance if needed
       };
     }
-  }, [setUniforms]);
+  }, [setUniforms, setTemplateVariables]);
 
   return <div ref={containerRef} />; // This is where the UI will be rendered
 };

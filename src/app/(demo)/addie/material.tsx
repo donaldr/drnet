@@ -5,22 +5,37 @@ import { useRef, useState, useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-import fragmentShader from "./addie.frag";
+import fragmentShaderTemplate from "./addie.frag";
 import vertexShader from "./addie.vert";
 
-import { UiData, type Shape, type Material, type Light } from "./ui";
+import {
+  UiData,
+  TemplateData,
+  type Shape,
+  type Material,
+  type Light,
+} from "./ui";
+
+import { Eta } from "eta";
+
+const eta = new Eta({ autoEscape: false, useWith: true });
 
 const MAX_SHAPES = 20;
 const MAX_MATERIALS = 20;
 const MAX_LIGHTS = 5;
 
+const toFloat = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
+
 export function ShaderMaterial({
   uiUniforms,
+  templateVariables,
 }: Readonly<{
   uiUniforms: UiData;
+  templateVariables: TemplateData;
 }>) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const [fragmentShader, setFragmentShader] = useState("");
   const [compileTime, setCompileTime] = useState(0);
   const dpr = window.devicePixelRatio;
 
@@ -53,10 +68,16 @@ export function ShaderMaterial({
       iFrame: { value: 0 },
       iResolution: { value: new THREE.Vector2(1, 1) },
       iMouse: { value: new THREE.Vector3(0, 0, 1) },
+      showPerformance: { value: false },
+      showBoxes: { value: false },
+      perfMode: { value: 0 },
+      perfScale: { value: 1.0 },
       numberOfShapes: { value: 0 },
       numberOfMaterials: { value: 0 },
       numberOfLights: { value: 0 },
       maxRays: { value: 0 },
+      marchingSteps: { value: 0 },
+      distanceThreshold: { value: 0 },
       giLength: { value: 0 },
       giStrength: { value: 0 },
       aoStrength: { value: 0 },
@@ -67,9 +88,19 @@ export function ShaderMaterial({
       shapes: { value: [] },
       materials: { value: [] },
       lights: { value: [] },
+      globalIllumination: { value: true },
+      brdfLighting: { value: true },
     }),
     []
   );
+
+  useEffect(() => {
+    const t = eta.renderString(fragmentShaderTemplate, {
+      ...templateVariables,
+      _f: toFloat,
+    });
+    setFragmentShader(t);
+  }, [templateVariables]);
 
   useEffect(() => {
     if (materialRef.current) {
@@ -141,13 +172,19 @@ export function ShaderMaterial({
         },
         kd: material.kd,
         ior: material.ior,
-        reflectivity: Math.floor(material.reflectivity * 1000) / 1000,
+        reflectivity: uiUniforms.globals.reflection
+          ? Math.floor(material.reflectivity * 1000) / 1000
+          : 0,
         intRef: material.intRef,
         roughness: material.roughness,
-        reflectRoughness: material.reflectRoughness,
-        refractRoughness: material.refractRoughness,
+        reflectRoughness:
+          uiUniforms.globals.perf == "LOW" ? 0.0 : material.reflectRoughness,
+        refractRoughness:
+          uiUniforms.globals.perf == "LOW" ? 0.0 : material.refractRoughness,
         metallic: material.metallic,
-        transparency: Math.floor(material.transparency * 1000) / 1000,
+        transparency: uiUniforms.globals.transparency
+          ? Math.floor(material.transparency * 1000) / 1000
+          : 0,
         attenuation: material.attenuation,
         attenuationStrength: material.attenuationStrength,
         glow: material.glow,
@@ -161,10 +198,23 @@ export function ShaderMaterial({
         dir: light.dir,
         pos: light.pos,
       }));
+      uniforms.showPerformance.value = uiUniforms.globals.showPerformance;
+      uniforms.perfMode.value = uiUniforms.globals.perfMode;
+      uniforms.perfScale.value = uiUniforms.globals.perfScale;
+      uniforms.showBoxes.value = uiUniforms.globals.showBoxes;
       uniforms.numberOfShapes.value = uiUniforms.globals.numberOfShapes;
       uniforms.numberOfMaterials.value = uiUniforms.globals.numberOfMaterials;
       uniforms.numberOfLights.value = uiUniforms.globals.numberOfLights;
-      uniforms.maxRays.value = uiUniforms.globals.maxRays;
+
+      const maxRays =
+        uiUniforms.globals.perf == "LOW"
+          ? 5
+          : uiUniforms.globals.perf == "MEDIUM"
+          ? 10
+          : 40;
+      uniforms.maxRays.value = Math.min(uiUniforms.globals.maxRays, maxRays);
+      uniforms.marchingSteps.value = uiUniforms.globals.marchingSteps;
+      uniforms.distanceThreshold.value = uiUniforms.globals.distanceThreshold;
       uniforms.giLength.value = uiUniforms.globals.giLength;
       uniforms.giStrength.value = uiUniforms.globals.giStrength;
       uniforms.aoStrength.value = uiUniforms.globals.aoStrength;
@@ -172,6 +222,8 @@ export function ShaderMaterial({
       uniforms.camHeight.value = uiUniforms.globals.camHeight;
       uniforms.camDist.value = uiUniforms.globals.camDist;
       uniforms.orbit.value = uiUniforms.globals.orbit;
+      uniforms.globalIllumination.value = uiUniforms.globals.globalIllumination;
+      uniforms.brdfLighting.value = uiUniforms.globals.lighting;
     }
   }, [uiUniforms]);
 
@@ -199,13 +251,18 @@ export function ShaderMaterial({
   }, [compileTime]);
 
   return (
-    <shaderMaterial
-      ref={materialRef as React.RefObject<THREE.ShaderMaterial>}
-      vertexShader={vertexShader}
-      fragmentShader={fragmentShader}
-      uniforms={uniforms}
-      transparent={false}
-      opacity={1}
-    />
+    <>
+      {
+        <shaderMaterial
+          ref={materialRef as React.RefObject<THREE.ShaderMaterial>}
+          vertexShader={vertexShader}
+          fragmentShader={fragmentShader}
+          uniforms={uniforms}
+          transparent={false}
+          opacity={1}
+          key={fragmentShader.toString()}
+        />
+      }
+    </>
   );
 }

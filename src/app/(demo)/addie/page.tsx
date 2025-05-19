@@ -6,7 +6,7 @@ import { EffectComposer, FXAA } from "@react-three/postprocessing";
 import { OrthographicCamera } from "@react-three/drei";
 import { ShaderMaterial } from "./material";
 import NoSSR from "react-no-ssr";
-import RaymarchingUI, { UiData } from "./ui";
+import RaymarchingUI, { TemplateData, UiData } from "./ui";
 
 function useWindowSize() {
   const [size, setSize] = useState({ innerWidth: 400, innerHeight: 400 });
@@ -47,6 +47,7 @@ export default function ShaderCanvas() {
   const { innerWidth, innerHeight } = useWindowSize();
   const [key, setKey] = useState(`${innerWidth}-${innerHeight}`);
   const [uiUniforms, setUniforms] = useState<UiData>();
+  const [templateVariables, setTemplateVariables] = useState<TemplateData>();
 
   // The shaders tend to be brittle and tend to break when we
   // change the window size or the underlying shader material.
@@ -61,7 +62,10 @@ export default function ShaderCanvas() {
   return (
     <div className="bg-gray-100 w-full h-screen pr-[24rem] overflow-hidden">
       <div className="fixed top-0 right-0 h-screen w-[24rem] bg-gray-100 border-l border-gray-300 shadow-lg overflow-y-auto p-4">
-        <RaymarchingUI setUniforms={setUniforms} />
+        <RaymarchingUI
+          setUniforms={setUniforms}
+          setTemplateVariables={setTemplateVariables}
+        />
       </div>
       <div className="pt-12 w-full flex justify-center h-full">
         <div className="w-[640px] flex flex-col h-full">
@@ -90,7 +94,12 @@ export default function ShaderCanvas() {
                 />
                 <mesh scale={[2, 2, 1]}>
                   <planeGeometry />
-                  {uiUniforms && <ShaderMaterial uiUniforms={uiUniforms} />}
+                  {uiUniforms && templateVariables && (
+                    <ShaderMaterial
+                      uiUniforms={uiUniforms}
+                      templateVariables={templateVariables}
+                    />
+                  )}
                   <EffectComposer multisampling={0}>
                     <FXAA />
                   </EffectComposer>
