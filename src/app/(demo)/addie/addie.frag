@@ -10,6 +10,10 @@ uniform int maxRays;
 uniform float giLength;
 uniform float giStrength;
 uniform float aoStrength;
+uniform float shadowRange;
+uniform int shadowAccuracy;
+uniform int roughReflectSamples;
+uniform int roughRefractSamples;
 uniform vec3 camTgt;
 uniform float camHeight;
 uniform float camDist;
@@ -25,7 +29,8 @@ uniform float perfScale;       // Scale for heat map
 
 // Features
 uniform bool globalIllumination;
-uniform bool brdfLighting;
+uniform bool lighting;
+uniform bool shadows;
 
 //------------------------------------------------------------------
 float dot2( in vec2 v ) { return dot(v,v); }
@@ -91,6 +96,7 @@ struct Material {
   float kd, ior, reflectivity, roughness, reflectRoughness, refractRoughness, metallic, transparency, attenuation, attenuationStrength, glow;
 };
 
+/*
 struct Shape {
   int type, id;
   vec2 l, c;
@@ -100,6 +106,7 @@ struct Shape {
   mat3 rot;
   bool isRot;
 };
+*/
 
 struct Light {
   int type;
@@ -111,11 +118,9 @@ struct Light {
   vec3 pos;
 };
 
-uniform Shape shapes[MAX_SHAPES];
+uniform vec3 shapes[MAX_SHAPES];
 uniform Material materials[MAX_MATERIALS];
-uniform Light lights[MAX_LIGHTS];
 
-Shape debugShapes[MAX_SHAPES];
 Material debugMaterial;
 
 // Performance visualization functions
@@ -401,6 +406,7 @@ vec3 randomHemispherePoint(vec3 rand, vec3 dir) {
 #define ZERO (min(iFrame,0))
 
 //------------------------------------------------------------------
+/*
 float getApproximateRadius(Shape s) {
     switch(s.type) {
         case SPHERE: 
@@ -508,6 +514,7 @@ vec3 getShapeBounds(Shape s) {
             return vec3(1.5);
     }
 }
+*/
 
 vec3 map( in vec3 pos, float rayDistance)
 {
@@ -516,7 +523,111 @@ vec3 map( in vec3 pos, float rayDistance)
     float earlyExitThreshold = distanceThreshold * rayDistance;
 
     const float boundsPadding = 0.02;
-    <% shapes.forEach((s, i) => { %>
+    <% const allShapes = showBoxes ? [...shapes, ...shapes] : shapes;
+      allShapes.forEach((_s, i) => {
+        if(showBoxes) {
+          if(i < shapes.length)
+          {
+            s = _s;
+          } 
+          else
+          {
+            let bounds;
+            let boundsPadding = 0.02;
+            switch(_s.type) {
+              case 1: //SPHERE:
+                  bounds = {x: _s.r + boundsPadding, y: _s.r + boundsPadding, z: _s.r + boundsPadding};
+                  break;
+              case 2: //BOX:
+                  bounds = {x: _s.a.x + boundsPadding, y: _s.a.y + boundsPadding, z: _s.a.z + boundsPadding};
+                  break;
+              case 3: //ROUND_BOX:
+                  bounds = {x: _s.a.x + _s.r + boundsPadding, y: _s.a.y + _s.r + boundsPadding, z: _s.a.z + _s.r + boundsPadding};
+                  break;
+              case 20: //BOX_FRAME:
+                  bounds = {x: _s.a.x + _s.r + boundsPadding, y: _s.a.y + _s.r + boundsPadding, z: _s.a.z + _s.r + boundsPadding};
+                  break;
+              case 4: //TORUS:
+                  bounds = {x: _s.r1 + _s.r2 + boundsPadding, y: _s.r2 + boundsPadding, z: _s.r1 + _s.r2 + boundsPadding};
+                  break;
+              case 5: //LINK:
+                  bounds = {x: _s.r1 + _s.r2 + boundsPadding, y: _s.h + _s.r2 + boundsPadding, z: _s.r1 + _s.r2 + boundsPadding};
+                  break;
+              case 10: //CYLINDER:
+                  bounds = {x: _s.r + boundsPadding, y: _s.h + boundsPadding, z: _s.r + boundsPadding};
+                  break;
+              case 11: //ROUND_CYLINDER:
+                  bounds = {x: _s.r + _s.r1 + boundsPadding, y: _s.h + _s.r1 + boundsPadding, z: _s.r + _s.r1 + boundsPadding};
+                  break;
+              case 9: //CAPSULE:
+                  bounds = {x: _s.r + boundsPadding, y: _s.h + _s.r + boundsPadding, z: _s.r + boundsPadding};
+                  break;
+              case 6: //CONE:
+                  // For sdCone, s.c is sin/cos of angle, s.h is height
+                  // Base radius = h * c.x/c.y = h * tan(angle)
+                  const baseRadius = _s.h * (_s.c.x / _s.c.y);
+                  bounds = {x: Math.abs(baseRadius) + boundsPadding, y: _s.h + boundsPadding, z: Math.abs(baseRadius) + boundsPadding};
+              case 12: //CUT_CONE:
+                  const maxCutR = Math.max(_s.r1, _s.r2);
+                  bounds = {x: maxCutR + boundsPadding, y: _s.h + boundsPadding, z: maxCutR + boundsPadding};
+                  break;
+              case 13: //SOLID_ANGLE:
+                  // Based on sin/cos angle and radius
+                  bounds = {x: _s.r1 + boundsPadding, y: _s.r1 + boundsPadding, z: _s.r1 + boundsPadding};
+                  break;
+              case 14: //CUT_SPHERE:
+                  // Sphere with radius s.r, cut at height s.h
+                  bounds = {x: _s.r + boundsPadding, y: _s.r + boundsPadding, z: _s.r + boundsPadding};
+                  break;
+              case 15: //ROUND_CONE:
+                  // Similar to cut cone but with rounded edges
+                  const maxRoundR = Math.max(_s.r1, _s.r2);
+                  bounds = {x: maxRoundR + boundsPadding, y: _s.h + boundsPadding, z: maxRoundR + boundsPadding};
+                  break;
+              case 16: //ELLIPSOID:
+                  // Use max of the three radii
+                  const maxEllipseR = Math.max(_s.r, max(_s.r1, _s.r2));
+                  bounds = {x: maxEllipseR + boundsPadding, y: maxEllipseR + boundsPadding, z: maxEllipseR + boundsPadding};
+                  break;
+              case 17: //FOOTBALL:
+                  // Football shape - analyze the sdFootball function parameters
+                  // It uses s.a, s.b (endpoints) and s.h (height/thickness)
+                  const footballLength = Math.sqrt(Math.pow(_s.b.x - _s.a.x, 2) +Math.pow(_s.b.y - _s.a.y, 2) + Math.pow(_s.b.z - _s.a.z, 2)) * 0.5;
+                  bounds = {x: footballLength + _s.h + boundsPadding, y: footballLength + _s.h + boundsPadding, z: footballLength + _s.h + boundsPadding};
+                  break;
+              case 18: //OCTAHEDRON:
+                  // Regular octahedron with "radius" s.r
+                  bounds = {x: _s.r + boundsPadding, y: _s.r + boundsPadding, z: _s.r + boundsPadding};
+                  break;
+              case 19: //PYRAMID:
+                  // Pyramid with height s.r and base 1x1 (from sdPyramid)
+                  bounds = {x: 0.71 + boundsPadding, y: _s.r + boundsPadding, z: 0.71 + boundsPadding};
+                  break;
+              case 7: //HEX_PRISM:
+                  bounds = {x: _s.l.x * 1.16, y: _s.l.y + boundsPadding, z: _s.l.x * 1.16};
+                  break;
+              case 8: //TRI_PRISM:
+                  bounds = {x: _s.l.x + boundsPadding, y: _s.l.y + boundsPadding, z: _s.l.x + boundsPadding};
+                  break;
+              case 0: //PLANE:
+                  //Plane extends infinitely, but we can use a large bound
+                  bounds = {x: 100.0, y: 100.0, z: 100.0};
+                  break;
+              default:
+                  // For unknown shapes, use conservative bound
+                  bounds = {x: 1.5, y: 1.5, z: 1.5};
+            };
+            s = {
+              ..._s,
+              type: 20,
+              mat: 1,
+              a: bounds,
+              r: 0.005
+            };
+          }
+        } else {
+          s = _s;
+        } %>
         vec3 delta<%= i %> = pos - vec3(<%= _f(s.pos.x) %>,<%= _f(s.pos.y) %>,<%= _f(s.pos.z) %>);
 
         <% switch(s.type) { 
@@ -524,7 +635,10 @@ vec3 map( in vec3 pos, float rayDistance)
                 float approxRadius<%= i %> = <%= _f(s.r) %>;
             <%
                 break;
-            case 2: //BOX: 
+            case 2: //BOX: %>
+                float approxRadius<%= i %> = length(vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>));
+            <%    
+                break;
             case 3: //ROUND_BOX: 
             case 20: //BOX_FRAME: %>
                 float approxRadius<%= i %> = length(vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>)) + <%= _f(s.r) %>;
@@ -882,21 +996,20 @@ vec3 raycast(in vec3 ro, in vec3 rd)
                 }
                 else
                 {
-                    Shape s;
+                    vec3 sPos;
                     bool firstHalf = int(h.z) < numberOfShapes;
 
                     if(firstHalf)
                     {
-                      s = shapes[int(h.z)];
+                      sPos = shapes[int(h.z)];
                     }
 
                     if(!firstHalf)
                     {
-                      s = debugShapes[int(h.z) - numberOfShapes];
+                      sPos = shapes[int(h.z) - numberOfShapes];
                     }
 
-                    vec3 shapeCenter = s.pos;
-                    vec3 toCenter = normalize(p - shapeCenter);
+                    vec3 toCenter = normalize(p - sPos);
                     jumpDir = (h.x > 0.0) ? toCenter : -toCenter;
                 }
 
@@ -929,6 +1042,7 @@ vec3 raycast(in vec3 ro, in vec3 rd)
     return res;
 }
 
+/*
 // https://iquilezles.org/articles/rmshadows
 float calcSoftShadow( in vec3 ro, in vec3 rd, in float mint, in float tmax )
 {
@@ -937,8 +1051,9 @@ float calcSoftShadow( in vec3 ro, in vec3 rd, in float mint, in float tmax )
 
     float res = 1.0;
     float t = mint;
-    for( int i=ZERO; i<24; i++ )
+    for( int i=ZERO; i< shadowAccuracy; i++ )
     {
+      perfStats.stepCount++;
 		  float h = map( ro + rd*t, t ).x;
       float s = clamp(8.0*h/t,0.0,1.0);
       res = min( res, s );
@@ -947,6 +1062,21 @@ float calcSoftShadow( in vec3 ro, in vec3 rd, in float mint, in float tmax )
     }
     res = max(res, -1.0);
     return 0.25 * (1.0+res)*(1.0+res)*(2.0-res);
+}
+*/
+
+float calcSoftShadow(in vec3 ro, in vec3 rd, in float mint, in float tmax) {
+    float t = mint;
+    float res = 1.0;
+    
+    for(int i = 0; i < shadowAccuracy; i++) {  // Just 6 steps instead of 24
+        float h = map(ro + rd * t, t).x;
+        res = min(res, 8.0 * h / t);
+        t += h;
+        if(res < 0.001 || t > tmax) break;
+    }
+    
+    return clamp(res, 0.0, 1.0);  // Simpler calculation
 }
 
 // https://iquilezles.org/articles/normalsSDF
@@ -1012,77 +1142,78 @@ float checkersGradBox( in vec2 p, in vec2 dpdx, in vec2 dpdy )
     return 0.5 - 0.5*i.x*i.y;                  
 }
 
-vec3 lighting(vec3 pos, vec3 rd, vec3 nor, vec3 ref, vec3 albedo, Material mat) 
+vec3 applyLights(vec3 pos, vec3 rd, vec3 nor, vec3 ref, vec3 albedo, Material mat) 
 {
     vec3 lin = vec3(0.0); 
     vec3 V = -rd;
 
-    for(int i = 0 + ZERO; i < numberOfLights + ZERO; i++) {
-        Light light = lights[i];
-        vec3 L, lightCol = light.color;
-        float attenuation = 1.0;
+    <% lights.forEach((l, i) => { %>
+        vec3 L<%= i %>, lightCol<%= i %> = vec3(<%= _f(l.color.r) %>, <%= _f(l.color.g) %>, <%= _f(l.color.b) %>);
+        float attenuation<%= i %> = 1.0;
 
-        if(light.type == OMNI) {
-            lin += lightCol * light.strength * mat.kd * albedo; // Ambient light only affects diffuse
-            continue;
-        }
+        <% if(l.type == 0) { %>
+            lin += lightCol<%= i %> * <%= _f(l.strength) %> * mat.kd * albedo; // Ambient light only affects diffuse
+        <% } else { %>
 
-        if(!brdfLighting)
-        {
-          continue;
-        }
+          if(lighting)
+          {
+            <% if(l.type == 1) { %>
+                L<%= i %> = normalize(-vec3(<%= l.dir.x %>, <%= l.dir.y %>, <%= l.dir.z %>));
+            <% } %>
+            <% if(l.type == 2) { %>
+                vec3 toLight<%= i %> = vec3(<%= l.pos.x %> - pos.x, <%= l.pos.y %> - pos.y, <%= l.pos.z %> - pos.z);
+                float dist2<%= i %> = dot(toLight<%= i %>, toLight<%= i %>);
+                float dist<%= i %> = sqrt(dist2<%= i %>);
+                L<%= i %> = toLight<%= i %> / dist<%= i %>;
+                <% if(l.ranged) { %>
+                    attenuation *= clamp(1.0 - dist<%= i %> / <%= l.r %>, 0.0, 1.0);
+                <% } %>
+            <% } %>
 
-        if(light.type == DIRECTIONAL) {
-            L = normalize(-light.dir);
-        } 
-        else if(light.type == POINT) {
-            vec3 toLight = light.pos - pos;
-            float dist2 = dot(toLight, toLight);
-            float dist = sqrt(dist2);
-            L = toLight / dist;
-            if(light.ranged)
-                attenuation *= clamp(1.0 - dist / light.r, 0.0, 1.0);
-        }
+            // Shadow
+            float shadow<%= i %> = 1.0;
+            if(shadows && <%= l.castsShadow ? "true" : " false" %>)
+            {
+              shadow<%= i %> = calcSoftShadow(pos + nor * 0.01, L<%= i %>, 0.01, shadowRange);
+            }
 
-        // Shadow
-        float shadow = calcSoftShadow(pos + nor * 0.01, L, 0.01, 10.0);
-        if(shadow < 0.001) continue;
+            // Half vector for Cook-Torrance
+            vec3 H<%= i %> = normalize(L<%= i %> + V);
 
-        // Half vector for Cook-Torrance
-        vec3 H = normalize(L + V);
+            float NdotL<%= i %> = max(dot(nor, L<%= i %>), 0.0);
+            float NdotV<%= i %> = max(dot(nor, V), 0.0);
+            float NdotH<%= i %> = max(dot(nor, H<%= i %>), 0.0);
+            float VdotH<%= i %> = max(dot(V, H<%= i %>), 0.0);
 
-        float NdotL = max(dot(nor, L), 0.0);
-        float NdotV = max(dot(nor, V), 0.0);
-        float NdotH = max(dot(nor, H), 0.0);
-        float VdotH = max(dot(V, H), 0.0);
+            // Fresnel term (Schlick)
+            vec3 F0<%= i %> = mix(vec3(0.04), albedo, mat.metallic);
+            vec3 F<%= i %> = F0<%= i %> + (1.0 - F0<%= i %>) * pow(1.0 - VdotH<%= i %>, 5.0);
 
-        // Fresnel term (Schlick)
-        vec3 F0 = mix(vec3(0.04), albedo, mat.metallic);
-        vec3 F = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
+            // Geometry term (Smith GGX Approximation)
+            float alpha<%= i %> = mat.roughness * mat.roughness;
+            float k<%= i %> = (alpha<%= i %> + 1.0) * (alpha<%= i %> + 1.0) / 8.0;
+            float G_V<%= i %> = NdotV<%= i %> / (NdotV<%= i %> * (1.0 - k<%= i %>) + k<%= i %>);
+            float G_L<%= i %> = NdotL<%= i %> / (NdotL<%= i %> * (1.0 - k<%= i %>) + k<%= i %>);
+            float G<%= i %> = G_V<%= i %> * G_L<%= i %>;
 
-        // Geometry term (Smith GGX Approximation)
-        float alpha = mat.roughness * mat.roughness;
-        float k = (alpha + 1.0) * (alpha + 1.0) / 8.0;
-        float G_V = NdotV / (NdotV * (1.0 - k) + k);
-        float G_L = NdotL / (NdotL * (1.0 - k) + k);
-        float G = G_V * G_L;
+            // Normal distribution function (GGX)
+            float a2<%= i %> = alpha<%= i %> * alpha<%= i %>;
+            float d<%= i %> = (NdotH<%= i %> * NdotH<%= i %>) * (a2<%= i %> - 1.0) + 1.0;
+            float D<%= i %> = a2<%= i %> / (PI * d<%= i %> * d<%= i %>);
 
-        // Normal distribution function (GGX)
-        float a2 = alpha * alpha;
-        float d = (NdotH * NdotH) * (a2 - 1.0) + 1.0;
-        float D = a2 / (PI * d * d);
+            // Cook-Torrance specular BRDF
+            vec3 spec<%= i %> = (F<%= i %> * G<%= i %> * D<%= i %>) / max(4.0 * NdotL<%= i %> * NdotV<%= i %>, 0.001);
 
-        // Cook-Torrance specular BRDF
-        vec3 spec = (F * G * D) / max(4.0 * NdotL * NdotV, 0.001);
+            // Diffuse (Lambert or none for metals)
+            vec3 kd<%= i %> = (1.0 - F<%= i %>) * (1.0 - mat.metallic);
+            vec3 diffuse<%= i %> = kd<%= i %> * albedo / PI;
 
-        // Diffuse (Lambert or none for metals)
-        vec3 kd = (1.0 - F) * (1.0 - mat.metallic);
-        vec3 diffuse = kd * albedo / PI;
-
-        // Combine
-        vec3 contrib = (diffuse + spec) * light.strength * lightCol * NdotL * attenuation * shadow;
-        lin += contrib;
-    }
+            // Combine
+            vec3 contrib<%= i %> = (diffuse<%= i %> + spec<%= i %>) * <%= _f(l.strength) %> * lightCol<%= i %> * NdotL<%= i %> * attenuation<%= i %> * shadow<%= i %>;
+            lin += contrib<%= i %>;
+          }
+        <% } %>
+    <% }) %>
 
     // Global Illumination
     if(globalIllumination)
@@ -1148,35 +1279,17 @@ vec3 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy) {
             vec3 pos = currentRay.origin + t * currentRay.direction;
             vec3 nor = (m < 0.5) ? vec3(0.0, 1.0, 0.0) : calcNormal(pos);
             vec3 refDir = reflect(currentRay.direction, nor);
-            const int numberOfRefractSamples = 4;
-            const int numberOfReflectSamples = 4;
 
             vec3 base = mat.color; 
-            /*
-            vec3 base;
-            if(m > 0.5)
-            {
-              base = vec3(1.0, 0.0, 0.0);
-            }
-            else
-            {
-              base = vec3(0.5, 0.5, 0.5);
-            }
-            */
 
             float reflectivity = mat.reflectivity;
             float transparency = mat.transparency;
             float reflectRoughness = mat.reflectRoughness;
             float refractRoughness = mat.refractRoughness;
             float ior = mat.ior;
-            //float reflectivity = 0.0;
-            //float transparency = 0.0;
-            //float reflectRoughness = 0.0;
-            //float refractRoughness = 0.0;
-            //float ior = 1.0;
 
             // Lighting calculations for the current point
-            vec3 lin = lighting(pos, currentRay.direction, nor, refDir, base, mat);
+            vec3 lin = applyLights(pos, currentRay.direction, nor, refDir, base, mat);
             //vec3 lin = base;
 
             // FLATTENED BRANCHING VERSION
@@ -1195,10 +1308,10 @@ vec3 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy) {
                 col += lin * currentRay.throughput * (1.0 - reflectivity);
                 
                 // Rough reflections
-                if (reflectRoughness > 0.01) {
-                    for(int j = 0; j < numberOfReflectSamples; j++) {
+                if (reflectRoughness > 0.01 && roughReflectSamples > 0) {
+                    for(int j = 0; j < roughReflectSamples; j++) {
                         vec3 jitter = reflectRoughness * randomHemispherePoint(vec3(random(vec2(float(j) * 0.73, fract(t * 13.3))), random(vec2(float(j + 1) * 0.91, fract(t * 17.7))), random(vec2(float(j + 2) * 1.32, fract(t * 31.3)))), refDir);
-                        addRay(pos + nor * 0.002, normalize(refDir + jitter), currentRay.throughput * reflectivity * (1. / float(numberOfReflectSamples)), false, 0 + i);
+                        addRay(pos + nor * 0.002, normalize(refDir + jitter), currentRay.throughput * reflectivity * (1. / float(roughReflectSamples)), false, 0 + i);
                     }
                 } else {
                     addRay(pos + nor * 0.002, refDir, currentRay.throughput * reflectivity, false, 0 + i);
@@ -1220,10 +1333,10 @@ vec3 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy) {
                 if (canRefract) {
                     col += lin * currentRay.throughput * (1.0 - transparency);
                     
-                    if (refractRoughness > 0.01) {
-                        for(int j = 0; j < numberOfRefractSamples; j++) {
+                    if (refractRoughness > 0.01 && roughRefractSamples > 0) {
+                        for(int j = 0; j < roughRefractSamples; j++) {
                             vec3 jitter = 0.1 * refractRoughness * randomHemispherePoint(vec3(random(vec2(float(j) * 0.73, fract(t * 13.3))), random(vec2(float(j + 1) * 0.91, fract(t * 17.7))), random(vec2(float(j + 2) * 1.32, fract(t * 31.3)))), refDir);
-                            addRay(pos + nor * 0.004, normalize(refractDir - jitter), currentRay.throughput * transparency * (1. / float(numberOfRefractSamples)), true, 10 + i);
+                            addRay(pos + nor * 0.004, normalize(refractDir - jitter), currentRay.throughput * transparency * (1. / float(roughRefractSamples)), true, 10 + i);
                         }
                     } else {
                         addRay(pos + nor * 0.004, refractDir, currentRay.throughput * transparency, true, 10 + i);
@@ -1234,10 +1347,10 @@ vec3 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy) {
                 if (fresnel != 0.0) {
                     col += lin * currentRay.throughput * (1.0 - fresnel);
                     
-                    if (reflectRoughness > 0.01) {
-                        for(int j = 0; j < numberOfReflectSamples; j++) {
+                    if (reflectRoughness > 0.01 && roughReflectSamples > 0) {
+                        for(int j = 0; j < roughReflectSamples; j++) {
                             vec3 jitter = 0.1 * reflectRoughness * randomHemispherePoint(vec3(random(vec2(float(j) * 0.73, fract(t * 13.3))), random(vec2(float(j + 1) * 0.91, fract(t * 17.7))), random(vec2(float(j + 2) * 1.32, fract(t * 31.3)))), refDir);
-                            addRay(pos + nor * 0.002, normalize(refDir + jitter), currentRay.throughput * fresnel * 1. / float(numberOfReflectSamples), false, 20 + i);
+                            addRay(pos + nor * 0.002, normalize(refDir + jitter), currentRay.throughput * fresnel * 1. / float(roughReflectSamples), false, 20 + i);
                         }
                     } else {
                         addRay(pos + nor * 0.002, refDir, currentRay.throughput * fresnel, false, 20 + i);
@@ -1264,13 +1377,6 @@ vec3 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy) {
           vec3 innerColor = mat.innerColor;
           bool intRef = mat.intRef;
           float ior = mat.ior;
-
-          //float reflectivity = 0.0;
-          //float attenuation = 0.0;
-          //float attenuationStrength = 0.0;
-          //vec3 innerColor = vec3(1.0,1.0,1.0);
-          //bool intRef = false;
-          //float ior = 1.0;
 
           float eta = ior;
           vec3 refractDir = refract(currentRay.direction, nor, eta);
@@ -1356,24 +1462,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec2 py = (2.0*(fragCoord+vec2(0.0,1.0))-iResolution.xy)/iResolution.y;
     vec3 rdx = ca * normalize( vec3(px,fl) );
     vec3 rdy = ca * normalize( vec3(py,fl) );
-
-    if(showBoxes)
-    {
-      for(int i = 0; i < numberOfShapes; i++)
-      {
-        Shape debugShape;
-        Shape shape = shapes[i];
-        debugShape.type = BOX_FRAME;
-        debugShape.mat = 1;
-        debugShape.pos = shapes[i].pos;
-        debugShape.a = getShapeBounds(shape); 
-        debugShape.r = 0.005;
-        debugShape.isRot = shapes[i].isRot;
-        debugShape.mat = 1;
-        debugShape.rot = shape.rot;
-        debugShapes[i] = debugShape;
-      }
-    }
     
     // render	
     vec3 col = render( ro, rd, rdx, rdy );

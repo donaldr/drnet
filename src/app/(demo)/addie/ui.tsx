@@ -52,14 +52,21 @@ export interface GlobalSettings {
   giLength: number;
   giStrength: number;
   aoStrength: number;
+  shadowRange: number;
+  shadowAccuracy: number;
+  roughReflectSamples: number;
+  roughRefractSamples: number;
   camTgt: Vec3;
   camHeight: number;
   camDist: number;
   orbit: number;
+  boundingBoxPos: Vec3;
+  boundingBoxDims: Vec3;
   globalIllumination: boolean;
   reflection: boolean;
   transparency: boolean;
   lighting: boolean;
+  shadows: boolean;
   showPerformance: boolean;
   perfMode: number;
   perfScale: number;
@@ -114,6 +121,7 @@ export interface Light {
   dir: Vec3;
   pos: Vec3;
   uuid: string;
+  castsShadow: boolean;
 }
 
 export interface UiData {
@@ -125,6 +133,8 @@ export interface UiData {
 
 export interface TemplateData {
   shapes: any[];
+  lights: Light[];
+  showBoxes: boolean;
 }
 
 export class RaymarchingUI {
@@ -185,14 +195,21 @@ export class RaymarchingUI {
       giLength: 0.6,
       giStrength: 0.01,
       aoStrength: 0.4,
+      shadowRange: 10.0,
+      shadowAccuracy: 24.0,
+      roughReflectSamples: 4,
+      roughRefractSamples: 4,
       camTgt: { x: 0, y: 0, z: 0 },
       camHeight: 5.0,
       camDist: 5.0,
       orbit: 1.0,
+      boundingBoxPos: { x: 0, y: 0, z: 0 },
+      boundingBoxDims: { x: 1.0, y: 4.0, z: 0.0 },
       globalIllumination: true,
       reflection: true,
       transparency: true,
       lighting: true,
+      shadows: true,
       showPerformance: false,
       perfMode: 0,
       perfScale: 1.0,
@@ -295,6 +312,8 @@ export class RaymarchingUI {
       });
       this.setTemplateVariables({
         shapes,
+        lights: this.lights,
+        showBoxes: this.globals.showBoxes,
       });
     }
     this.pane.on("change", () => {
@@ -332,6 +351,8 @@ export class RaymarchingUI {
       });
       this.setTemplateVariables({
         shapes,
+        lights: this.lights,
+        showBoxes: this.globals.showBoxes,
       });
     }
     localStorage.setItem(
@@ -395,6 +416,34 @@ export class RaymarchingUI {
       step: 0.01,
       label: "AO Strength",
     });
+    this.globals.shadowRange = this.globals.shadowRange || 10.0;
+    f.addBinding(this.globals, "shadowRange", {
+      min: 0,
+      max: 20.0,
+      step: 0.01,
+      label: "Shadow Range",
+    });
+    this.globals.shadowAccuracy = this.globals.shadowAccuracy || 24;
+    f.addBinding(this.globals, "shadowAccuracy", {
+      min: 8.0,
+      max: 24.0,
+      step: 1.0,
+      label: "Shadow Accuracy",
+    });
+    this.globals.roughReflectSamples = this.globals.roughReflectSamples || 4;
+    f.addBinding(this.globals, "roughReflectSamples", {
+      min: 0,
+      max: 16.0,
+      step: 1.0,
+      label: "Rough Reflect Samples",
+    });
+    this.globals.roughRefractSamples = this.globals.roughRefractSamples || 4;
+    f.addBinding(this.globals, "roughRefractSamples", {
+      min: 0,
+      max: 16.0,
+      step: 1.0,
+      label: "Rough Refract Samples",
+    });
     this.globals.camTgt = this.globals.camTgt ?? { x: 0, y: 0, z: 0 };
     f.addBinding(this.globals, "camTgt", {
       label: "Camera Target",
@@ -417,45 +466,46 @@ export class RaymarchingUI {
       step: 0.1,
       label: "Orbit",
     });
+    this.globals.boundingBoxPos = this.globals.boundingBoxPos ?? {
+      x: 0,
+      y: 0,
+      z: 0,
+    };
+    f.addBinding(this.globals, "camTgt", {
+      label: "Camera Target",
+      step: 0.01,
+    });
     f.addBlade({
       view: "separator",
     });
-    this.globals.globalIllumination =
-      this.globals.globalIllumination === undefined
-        ? false
-        : this.globals.globalIllumination;
+    this.globals.globalIllumination = this.globals.globalIllumination ?? false;
     f.addBinding(this.globals, "globalIllumination", {
       label: "Global Illumination",
     });
-    this.globals.reflection =
-      this.globals.reflection === undefined ? false : this.globals.reflection;
+    this.globals.reflection = this.globals.reflection ?? false;
     f.addBinding(this.globals, "reflection", {
       label: "Reflection",
     });
-    this.globals.transparency =
-      this.globals.transparency === undefined
-        ? false
-        : this.globals.transparency;
+    this.globals.transparency = this.globals.transparency ?? false;
     f.addBinding(this.globals, "transparency", {
       label: "Transparency",
     });
-    this.globals.lighting =
-      this.globals.lighting === undefined ? false : this.globals.lighting;
+    this.globals.lighting = this.globals.lighting ?? false;
     f.addBinding(this.globals, "lighting", {
       label: "Lighting",
+    });
+    this.globals.shadows = this.globals.shadows ?? false;
+    f.addBinding(this.globals, "shadows", {
+      label: "Shadows",
     });
     f.addBlade({
       view: "separator",
     });
-    this.globals.showPerformance =
-      this.globals.showPerformance === undefined
-        ? false
-        : this.globals.showPerformance;
+    this.globals.showPerformance = this.globals.showPerformance ?? false;
     f.addBinding(this.globals, "showPerformance", {
       label: "Show Debug",
     });
-    this.globals.perfMode =
-      this.globals.perfMode === undefined ? 0 : this.globals.perfMode;
+    this.globals.perfMode = this.globals.perfMode ?? 0;
     f.addBinding(this.globals, "perfMode", {
       label: "Debug Mode",
       options: Object.keys(PerformanceMode)
@@ -465,16 +515,14 @@ export class RaymarchingUI {
           value: parseInt(v),
         })),
     });
-    this.globals.perfScale =
-      this.globals.perfScale === undefined ? 1.0 : this.globals.perfScale;
+    this.globals.perfScale = this.globals.perfScale ?? 1.0;
     f.addBinding(this.globals, "perfScale", {
       min: 0.0,
       max: 2.0,
       step: 0.1,
       label: "Heatmap Scale",
     });
-    this.globals.showBoxes =
-      this.globals.showBoxes === undefined ? false : this.globals.showBoxes;
+    this.globals.showBoxes = this.globals.showBoxes ?? false;
     f.addBinding(this.globals, "showBoxes", {
       label: "Show Boxes",
     });
@@ -485,9 +533,7 @@ export class RaymarchingUI {
     switch (shape.type) {
       case ShapeType.OCTAHEDRON:
       case ShapeType.SPHERE:
-        if (shape.r === undefined) {
-          shape.r = 0.3;
-        }
+        shape.r = shape.r ?? 0.3;
         f.addBinding(shape, "r", {
           label: "Radius",
           min: 0,
@@ -497,9 +543,7 @@ export class RaymarchingUI {
         break;
 
       case ShapeType.ROUND_BOX:
-        if (shape.r === undefined) {
-          shape.r = 0.15;
-        }
+        shape.r = shape.r ?? 0.3;
         f.addBinding(shape, "r", {
           label: "Radius",
           min: 0,
@@ -558,9 +602,7 @@ export class RaymarchingUI {
         break;
       case ShapeType.LINK:
       case ShapeType.ROUND_CONE:
-        if (shape.h === undefined) {
-          shape.h = 0.1;
-        }
+        shape.h = shape.h ?? 0.1;
         f.addBinding(shape, "h", {
           label: "Height",
           min: 0,
@@ -569,12 +611,8 @@ export class RaymarchingUI {
         });
 
       case ShapeType.TORUS:
-        if (shape.r1 === undefined) {
-          shape.r1 = 0.3;
-        }
-        if (shape.r2 === undefined) {
-          shape.r2 = 0.1;
-        }
+        shape.r1 = shape.r1 ?? 0.3;
+        shape.r2 = shape.r2 ?? 0.1;
         f.addBinding(shape, "r1", {
           label: "Radius",
           min: 0,
@@ -589,12 +627,8 @@ export class RaymarchingUI {
         });
         break;
       case ShapeType.CONE:
-        if (shape.h === undefined) {
-          shape.h = 0.5;
-        }
-        if (shape.r === undefined) {
-          shape.r = 0.25;
-        }
+        shape.h = shape.h ?? 0.5;
+        shape.r = shape.r ?? 0.25;
         const vCone = new THREE.Vector2(shape.r, shape.h).normalize();
         shape.c = { x: vCone.x, y: vCone.y };
         f.addBinding(shape, "h", {
@@ -618,12 +652,8 @@ export class RaymarchingUI {
         break;
       case ShapeType.HEX_PRISM:
       case ShapeType.TRI_PRISM:
-        if (shape.h === undefined) {
-          shape.h = 0.5;
-        }
-        if (shape.r === undefined) {
-          shape.r = 0.25;
-        }
+        shape.h = shape.h ?? 0.5;
+        shape.r = shape.r ?? 0.25;
         const vPrism = new THREE.Vector2(shape.r, shape.h).normalize();
         shape.c = { x: vPrism.x, y: vPrism.y };
         f.addBinding(shape, "h", {
@@ -644,15 +674,9 @@ export class RaymarchingUI {
         });
         break;
       case ShapeType.ROUND_CYLINDER:
-        if (shape.r === undefined) {
-          shape.r = 0.5;
-        }
-        if (shape.r1 === undefined) {
-          shape.r1 = 0.125;
-        }
-        if (shape.h === undefined) {
-          shape.h = 0.1;
-        }
+        shape.r = shape.r ?? 0.5;
+        shape.r1 = shape.r1 ?? 0.125;
+        shape.h = shape.h ?? 0.1;
         f.addBinding(shape, "r", {
           label: "Radius",
           min: 0,
@@ -674,12 +698,8 @@ export class RaymarchingUI {
         break;
       case ShapeType.CAPSULE:
       case ShapeType.CYLINDER:
-        if (shape.r === undefined) {
-          shape.r = 0.5;
-        }
-        if (shape.h === undefined) {
-          shape.h = 1.0;
-        }
+        shape.r = shape.r ?? 0.5;
+        shape.h = shape.h ?? 1.0;
 
         f.addBinding(shape, "h", {
           label: "Height",
@@ -695,15 +715,9 @@ export class RaymarchingUI {
         });
         break;
       case ShapeType.CUT_CONE:
-        if (shape.h === undefined) {
-          shape.h = 1.0;
-        }
-        if (shape.r1 === undefined) {
-          shape.r1 = 0.5;
-        }
-        if (shape.r2 === undefined) {
-          shape.r2 = 0.5;
-        }
+        shape.h = shape.h ?? 1.0;
+        shape.r1 = shape.r1 ?? 0.5;
+        shape.r2 = shape.r2 ?? 0.5;
         f.addBinding(shape, "h", {
           label: "Height",
           min: 0,
@@ -724,12 +738,8 @@ export class RaymarchingUI {
         });
         break;
       case ShapeType.SOLID_ANGLE:
-        if (shape.r1 === undefined) {
-          shape.r1 = 0.5;
-        }
-        if (shape.h === undefined) {
-          shape.h = Math.PI / 2;
-        }
+        shape.h = shape.h ?? Math.PI / 2;
+        shape.r1 = shape.r1 ?? 0.5;
         shape.c = { x: Math.sin(shape.h), y: Math.cos(shape.h) };
         f.addBinding(shape, "r1", {
           label: "Radius",
@@ -747,12 +757,8 @@ export class RaymarchingUI {
         });
         break;
       case ShapeType.CUT_SPHERE:
-        if (shape.r === undefined) {
-          shape.r = 0.5;
-        }
-        if (shape.h === undefined) {
-          shape.h = 0.0;
-        }
+        shape.h = shape.h ?? 0.0;
+        shape.r = shape.r ?? 0.5;
         f.addBinding(shape, "r", {
           label: "Radius",
           min: 0,
@@ -1015,6 +1021,8 @@ export class RaymarchingUI {
     f.addBinding(light, "pos", { label: "Position" });
     f.addBinding(light, "ranged", { label: "Ranged" });
     f.addBinding(light, "r", { min: 0, max: 10, label: "Radius" });
+    light.castsShadow = light.castsShadow ?? true;
+    f.addBinding(light, "castsShadow", { label: "Casts Shadow" });
 
     if (light.uuid !== "DEFAULT") {
       const rmBtn = f.addButton({ title: "Remove" });
@@ -1114,6 +1122,7 @@ export class RaymarchingUI {
       dir: { x: 0, y: 0, z: 0 },
       pos: { x: 0, y: 0, z: 0 },
       uuid: "DEFAULT",
+      castsShadow: true,
     };
   }
 }

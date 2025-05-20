@@ -8,21 +8,13 @@ import * as THREE from "three";
 import fragmentShaderTemplate from "./addie.frag";
 import vertexShader from "./addie.vert";
 
-import {
-  UiData,
-  TemplateData,
-  type Shape,
-  type Material,
-  type Light,
-} from "./ui";
+import { UiData, TemplateData, type Material } from "./ui";
 
 import { Eta } from "eta";
 
 const eta = new Eta({ autoEscape: false, useWith: true });
 
-const MAX_SHAPES = 20;
 const MAX_MATERIALS = 20;
-const MAX_LIGHTS = 5;
 
 const toFloat = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
 
@@ -81,15 +73,19 @@ export function ShaderMaterial({
       giLength: { value: 0 },
       giStrength: { value: 0 },
       aoStrength: { value: 0 },
+      shadowRange: { value: 0 },
+      shadowAccuracy: { value: 0 },
+      roughReflectSamples: { value: 0 },
+      roughRefractSamples: { value: 0 },
       camTgt: { value: new THREE.Vector3(0, 0, 0) },
       camHeight: { value: 0 },
       camDist: { value: 0 },
       orbit: { value: 0 },
       shapes: { value: [] },
       materials: { value: [] },
-      lights: { value: [] },
       globalIllumination: { value: true },
-      brdfLighting: { value: true },
+      lighting: { value: true },
+      shadows: { value: true },
     }),
     []
   );
@@ -105,54 +101,17 @@ export function ShaderMaterial({
   useEffect(() => {
     if (materialRef.current) {
       const { uniforms } = materialRef.current;
-      const shapes = [...uiUniforms.shapes];
       const materials = [...uiUniforms.materials];
-      const lights = [...uiUniforms.lights];
-      if (shapes.length < MAX_SHAPES) {
-        for (let i = shapes.length; i < MAX_SHAPES; i++) {
-          shapes.push(shapes[uiUniforms.shapes.length - 1]);
-        }
-      }
       if (materials.length < MAX_MATERIALS) {
         for (let i = materials.length; i < MAX_MATERIALS; i++) {
           materials.push(materials[uiUniforms.materials.length - 1]);
         }
       }
-      if (lights.length < MAX_LIGHTS) {
-        for (let i = lights.length; i < MAX_LIGHTS; i++) {
-          lights.push(lights[uiUniforms.lights.length - 1]);
-        }
-      }
 
-      uniforms.shapes.value = shapes.map((shape: Shape) => ({
-        type: shape.type,
-        id: shape.id,
-        l: shape.l,
-        c: shape.c,
-        a: shape.a,
-        b: shape.b,
-        n: shape.n,
-        pos: shape.pos,
-        h: shape.h,
-        r: shape.r,
-        r1: shape.r1,
-        r2: shape.r2,
-        mat: shape.mat,
-        rot: new THREE.Matrix3()
-          .setFromMatrix4(
-            new THREE.Matrix4()
-              .makeRotationFromEuler(
-                new THREE.Euler(
-                  (shape.rot.x / 180) * Math.PI,
-                  (shape.rot.y / 180) * Math.PI,
-                  (shape.rot.z / 180) * Math.PI
-                )
-              )
-              .invert()
-          )
-          .toArray(),
-        isRot: shape.rot.x != 0 || shape.rot.y != 0 || shape.rot.z != 0,
-      }));
+      uniforms.shapes.value = uiUniforms.shapes.map(
+        (s) => new THREE.Vector3(s.pos.x, s.pos.y, s.pos.z)
+      );
+
       uniforms.materials.value = materials.map((material: Material) => ({
         emissive: material.emissive,
         color: {
@@ -189,15 +148,6 @@ export function ShaderMaterial({
         attenuationStrength: material.attenuationStrength,
         glow: material.glow,
       }));
-      uniforms.lights.value = lights.map((light: Light) => ({
-        type: light.type,
-        strength: light.strength,
-        color: { x: light.color.r, y: light.color.g, z: light.color.b },
-        ranged: light.ranged,
-        r: light.r,
-        dir: light.dir,
-        pos: light.pos,
-      }));
       uniforms.showPerformance.value = uiUniforms.globals.showPerformance;
       uniforms.perfMode.value = uiUniforms.globals.perfMode;
       uniforms.perfScale.value = uiUniforms.globals.perfScale;
@@ -218,12 +168,19 @@ export function ShaderMaterial({
       uniforms.giLength.value = uiUniforms.globals.giLength;
       uniforms.giStrength.value = uiUniforms.globals.giStrength;
       uniforms.aoStrength.value = uiUniforms.globals.aoStrength;
+      uniforms.shadowRange.value = uiUniforms.globals.shadowRange;
+      uniforms.shadowAccuracy.value = uiUniforms.globals.shadowAccuracy;
+      uniforms.roughReflectSamples.value =
+        uiUniforms.globals.roughReflectSamples;
+      uniforms.roughRefractSamples.value =
+        uiUniforms.globals.roughRefractSamples;
       uniforms.camTgt.value = uiUniforms.globals.camTgt;
       uniforms.camHeight.value = uiUniforms.globals.camHeight;
       uniforms.camDist.value = uiUniforms.globals.camDist;
       uniforms.orbit.value = uiUniforms.globals.orbit;
       uniforms.globalIllumination.value = uiUniforms.globals.globalIllumination;
-      uniforms.brdfLighting.value = uiUniforms.globals.lighting;
+      uniforms.lighting.value = uiUniforms.globals.lighting;
+      uniforms.shadows.value = uiUniforms.globals.shadows;
     }
   }, [uiUniforms]);
 

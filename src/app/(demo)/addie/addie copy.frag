@@ -4,123 +4,41 @@ uniform float iTimeDelta;
 uniform int iFrame;
 uniform vec2 iResolution;
 uniform vec3 iMouse;
+uniform int numberOfShapes;
+uniform int numberOfMaterials;
+uniform int numberOfLights;
+uniform int maxRays;
+uniform float giLength;
+uniform float giStrength;
+uniform float aoStrength;
+uniform float shadowRange;
+uniform vec3 camTgt;
+uniform float camHeight;
+uniform float camDist;
+uniform float orbit;
+uniform int marchingSteps;
+uniform float distanceThreshold;
 
-const float PI             = 3.14159265359;
+// Performance visualization controls
+uniform bool showPerformance;   // Toggle performance overlay
+uniform bool showBoxes;  
+uniform int perfMode;          // 0=steps, 1=heat map, 2=termination reasons
+uniform float perfScale;       // Scale for heat map
 
-//SDFs from https://iquilezles.org/articles/distfunctions/
+// Features
+uniform bool globalIllumination;
+uniform bool lighting;
+uniform bool shadows;
 
+//------------------------------------------------------------------
 float dot2( in vec2 v ) { return dot(v,v); }
 float dot2( in vec3 v ) { return dot(v,v); }
+float ndot( in vec2 a, in vec2 b ) { return a.x*b.x - a.y*b.y; }
 
-mat4 rotationMatrix(vec3 axis, float angle)
-{
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0 - c;
-    
-    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-                0.0,                                0.0,                                0.0,                                1.0);
-}
-
-vec3 hsv2rgb(vec3 hsv) { return ((clamp(abs(fract(hsv.x+vec3(0,2,1)/3.)*2.-1.)*3.-1.,0.,1.)-1.)*hsv.y+1.)*hsv.z; }
-float checker(vec2 uv, vec2 csize) { return mod(floor(uv.x/csize.x)+floor(uv.y/csize.y),2.); }
-
-vec3 fresnel ( in vec3 f0, in float product )
-{
-	product = clamp ( product, 0.0, 1.0 );		// saturate
-	
-	return mix ( f0, vec3 (1.0), pow(1.0 - product, 5.0) );
-}
-
-float D_blinn(in float roughness, in float NdH)
-{
-    float m = roughness * roughness;
-    float m2 = m * m;
-    float n = 2.0 / m2 - 2.0;
-    return (n + 2.0) / (2.0 * PI) * pow(NdH, n);
-}
-
-float D_beckmann ( in float roughness, in float NdH )
-{
-	float m    = roughness * roughness;
-	float m2   = m * m;
-	float NdH2 = NdH * NdH;
-	
-	return exp( (NdH2 - 1.0) / (m2 * NdH2) ) / (PI * m2 * NdH2 * NdH2);
-}
-
-float D_GGX ( in float roughness, in float NdH )
-{
-	float m  = roughness * roughness;
-	float m2 = m * m;
-	float NdH2 = NdH * NdH;
-	float d  = (m2 - 1.0) * NdH2 + 1.0;
-	
-	return m2 / (PI * d * d);
-}
-
-float G_schlick ( in float roughness, in float nv, in float nl )
-{
-    float k = roughness * roughness * 0.5;
-    float V = nv * (1.0 - k) + k;
-    float L = nl * (1.0 - k) + k;
-	
-    return 0.25 / (V * L);
-}
-
-float G_neumann ( in float nl, in float nv )
-{
-	return nl * nv / max ( nl, nv );
-}
-
-float G_klemen ( in float nl, in float nv, in float vh )
-{
-	return nl * nv / (vh * vh );
-}
-
-float G_default ( in float nl, in float nh, in float nv, in float vh )
-{
-	return min ( 1.0, min ( 2.0*nh*nv/vh, 2.0*nh*nl/vh ) );
-}
-
-/*
-vec4 cookTorrance ( Ray h, RayHit rh, Light li)
-{
-    
-    vec3  h    = normalize ( l + v );
-    float nh   = dot (n, h);
-    float nv   = dot (n, v);
-    float nl   = dot (n, l);
-    float vh   = dot (v, h);
-    float metallness = 0.5;
-    vec3  base  = pow ( clr, vec3 ( gamma ) );
-    vec3  F0    = mix ( vec3(FDiel), clr, metallness );
-	
-			// compute Beckman
-   	float d = D_beckmann ( roughness, nh );
-
-            // compute Fresnel
-    vec3 f = fresnel ( F0, nv );
-	
-            // default G
-    float g = G_default ( nl, nh, nv, vh );
-	
-			// resulting color
-	vec3  ct   = f*(0.25 * d * g / nv);
-	vec3  diff = max(nl, 0.0) * ( vec3 ( 1.0 ) - f ) / pi;
-	float ks   = 0.5;
-
-	return vec4 ( pow ( diff * base + ks * ct, vec3 ( 1.0 / gamma ) ), 1.0 );
-}
-*/
-
-#define ZERO (min(iFrame,0))
-
-const int   NUM_SHAPES     = 4;
-const int   NUM_LIGHTS     = 2;
+const int MAX_SHAPES = 10;
+const int MAX_MATERIALS = 10;
+const int MAX_LIGHTS = 5;
+const int MAX_RAYS = 20;
 
 //Shapes
 const int   PLANE          = 0;
@@ -143,1106 +61,1462 @@ const int   ELLIPSOID      = 16;
 const int   FOOTBALL       = 17;
 const int   OCTAHEDRON     = 18;
 const int   PYRAMID        = 19;
+const int   BOX_FRAME      = 20;
 
 // Lights
 const int   OMNI           = 0;
 const int   DIRECTIONAL    = 1;
 const int   POINT          = 2;
+const int   SKY            = 3;
 
-// Ray marching variables
-const int   MAX_STEPS      = 256;
-const int   MAX_BOUNCES    = 0;
-const int   RAY_ITERATION  = 1;
-const float MAX_DISTANCE   = 50.0;
-const float SURF_DISTANCE  = 0.000001;
-const float STALL_STEP     = 0.01;
+const float FUDGE_FACTOR   = 0.9;
 
-const int   MARCHING       = 0;
-const int   HIT            = 1;
-const int   MISS           = 2;
+const float PI             = 3.14159265359;
 
-// Ray type
-const int   INITIAL        = 0;  
-const int   REFLECT        = 1;
-const int   REFRACT        = 2;
-
-// Ray position
-const int   OUTSIDE        = 0;
-const int   INSIDE         = 1;
-
-//Colors
-const vec3 AMBIENT_COLOR     = vec3(0.8, 0.8, 0.9);
-const vec3 DIRECTIONAL_COLOR = vec3(0.8, 0.7, 0.8);
-const vec3 POINT_COLOR       = vec3(0.8, 0.8, 0.7);
-
-const vec4 RED               = vec4(1.,0.,0.,1.);
-
-//Global Illumination
-const float GI_LENGTH        = 1.6;
-const float GI_STRENGTH      = 0.1;
-const float AO_STRENGTH      = 0.3;
- 
-//Array sizes and indexes
-const int NUM_RAYS = 40;
-const int GI_RAY_INDEX = 32;
-const int N_RAY_INDEX = 33;
-const int LIGHT_RAY_INDEX = 36;
-
-vec4 overrideColor = RED;
 bool override = false;
+vec4 overrideColor = vec4(1.,0.,0.,1.);
 
-vec3 camPos;
-vec3 camTgt;
-float camNear;
+// Performance tracking structure
+struct PerformanceStats {
+    int stepCount;
+    int stallCount;
+    int bounceCount;
+    int terminationReason; // 0=surface, 1=max steps, 2=escaped, 3=stalled
+    float minDistance;
+    float totalDistance;
+};
 
-int lightType[NUM_LIGHTS+1];
-vec3 lightColor[NUM_LIGHTS+1];
-bool lightRanged[NUM_LIGHTS+1];
-float lightR[NUM_LIGHTS+1];
-vec3 lightDir[NUM_LIGHTS+1];
-vec3 lightPos[NUM_LIGHTS+1];
+PerformanceStats perfStats;
 
-bool matEmissive[NUM_SHAPES+1];
-vec3 matDiffuseColor[NUM_SHAPES+1];
-vec3 matTransparentColor[NUM_SHAPES+1]; 
-vec3 matGlowColor[NUM_SHAPES+1];
-float matDiffuseStrength[NUM_SHAPES+1];
-float matSpecularStrength[NUM_SHAPES+1];
-float matShininess[NUM_SHAPES+1]; 
-float matReflectivity[NUM_SHAPES+1]; 
-float matTransparency[NUM_SHAPES+1]; 
-float matAttenuation[NUM_SHAPES+1];
-float matAttenuationStrength[NUM_SHAPES+1]; 
-float matGlow[NUM_SHAPES+1]; 
-float matRefraction[NUM_SHAPES+1];
+struct Material {
+  bool emissive, intRef;
+  vec3 color, innerColor, glowColor;
+  float kd, ior, reflectivity, roughness, reflectRoughness, refractRoughness, metallic, transparency, attenuation, attenuationStrength, glow;
+};
 
-int shapeType[NUM_SHAPES+1];
-int shapeId[NUM_SHAPES+1];
-vec2 s_l[NUM_SHAPES+1]; 
-vec2 s_c[NUM_SHAPES+1];
-vec3 s_a[NUM_SHAPES+1];
-vec3 s_b[NUM_SHAPES+1]; 
-vec3 s_n[NUM_SHAPES+1]; 
-vec3 shapePos[NUM_SHAPES+1];
-float s_h[NUM_SHAPES+1];
-float s_r[NUM_SHAPES+1]; 
-float s_r1[NUM_SHAPES+1];
-float s_r2[NUM_SHAPES+1];
-int shapeMat[NUM_SHAPES+1];
-mat4 shapeTransform[NUM_SHAPES+1];
+/*
+struct Shape {
+  int type, id;
+  vec2 l, c;
+  vec3 a, b, n, pos;
+  float h, r, r1, r2;
+  int mat;
+  mat3 rot;
+  bool isRot;
+};
+*/
 
+struct Light {
+  int type;
+  float strength;
+  vec3 color;
+  bool ranged;
+  float r;
+  vec3 dir;
+  vec3 pos;
+};
 
-vec3 rayPos[NUM_RAYS];
-vec3 rayDir[NUM_RAYS];
-float rayDistance[NUM_RAYS];
-int rayStepShape[NUM_RAYS];
-float rayStepDistance[NUM_RAYS];
-int rayHitShape[NUM_RAYS];
-float rayHitDistance[NUM_RAYS];
-vec3 rayHitPos[NUM_RAYS];
-vec3 rayHitNormal[NUM_RAYS];
-int rayFromHitShape[NUM_RAYS];
-float rayFromHitDistance[NUM_RAYS];
-vec3 rayFromHitPos[NUM_RAYS];
-vec3 rayFromHitNormal[NUM_RAYS];
-int rayStepCount[NUM_RAYS];
-vec4 rayColor[NUM_RAYS];
-vec4 rayInnerColor[NUM_RAYS]; //for refraction
-int rayHitOrMiss[NUM_RAYS];
-bool rayInitialized[NUM_RAYS];
-int rayType[NUM_RAYS];
-int rayInOrOut[NUM_RAYS];
+uniform vec3 shapes[MAX_SHAPES];
+uniform Material materials[MAX_MATERIALS];
 
-void initScene() {
-  camPos = vec3(-4.0,2.0,4.0);
-  camTgt = vec3(0.0,1.0,0.0);
-  camNear = 1.73205081 * 1.;
+Material debugMaterial;
 
-  lightType[0] = OMNI;
-  lightColor[0] = AMBIENT_COLOR;
-
-  lightType[1] = DIRECTIONAL;
-  lightColor[1] = DIRECTIONAL_COLOR;
-  lightDir[1] = vec3(0.0, -1.0, 0.0);
-  
-  lightType[2] = POINT;
-  lightColor[2] = POINT_COLOR;
-  lightPos[2] = vec3(0.0, 4.0, 0.0);
-  
-  matEmissive[0] = false;
-  matDiffuseStrength[0] = 1.0;
-  matDiffuseColor[0] = vec3(0.4, 0.4, 0.4);
-  matSpecularStrength[0] = 0.;
-  matShininess[0] = 24.0;
-  matReflectivity[0] = 0.;
-  matTransparency[0] = 0.;
-  matGlow[0] = 0.;
-  
-  matEmissive[1] = false;
-  matDiffuseStrength[1] = 1.0;
-  matDiffuseColor[1] = vec3(0.6, 0.2, 0.3);
-  matSpecularStrength[1] = 5.5;
-  matShininess[1] = 48.0;
-  matReflectivity[1] = 0.;
-  matTransparency[1] = 0.;
-  matAttenuation[1] = 0.001;
-  matAttenuationStrength[1] = 13.;
-  matTransparentColor[1] = vec3(1.0, 0.8, 0.8);
-  matRefraction[1] = 1.5;
-  matGlow[1] = 0.;
-  
-  matEmissive[2] = false;
-  matDiffuseStrength[2] = 1.0;
-  matDiffuseColor[2] = vec3(0.4, 0.2, 0.6);
-  matSpecularStrength[2] = 1.0;
-  matShininess[2] = 48.0;
-  matReflectivity[2] = 0.;
-  matTransparency[2] = 0.;
-  matTransparentColor[2] = vec3(0.6, 0.3, 0.4);
-  matRefraction[2] = 1.1;
-  matAttenuation[2] = 0.5;
-  matAttenuationStrength[2] = 2.0;
-  matGlow[2] = 0.;
-  
-  matEmissive[3] = false;
-  matDiffuseStrength[3] = 0.6;
-  matDiffuseColor[3] = vec3(1.0, 1.0, 1.0);
-  matSpecularStrength[3] = 1.0;
-  matShininess[3] = 48.0;
-  matReflectivity[3] = 0.;
-  matTransparency[3] = 0.;
-  
-  shapeType[0] = PLANE;
-  shapeId[0] = 0;
-  s_n[0] = vec3(0.,1.,0.);
-  s_h[0] = 0.5;
-  shapeMat[0] = 0;
-  shapePos[0] = vec3(0.,0.,0.);
-  shapeTransform[0] = mat4(1.0, 0.0, 0.0, 0.0,  
-                           0.0, 1.0, 0.0, 0.0,  
-                           0.0, 0.0, 1.0, 0.0,  
-                           0.0, 0.0, 0.0, 1.0); 
-  
-  shapeType[1] = SPHERE;
-  shapeId[1] = 1;
-  s_r[1] = 1.;
-  shapeMat[1] = 1;
-  shapePos[1] = vec3(-1.25,1.5,0.);
-  shapeTransform[1] = mat4(1.0, 0.0, 0.0, 0.0,  
-                           0.0, 1.0, 0.0, 0.0,  
-                           0.0, 0.0, 1.0, 0.0,  
-                           0.0, 0.0, 0.0, 1.0);
-
-  shapeType[2] = BOX;
-  shapeId[2] = 2;
-  s_a[2] = vec3(1.,1.,1.);
-  shapeMat[2] = 2;
-  shapePos[2] = vec3(1.25,1.5,0.);
-  shapeTransform[2] = mat4(1.0, 0.0, 0.0, 0.0,  
-                           0.0, 1.0, 0.0, 0.0,  
-                           0.0, 0.0, 1.0, 0.0,  
-                           0.0, 0.0, 0.0, 1.0);   
-  
-  shapeType[3] = CONE;
-  shapeId[3] = 3;
-  s_c[3] = vec2(1.0,2.0);
-  s_h[3] = 2.0;
-  shapeMat[3] = 3;
-  shapePos[3] = vec3(0.,2.5,2.25);
-  shapeTransform[3] = mat4(1.0, 0.0, 0.0, 0.0,  
-                           0.0, 1.0, 0.0, 0.0,  
-                           0.0, 0.0, 1.0, 0.0,  
-                           0.0, 0.0, 0.0, 1.0);
-                           
-  shapeType[4] = BOX;
-  shapeId[2] = 4;
-  s_a[2] = vec3(1.,1.,1.);
-  shapeMat[4] = 2;
-  shapePos[4] = vec3(1.25,1.5,0.);
-  shapeTransform[4] = mat4(1.0, 0.0, 0.0, 0.0,  
-                          0.0, 1.0, 0.0, 0.0,  
-                           0.0, 0.0, 1.0, 0.0,  
-                           0.0, 0.0, 0.0, 1.0);   
+// Performance visualization functions
+vec3 heatmapColor(float value, float maxValue) {
+    float t = clamp(value / maxValue, 0.0, 1.0);
+    // Blue (cool) -> Green -> Yellow -> Red (hot)
+    if (t < 0.33) {
+        return mix(vec3(0.0, 0.0, 1.0), vec3(0.0, 1.0, 0.0), t * 3.0);
+    } else if (t < 0.66) {
+        return mix(vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 0.0), (t - 0.33) * 3.0);
+    } else {
+        return mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), (t - 0.66) * 3.0);
+    }
 }
 
-mat3 cameraMatrix() {
-    vec3 i = normalize(camPos - camTgt);
-    vec3 j = normalize(cross(i,vec3(0.,1.,0.)));
-    return mat3(j,normalize(cross(j,i)),i);
+vec3 terminationReasonColor(int reason) {
+    if (reason == 0) return vec3(0.0, 1.0, 0.0);      // Green: Hit surface
+    else if (reason == 1) return vec3(1.0, 0.0, 0.0); // Red: Max steps
+    else if (reason == 2) return vec3(0.0, 0.0, 1.0); // Blue: Escaped
+    else return vec3(1.0, 0.0, 1.0);                  // Magenta: Stalled
 }
 
-void rayScreen(in vec2 uv)
+float sdSphere( vec3 p, float r )
 {
-    rayPos[0] = camPos;
-    rayDir[0] = normalize(cameraMatrix() * vec3(uv.xy, -camNear));
-    rayDistance[0] = 0.;
-    rayStepCount[0] = 0;
-    rayColor[0] = vec4(0.,0.,0.,1.);
-    rayInnerColor[0] = vec4(0.,0.,0.,1.);
-    rayHitOrMiss[0] = MARCHING;
-    rayStepShape[0] = -1;
-    rayStepDistance[0] = 0.;
-    rayInitialized[0] = true;
-    rayType[0] = INITIAL;
-    rayInOrOut[0] = OUTSIDE;
+  return length(p)-r;
 }
 
-void ray(int index, vec3 pos, vec3 dir, int type, int inOrOut) 
+float sdBox( vec3 p, vec3 a )
 {
-    rayPos[index] = pos;
-    rayDir[index] = dir;
-    rayDistance[index] = 0.;
-    rayStepCount[index] = 0;
-    rayColor[index] = vec4(0.,0.,0.,1.);
-    rayInnerColor[index] = vec4(0.,0.,0.,1.);
-    rayHitOrMiss[index] = MARCHING;
-    rayStepShape[index] = -1;
-    rayStepDistance[index] = 0.;
-    rayInitialized[index] = true;
-    rayType[index] = type;
-    rayInOrOut[index] = inOrOut;
+  vec3 q = abs(p) - a;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
-void ray(int index, vec3 pos, vec3 dir)
+float sdRoundBox( vec3 p, vec3 a, float r )
 {
-    ray(index, pos, dir, INITIAL, OUTSIDE);
+  vec3 q = abs(p) - a + r;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
 }
 
-void march( int index ) 
+float sdBoxFrame( vec3 p, vec3 a, float r )
 {
-    float distance = MAX_DISTANCE * 2.;
-    int foundShape = -1;
+       p = abs(p  )-a;
+  vec3 q = abs(p+r)-r;
+  return min(min(
+      length(max(vec3(p.x,q.y,q.z),0.0))+min(max(p.x,max(q.y,q.z)),0.0),
+      length(max(vec3(q.x,p.y,q.z),0.0))+min(max(q.x,max(p.y,q.z)),0.0)),
+      length(max(vec3(q.x,q.y,p.z),0.0))+min(max(q.x,max(q.y,p.z)),0.0));
+}
 
-    for(int i = 0; i < NUM_SHAPES + 1 + ZERO; i++)
-    {
-        vec3 newPos = (inverse(shapeTransform[i]) * vec4((rayPos[index] + rayDir[index] * rayDistance[index]) - shapePos[i], 1.0)).xyz;
-        float newD;
+float sdTorus( vec3 p, float r1, float r2)
+{
+  vec2 q = vec2(length(p.xz)-r1,p.y);
+  return length(q)-r2;
+}
+
+float sdLink( vec3 p, float h, float r1, float r2 )
+{
+  vec3 q = vec3( p.x, max(abs(p.y)-h,0.0), p.z );
+  return length(vec2(length(q.xy)-r1,q.z)) - r2;
+}
+
+float sdCone( vec3 p, vec2 c, float h )
+{
+  // c is the sin/cos of the angle, h is height
+  // Alternatively pass q instead of (c,h),
+  // which is the point at the base in 2D
+  vec2 q = h*vec2(c.x/c.y,-1.0);
+    
+  vec2 w = vec2( length(p.xz), p.y );
+  vec2 a = w - q*clamp( dot(w,q)/dot(q,q), 0.0, 1.0 );
+  vec2 b = w - q*vec2( clamp( w.x/q.x, 0.0, 1.0 ), 1.0 );
+  float k = sign( q.y );
+  float d = min(dot( a, a ),dot(b, b));
+  float s = max( k*(w.x*q.y-w.y*q.x),k*(w.y-q.y)  );
+  return sqrt(d)*sign(s);
+}
+
+float sdPlane( vec3 p, vec3 n, float h )
+{
+  // n must be normalized
+  return dot(p,n) + h;
+}
+
+float sdHexPrism( vec3 p, vec2 l )
+{
+  const vec3 k = vec3(-0.8660254, 0.5, 0.57735);
+  p = abs(p);
+  p.xy -= 2.0*min(dot(k.xy, p.xy), 0.0)*k.xy;
+  vec2 d = vec2(
+       length(p.xy-vec2(clamp(p.x,-k.z*l.x,k.z*l.x), l.x))*sign(p.y-l.x),
+       p.z-l.y );
+  return min(max(d.x,d.y),0.0) + length(max(d,0.0));
+}
+
+float sdTriPrism( vec3 p, vec2 l )
+{
+  vec3 q = abs(p);
+  return max(q.z-l.y,max(q.x*0.866025+p.y*0.5,-p.y)-l.x*0.5);
+}
+
+float sdCapsule( vec3 p, float h, float r)
+{
+  p.y -= clamp( p.y, 0.0, h );
+  return length( p ) - r;
+}
+
+float sdCylinder( vec3 p, float h, float r )
+{
+  vec2 d = abs(vec2(length(p.xz),p.y)) - vec2(r,h);
+  return min(max(d.x,d.y),0.0) + length(max(d,0.0));
+}
+
+float sdRoundCylinder( vec3 p, float radius, float height, float rounding )
+{
+    // Create the main cylinder shape
+    vec2 d = vec2( length(p.xz) - radius, abs(p.y) - height );
+    
+    // Add rounding to the edges
+    return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - rounding;
+}
+
+
+float sdCutCone( vec3 p, float h, float r1, float r2 )
+{
+  vec2 q = vec2( length(p.xz), p.y );
+  vec2 k1 = vec2(r2,h);
+  vec2 k2 = vec2(r2-r1,2.0*h);
+  vec2 ca = vec2(q.x-min(q.x,(q.y<0.0)?r1:r2), abs(q.y)-h);
+  vec2 cb = q - k1 + k2*clamp( dot(k1-q,k2)/dot2(k2), 0.0, 1.0 );
+  float s = (cb.x<0.0 && ca.y<0.0) ? -1.0 : 1.0;
+  return s*sqrt( min(dot2(ca),dot2(cb)) );
+}
+
+float sdSolidAngle( vec3 p, vec2 c, float r1 )
+{
+  // c is the sin/cos of the angle
+  vec2 q = vec2( length(p.xz), p.y );
+  float l = length(q) - r1;
+  float m = length(q - c*clamp(dot(q,c),0.0,r1) );
+  return max(l,m*sign(c.y*q.x-c.x*q.y));
+}
+
+float sdCutSphere( vec3 p, float r, float h )
+{
+  // sampling independent computations (only depend on shape)
+  float w = sqrt(r*r-h*h);
+
+  // sampling dependant computations
+  vec2 q = vec2( length(p.xz), p.y );
+  float s = max( (h-r)*q.x*q.x+w*w*(h+r-2.0*q.y), h*q.x-w*q.y );
+  return (s<0.0) ? length(q)-r :
+         (q.x<w) ? h - q.y     :
+                   length(q-vec2(w,h));
+}
+
+float sdRoundCone( vec3 p, float r1, float r2, float h )
+{
+  // sampling independent computations (only depend on shape)
+  float b = (r1-r2)/h;
+  float a = sqrt(1.0-b*b);
+
+  // sampling dependant computations
+  vec2 q = vec2( length(p.xz), p.y );
+  float k = dot(q,vec2(-b,a));
+  if( k<0.0 ) return length(q) - r1;
+  if( k>a*h ) return length(q-vec2(0.0,h)) - r2;
+  return dot(q, vec2(a,b) ) - r1;
+}
+
+float sdEllipsoid( vec3 p, float r, float r1, float r2 )
+{
+  vec3 r3 = vec3(r, r1, r2);
+  float k0 = length(p/r3);
+  float k1 = length(p/(r3*r3));
+  return k0*(k0-1.0)/k1;
+}
+
+float sdFootball( in vec3 p, in vec3 a, in vec3 b, in float h )
+{
+    vec3  c = (a+b)*0.5;
+    float l = length(b-a);
+    vec3  v = (b-a)/l;
+    float y = dot(p-c,v);
+    vec2  q = vec2(length(p-c-y*v),abs(y));
+    
+    float r = 0.5*l;
+    float d = 0.5*(r*r-h*h)/h;
+    vec3  h2 = (r*q.x<d*(q.y-r)) ? vec3(0.0,r,0.0) : vec3(-d,0.0,d+h);
+ 
+    return length(q-h2.xy) - h2.z;
+}
+
+float sdOctahedron( vec3 p, float r )
+{
+  p = abs(p);
+  float m = p.x+p.y+p.z-r;
+  vec3 q;
+       if( 3.0*p.x < m ) q = p.xyz;
+  else if( 3.0*p.y < m ) q = p.yzx;
+  else if( 3.0*p.z < m ) q = p.zxy;
+  else return m*0.57735027;
+    
+  float k = clamp(0.5*(q.z-q.y+r),0.0,r); 
+  return length(vec3(q.x,q.y-r+k,q.z-k)); 
+}
+
+float sdPyramid( in vec3 p, in float h )
+{
+    if (p.y <= 0.0)
+        return length(max(abs(p)-vec3(0.5,0.0,0.5),0.0));
+    float m2 = h*h + 0.25;
+    
+    // symmetry
+    p.xz = abs(p.xz); // do p=abs(p) instead for double pyramid
+    p.xz = (p.z>p.x) ? p.zx : p.xz;
+    p.xz -= 0.5;
+	
+    // project into face plane (2D)
+    vec3 q = vec3( p.z, h*p.y-0.5*p.x, h*p.x+0.5*p.y);
         
-        if(shapeType[i] == PLANE)
-        {
-          newD = dot(newPos,s_n[i]) + s_h[i];
-        }
-        else if(shapeType[i] == SPHERE)
-        {
-          newD = length(newPos)-s_r[i];
-        }
-        else if(shapeType[i] == BOX)
-        {
-          vec3 q = abs(newPos) - s_a[i];
-          newD = length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
-        }
-        else if(shapeType[i] == ROUND_BOX)
-        {
-          vec3 q = abs(newPos) - s_a[i] + s_r[i];
-          newD = length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - s_r[i];
-        }
-        else if(shapeType[i] == TORUS)
-        {
-          vec2 q = vec2(length(newPos.xz)-s_r1[i],newPos.y);
-          newD = length(q)-s_r2[i];
-        }
-        else if(shapeType[i] == LINK)
-        {
-          vec3 q = vec3( newPos.x, max(abs(newPos.y)-s_h[i],0.0), newPos.z );
-          newD = length(vec2(length(q.xy)-s_r1[i],q.z)) - s_r2[i];
-        }
-        else if(shapeType[i] == CONE)
-        {
-          vec2 q = s_h[i]*vec2(s_c[i].x/s_c[i].y,-1.0);
-            
-          vec2 w = vec2( length(newPos.xz), newPos.y );
-          vec2 a = w - q*clamp( dot(w,q)/dot(q,q), 0.0, 1.0 );
-          vec2 b = w - q*vec2( clamp( w.x/q.x, 0.0, 1.0 ), 1.0 );
-          float k = sign( q.y );
-          float d = min(dot( a, a ),dot(b, b));
-          float s = max( k*(w.x*q.y-w.y*q.x),k*(w.y-q.y)  );
-          newD = sqrt(d)*sign(s);
-        }
-        else if(shapeType[i] == HEX_PRISM)
-        {
-          const vec3 k = vec3(-0.8660254, 0.5, 0.57735);
-          newPos = abs(newPos);
-          newPos.xy -= 2.0*min(dot(k.xy, newPos.xy), 0.0)*k.xy;
-          vec2 d = vec2(
-              length(newPos.xy-vec2(clamp(newPos.x,-k.z*s_l[i].x,k.z*s_l[i].x), s_l[i].x))*sign(newPos.y-s_l[i].x),
-              newPos.z-s_l[i].y );
-          newD = min(max(d.x,d.y),0.0) + length(max(d,0.0));
-        }
-        else if(shapeType[i] == TRI_PRISM)
-        {
-          vec3 q = abs(newPos);
-          newD = max(q.z-s_l[i].y,max(q.x*0.866025+newPos.y*0.5,-newPos.y)-s_l[i].x*0.5);
-        }
-        else if(shapeType[i] == CAPSULE)
-        {
-          vec3 pa = newPos - s_a[i], ba = s_b[i] - s_a[i];
-          float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
-          newD = length( pa - ba*h ) - s_r[i];
-        }
-        else if(shapeType[i] == CYLINDER)
-        {
-          vec3  ba = s_b[i] - s_a[i];
-          vec3  pa = newPos - s_a[i];
-          float baba = dot(ba,ba);
-          float paba = dot(pa,ba);
-          float x = length(pa*baba-ba*paba) - s_r[i]*baba;
-          float y = abs(paba-baba*0.5)-baba*0.5;
-          float x2 = x*x;
-          float y2 = y*y*baba;
-          float d = (max(x,y)<0.0)?-min(x2,y2):(((x>0.0)?x2:0.0)+((y>0.0)?y2:0.0));
-          newD = sign(d)*sqrt(abs(d))/baba;
-        }
-        else if(shapeType[i] == ROUND_CYLINDER)
-        {
-          vec2 d = vec2( length(newPos.xz)-2.0*s_r1[i]+s_r2[i], abs(newPos.y) - s_h[i] );
-          newD = min(max(d.x,d.y),0.0) + length(max(d,0.0)) - s_r2[i];
-        }
-        if(shapeType[i] == CUT_CONE)
-        {
-          float ra = s_r1[i];
-          float rb = s_r2[i];
-          float rba  = rb-ra;
-          float baba = dot(s_b[i]-s_a[i],s_b[i]-s_a[i]);
-          float papa = dot(newPos-s_a[i],newPos-s_a[i]);
-          float paba = dot(newPos-s_a[i],s_b[i]-s_a[i])/baba;
-          float x = sqrt( papa - paba*paba*baba );
-          float cax = max(0.0,x-((paba<0.5)?ra:rb));
-          float cay = abs(paba-0.5)-0.5;
-          float k = rba*rba + baba;
-          float f = clamp( (rba*(x-ra)+paba*baba)/k, 0.0, 1.0 );
-          float cbx = x-ra - f*rba;
-          float cby = paba - f;
-          float s = (cbx<0.0 && cay<0.0) ? -1.0 : 1.0;
-          newD = s*sqrt( min(cax*cax + cay*cay*baba, cbx*cbx + cby*cby*baba) );
-        }
-        else if(shapeType[i] == SOLID_ANGLE)
-        {
-          // c is the sin/cos of the angle
-          vec2 q = vec2( length(newPos.xz), newPos.y );
-          float l = length(q) - s_r1[i];
-          float m = length(q - s_c[i]*clamp(dot(q,s_c[i]),0.0,s_r1[i]) );
-          newD = max(l,m*sign(s_c[i].y*q.x-s_c[i].x*q.y));
-        }
-        else if(shapeType[i] == CUT_SPHERE)
-        {
-          // sampling independent computations (only depend on shape)
-          float w = sqrt(s_r[i]*s_r[i]-s_h[i]*s_h[i]);
+    float s = max(-q.x,0.0);
+    float t = clamp( (q.y-0.5*q.x)/(m2+0.25), 0.0, 1.0 );
+    
+    float a = m2*(q.x+s)*(q.x+s) + q.y*q.y;
+	float b = m2*(q.x+0.5*t)*(q.x+0.5*t) + (q.y-m2*t)*(q.y-m2*t);
+    
+    float d2 = max(-q.y,q.x*m2+q.y*0.5) < 0.0 ? 0.0 : min(a,b);
+    
+    // recover 3D and scale, and add sign
+    return sqrt( (d2+q.z*q.z)/m2 ) * sign(max(q.z,-p.y));;
+}
 
-          // sampling dependant computations
-          vec2 q = vec2( length(newPos.xz), newPos.y );
-          float s = max( (s_h[i]-s_r[i])*q.x*q.x+w*w*(s_h[i]+s_r[i]-2.0*q.y), s_h[i]*q.x-w*q.y );
-          newD = (s<0.0) ? length(q)-s_r[i] : (q.x<w) ? s_h[i] - q.y     : length(q-vec2(w,s_h[i]));
-        }
-        else if(shapeType[i] == ROUND_CONE)
-        {
-          // sampling independent computations (only depend on shape)
-          vec3  ba = s_b[i] - s_a[i];
-          float l2 = dot(ba,ba);
-          float rr = s_r1[i] - s_r2[i];
-          float a2 = l2 - rr*rr;
-          float il2 = 1.0/l2;
-            
-          // sampling dependant computations
-          vec3 pa = newPos - s_a[i];
-          float y = dot(pa,ba);
-          float z = y - l2;
-          float x2 = dot2( pa*l2 - ba*y );
-          float y2 = y*y*l2;
-          float z2 = z*z*l2;
 
-          // single square root!
-          float k = sign(rr)*rr*rr*x2;
-          if( sign(z)*a2*z2>k ) 
+float sdU( in vec3 p, in float r, in float le, vec2 w )
+{
+    p.x = (p.y>0.0) ? abs(p.x) : length(p.xy);
+    p.x = abs(p.x-r);
+    p.y = p.y - le;
+    float k = max(p.x,p.y);
+    vec2 q = vec2( (k<0.0) ? -k : length(max(p.xy,0.0)), abs(p.z) ) - w;
+    return length(max(q,0.0)) + min(max(q.x,q.y),0.0);
+}
+
+//------------------------------------------------------------------
+
+vec3 opU( vec3 d1, vec3 d2 )
+{
+	return (d1.x<d2.x) ? d1 : d2;
+}
+
+// Simple hash function based on the input value
+float random(vec2 seed) {
+    // Use a hashing algorithm to create a pseudo-random number
+    return fract(sin(dot(seed ,vec2(12.9898,78.233))) * 43758.5453123);
+}
+
+mat3 makeTBN(vec3 n) {
+    vec3 tangent = normalize(abs(n.y) < 0.999 ? cross(n, vec3(0.0, 1.0, 0.0)) : cross(n, vec3(1.0, 0.0, 0.0)));
+    vec3 bitangent = cross(n, tangent);
+    return mat3(tangent, bitangent, n);
+}
+
+vec3 randomSpherePoint(vec3 rand) {
+  float ang1 = (rand.x + 1.0) * PI; // [-1..1) -> [0..2*PI)
+  float u = rand.y; // [-1..1), cos and acos(2v-1) cancel each other out, so we arrive at [-1..1)
+  float u2 = u * u;
+  float sqrt1MinusU2 = sqrt(1.0 - u2);
+  float x = sqrt1MinusU2 * cos(ang1);
+  float y = sqrt1MinusU2 * sin(ang1);
+  float z = u;
+  return vec3(x, y, z);
+}
+
+vec3 randomHemispherePoint(vec3 rand, vec3 dir) {
+    vec3 v = randomSpherePoint(rand);
+    if (dot(v, vec3(0, 0, 1)) < 0.0) v = -v; // ensure it's in the upper hemisphere
+    mat3 tbn = makeTBN(normalize(dir)); // align Z-axis with dir
+    return normalize(tbn * v); // rotate to world space
+}
+
+//------------------------------------------------------------------
+
+#define ZERO (min(iFrame,0))
+
+//------------------------------------------------------------------
+/*
+float getApproximateRadius(Shape s) {
+    switch(s.type) {
+        case SPHERE: 
+            return s.r;
+        case BOX: 
+        case ROUND_BOX: 
+        case BOX_FRAME:
+            return length(s.a) + s.r;
+        case TORUS: 
+            return s.r1 + s.r2;
+        case LINK:
+            return s.r1 + s.r2;
+        case CYLINDER:
+        case ROUND_CYLINDER:
+        case CAPSULE: 
+            return max(s.r + s.r1, s.h);
+        case CONE:
+        case CUT_CONE:
+        case ROUND_CONE:
+            // Estimate based on height and max radius
+            float maxR = max(s.r1, s.r2);
+            return max(maxR, s.h);
+        case HEX_PRISM:
+        case TRI_PRISM:
+            return max(s.l.x, s.l.y);
+        case ELLIPSOID:
+            return max(s.r, max(s.r1, s.r2));
+        case FOOTBALL:
+            return length(s.b - s.a) * 0.5 + s.h;
+        case OCTAHEDRON:
+            return s.r;
+        case PYRAMID:
+            return max(0.71, s.r); // Base diagonal ~1.414/2, height s.r
+        case SOLID_ANGLE:
+        case CUT_SPHERE:
+            return s.r1;
+        default: 
+            return 1.5; // Conservative estimate
+    }
+}
+
+vec3 getShapeBounds(Shape s) {
+    const float padding = 0.02;
+    switch(s.type) {
+        case SPHERE:
+            return vec3(s.r + padding);
+        case BOX:
+            return s.a + padding;
+        case ROUND_BOX:
+            return s.a + s.r + padding;
+        case BOX_FRAME:
+            return s.a + s.r + padding;
+        case TORUS:
+            return vec3(s.r1 + s.r2 + padding, s.r2 + padding, s.r1 + s.r2 + padding);
+        case LINK: 
+            return vec3(s.r1 + s.r2 + padding, s.h + s.r2 + padding, s.r1 + s.r2 + padding);
+        case CYLINDER:
+            return vec3(s.r + padding, s.h + padding, s.r + padding);
+        case ROUND_CYLINDER:
+            return vec3(s.r + s.r1 + padding, s.h + s.r1 + padding, s.r + s.r1 + padding);
+        case CAPSULE:
+            return vec3(s.r + padding, s.h + s.r + padding, s.r + padding);
+        case CONE:
+            // For sdCone, s.c is sin/cos of angle, s.h is height
+            // Base radius = h * c.x/c.y = h * tan(angle)
+            float baseRadius = s.h * (s.c.x / s.c.y);
+            return vec3(abs(baseRadius) + padding, s.h + padding, abs(baseRadius) + padding);
+        case CUT_CONE:
+            float maxCutR = max(s.r1, s.r2);
+            return vec3(maxCutR + padding, s.h + padding, maxCutR + padding);
+        case SOLID_ANGLE:
+            // Based on sin/cos angle and radius
+            return vec3(s.r1 + padding, s.r1 + padding, s.r1 + padding);
+        case CUT_SPHERE:
+            // Sphere with radius s.r, cut at height s.h
+            return vec3(s.r + padding, s.r + padding, s.r + padding);
+        case ROUND_CONE:
+            // Similar to cut cone but with rounded edges
+            float maxRoundR = max(s.r1, s.r2);
+            return vec3(maxRoundR + padding, s.h + padding, maxRoundR + padding);
+        case ELLIPSOID:
+            // Use max of the three radii
+            float maxEllipseR = max(s.r, max(s.r1, s.r2));
+            return vec3(maxEllipseR + padding);
+        case FOOTBALL:
+            // Football shape - analyze the sdFootball function parameters
+            // It uses s.a, s.b (endpoints) and s.h (height/thickness)
+            float footballLength = length(s.b - s.a) * 0.5;
+            return vec3(footballLength + s.h + padding);
+        case OCTAHEDRON:
+            // Regular octahedron with "radius" s.r
+            return vec3(s.r + padding);
+        case PYRAMID:
+            // Pyramid with height s.r and base 1x1 (from sdPyramid)
+            return vec3(0.71 + padding, s.r + padding, 0.71 + padding);
+        case HEX_PRISM:
+            return vec3(s.l.x * 1.16, s.l.y + padding, s.l.x * 1.16);
+        case TRI_PRISM:
+            return vec3(s.l.x + padding, s.l.y + padding, s.l.x + padding);
+        case PLANE:
+            // Plane extends infinitely, but we can use a large bound
+            return vec3(100.0);
+        default:
+            // For unknown shapes, use conservative bound
+            return vec3(1.5);
+    }
+}
+*/
+
+vec3 map( in vec3 pos, float rayDistance)
+{
+    vec3 res = vec3( pos.y, 0.0, -1.0 );
+
+    float earlyExitThreshold = distanceThreshold * rayDistance;
+
+    const float boundsPadding = 0.02;
+    <% const allShapes = showBoxes ? [...shapes, ...shapes] : shapes;
+      allShapes.forEach((_s, i) => {
+        if(showBoxes) {
+          if(i < shapes.length)
           {
-            newD = sqrt(x2 + z2)        *il2 - s_r2[i];
-          }
-          else if( sign(y)*a2*y2<k ) 
-          {
-            newD = sqrt(x2 + y2)        *il2 - s_r1[i];
-          }
+            s = _s;
+          } 
           else
           {
-            newD = (sqrt(x2*a2*il2)+y*rr)*il2 - s_r1[i];
+            let bounds;
+            let boundsPadding = 0.02;
+            switch(_s.type) {
+              case 1: //SPHERE:
+                  bounds = {x: _s.r + boundsPadding, y: _s.r + boundsPadding, z: _s.r + boundsPadding};
+                  break;
+              case 2: //BOX:
+                  bounds = {x: _s.a.x + boundsPadding, y: _s.a.y + boundsPadding, z: _s.a.z + boundsPadding};
+                  break;
+              case 3: //ROUND_BOX:
+                  bounds = {x: _s.a.x + _s.r + boundsPadding, y: _s.a.y + _s.r + boundsPadding, z: _s.a.z + _s.r + boundsPadding};
+                  break;
+              case 20: //BOX_FRAME:
+                  bounds = {x: _s.a.x + _s.r + boundsPadding, y: _s.a.y + _s.r + boundsPadding, z: _s.a.z + _s.r + boundsPadding};
+                  break;
+              case 4: //TORUS:
+                  bounds = {x: _s.r1 + _s.r2 + boundsPadding, y: _s.r2 + boundsPadding, z: _s.r1 + _s.r2 + boundsPadding};
+                  break;
+              case 5: //LINK:
+                  bounds = {x: _s.r1 + _s.r2 + boundsPadding, y: _s.h + _s.r2 + boundsPadding, z: _s.r1 + _s.r2 + boundsPadding};
+                  break;
+              case 10: //CYLINDER:
+                  bounds = {x: _s.r + boundsPadding, y: _s.h + boundsPadding, z: _s.r + boundsPadding};
+                  break;
+              case 11: //ROUND_CYLINDER:
+                  bounds = {x: _s.r + _s.r1 + boundsPadding, y: _s.h + _s.r1 + boundsPadding, z: _s.r + _s.r1 + boundsPadding};
+                  break;
+              case 9: //CAPSULE:
+                  bounds = {x: _s.r + boundsPadding, y: _s.h + _s.r + boundsPadding, z: _s.r + boundsPadding};
+                  break;
+              case 6: //CONE:
+                  // For sdCone, s.c is sin/cos of angle, s.h is height
+                  // Base radius = h * c.x/c.y = h * tan(angle)
+                  const baseRadius = _s.h * (_s.c.x / _s.c.y);
+                  bounds = {x: Math.abs(baseRadius) + boundsPadding, y: _s.h + boundsPadding, z: Math.abs(baseRadius) + boundsPadding};
+              case 12: //CUT_CONE:
+                  const maxCutR = Math.max(_s.r1, _s.r2);
+                  bounds = {x: maxCutR + boundsPadding, y: _s.h + boundsPadding, z: maxCutR + boundsPadding};
+                  break;
+              case 13: //SOLID_ANGLE:
+                  // Based on sin/cos angle and radius
+                  bounds = {x: _s.r1 + boundsPadding, y: _s.r1 + boundsPadding, z: _s.r1 + boundsPadding};
+                  break;
+              case 14: //CUT_SPHERE:
+                  // Sphere with radius s.r, cut at height s.h
+                  bounds = {x: _s.r + boundsPadding, y: _s.r + boundsPadding, z: _s.r + boundsPadding};
+                  break;
+              case 15: //ROUND_CONE:
+                  // Similar to cut cone but with rounded edges
+                  const maxRoundR = Math.max(_s.r1, _s.r2);
+                  bounds = {x: maxRoundR + boundsPadding, y: _s.h + boundsPadding, z: maxRoundR + boundsPadding};
+                  break;
+              case 16: //ELLIPSOID:
+                  // Use max of the three radii
+                  const maxEllipseR = Math.max(_s.r, max(_s.r1, _s.r2));
+                  bounds = {x: maxEllipseR + boundsPadding, y: maxEllipseR + boundsPadding, z: maxEllipseR + boundsPadding};
+                  break;
+              case 17: //FOOTBALL:
+                  // Football shape - analyze the sdFootball function parameters
+                  // It uses s.a, s.b (endpoints) and s.h (height/thickness)
+                  const footballLength = Math.sqrt(Math.pow(_s.b.x - _s.a.x, 2) +Math.pow(_s.b.y - _s.a.y, 2) + Math.pow(_s.b.z - _s.a.z, 2)) * 0.5;
+                  bounds = {x: footballLength + _s.h + boundsPadding, y: footballLength + _s.h + boundsPadding, z: footballLength + _s.h + boundsPadding};
+                  break;
+              case 18: //OCTAHEDRON:
+                  // Regular octahedron with "radius" s.r
+                  bounds = {x: _s.r + boundsPadding, y: _s.r + boundsPadding, z: _s.r + boundsPadding};
+                  break;
+              case 19: //PYRAMID:
+                  // Pyramid with height s.r and base 1x1 (from sdPyramid)
+                  bounds = {x: 0.71 + boundsPadding, y: _s.r + boundsPadding, z: 0.71 + boundsPadding};
+                  break;
+              case 7: //HEX_PRISM:
+                  bounds = {x: _s.l.x * 1.16, y: _s.l.y + boundsPadding, z: _s.l.x * 1.16};
+                  break;
+              case 8: //TRI_PRISM:
+                  bounds = {x: _s.l.x + boundsPadding, y: _s.l.y + boundsPadding, z: _s.l.x + boundsPadding};
+                  break;
+              case 0: //PLANE:
+                  //Plane extends infinitely, but we can use a large bound
+                  bounds = {x: 100.0, y: 100.0, z: 100.0};
+                  break;
+              default:
+                  // For unknown shapes, use conservative bound
+                  bounds = {x: 1.5, y: 1.5, z: 1.5};
+            };
+            s = {
+              ..._s,
+              type: 20,
+              mat: 1,
+              a: bounds,
+              r: 0.005
+            };
           }
-        }
-        else if(shapeType[i] == ELLIPSOID)
-        {
-          vec3 r3 = vec3(s_r[i], s_r1[i], s_r2[i]);
-          float k0 = length(newPos/r3);
-          float k1 = length(newPos/(r3*r3));
-          newD = k0*(k0-1.0)/k1;
-        }
-        else if(shapeType[i] == FOOTBALL)
-        {
-          vec3  c = (s_a[i]+s_b[i])*0.5;
-          float l = length(s_b[i]-s_a[i]);
-          vec3  v = (s_b[i]-s_a[i])/l;
-          float y = dot(newPos-c,v);
-          vec2  q = vec2(length(newPos-c-y*v),abs(y));
-          
-          float r = 0.5*l;
-          float d = 0.5*(r*r-s_h[i]*s_h[i])/s_h[i];
-          vec3  h2 = (r*q.x<d*(q.y-r)) ? vec3(0.0,r,0.0) : vec3(-d,0.0,d+s_h[i]);
-      
-          newD = length(q-h2.xy) - h2.z;
-        }
-        else if(shapeType[i] == OCTAHEDRON)
-        {
-          vec3 p = abs(newPos);
-          float m = p.x+p.y+p.z-s_r[i];
-          bool alreadySet = false;
-          vec3 q;
-               if( 3.0*p.x < m ) q = p.xyz;
-          else if( 3.0*p.y < m ) q = p.yzx;
-          else if( 3.0*p.z < m ) q = p.zxy;
-          else { 
-            newD = m*0.57735027;
-            alreadySet = true;
-          }
-          if(!alreadySet)
-          {
-            float k = clamp(0.5*(q.z-q.y+s_r[i]),0.0,s_r[i]); 
-            newD = length(vec3(q.x,q.y-s_r[i]+k,q.z-k)); 
-          } 
-        }
-        else if(shapeType[i] == PYRAMID)
-        {
-          float m2 = s_r[i]*s_r[i] + 0.25;
+        } else {
+          s = _s;
+        } %>
+        vec3 delta<%= i %> = pos - vec3(<%= _f(s.pos.x) %>,<%= _f(s.pos.y) %>,<%= _f(s.pos.z) %>);
 
-          vec3 p = newPos; 
-          p.xz = abs(p.xz);
-          p.xz = (p.z>p.x) ? p.zx : p.xz;
-          p.xz -= 0.5;
+        <% switch(s.type) { 
+            case 1: // SPHERE: %>
+                float approxRadius<%= i %> = <%= _f(s.r) %>;
+            <%
+                break;
+            case 2: //BOX: %>
+                float approxRadius<%= i %> = length(vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>));
+            <%    
+                break;
+            case 3: //ROUND_BOX: 
+            case 20: //BOX_FRAME: %>
+                float approxRadius<%= i %> = length(vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>)) + <%= _f(s.r) %>;
+            <%    
+              break;
+            case 4: //TORUS: %>
+                float approxRadius<%= i %> = <%= _f(s.r1) %> + <%= _f(s.r2) %>;
+            <%     
+                break;
+            case 5: //LINK: %>
+                float approxRadius<%= i %> = <%= _f(s.r1) %> + <%= _f(s.r2) %>;
+            <%    
+                break;
+            case 10: //CYLINDER:
+            case 11: //ROUND_CYLINDER:
+            case 9: //CAPSULE: %>
+                float approxRadius<%= i %> = max(<%= _f(s.r) %> + <%= _f(s.r1) %>, <%= _f(s.h) %>);
+            <%    
+                break;
+            case 6: //CONE:
+            case 12: //CUT_CONE:
+            case 15: //ROUND_CONE: %>
+                float approxRadius<%= i %> = max(max(<%= _f(s.r1) %>, <%= _f(s.r2) %>), <%= _f(s.h) %>);
+            <%
+                break;
+            case 7: //HEX_PRISM:
+            case 8: //TRI_PRISM: %>
+                float approxRadius<%= i %> = max(<%= _f(s.l.x) %>, <%= _f(s.l.y) %>);
+            <%
+                break;
+            case 16: //ELLIPSOID: %>
+                float approxRadius<%= i %> = max(<%= _f(s.r) %>, max(<%= _f(s.r1) %>, <%= _f(s.r2) %>));
+            <%
+                break;
+            case 17: //FOOTBALL: %>
+                float approxRadius<%= i %> = length(vec3(<%= _f(s.b.x - s.a.x) %>, <%= _f(s.b.y - s.a.y) %>, <%= _f(s.b.z - s.a.z) %>)) * 0.5 + <%= _f(s.h) %>;
+            <%     
+                break;
+            case 18: //OCTAHEDRON: %>
+                float approxRadius<%= i %> = <%= _f(s.r) %>;
+            <% 
+                break;    
+            case 19: //PYRAMID: %>
+                float approxRadius<%= i %> = max(0.71, <%= _f(s.r) %>);
+            <% 
+                break;    
+            case 13: //SOLID_ANGLE:
+            case 14: //CUT_SPHERE: %>
+                float approxRadius<%= i %> = <%= _f(s.r1) %>;
+            <%     
+              break;
+            default: %>
+                float approxRadius<%= i %> = 1.5; // Conservative estimate
+        <% } %>
 
-          vec3 q = vec3( p.z, s_r[i]*p.y - 0.5*p.x, s_r[i]*p.x + 0.5*p.y);
-          
-          float s = max(-q.x,0.0);
-          float t = clamp( (q.y-0.5*p.z)/(m2+0.25), 0.0, 1.0 );
-            
-          float a = m2*(q.x+s)*(q.x+s) + q.y*q.y;
-          float b = m2*(q.x+0.5*t)*(q.x+0.5*t) + (q.y-m2*t)*(q.y-m2*t);
-            
-          float d2 = min(q.y,-q.x*m2-q.y*0.5) > 0.0 ? 0.0 : min(a,b);
-            
-          newD = sqrt( (d2+q.z*q.z)/m2 ) * sign(max(q.z,-p.y));
-        }
-        
-        if(abs(newD) < distance)
-        {
-            distance = abs(newD);
-            foundShape = i;
-        }
-    }
-    rayStepShape[index] = foundShape;
-    rayStepDistance[index] = distance * 0.9;
-    rayStepCount[index] += 1;
-}
+        if (length(delta<%= i %>) - approxRadius<%= i %> <= res.x) {
+          vec3 rotatedDelta<%= i %> = mat3(<%= s.rot.map(_f).join(",") %>) * delta<%= i %>;
+          vec3 newPos<%= i %> = rotatedDelta<%= i %>;
 
-float simpleMarch(vec3 pos) 
-{
-    float distance = MAX_DISTANCE * 2.;
-    for(int i = 0; i < NUM_SHAPES + 1 + ZERO; i++)
-    {
-        vec3 newPos = (inverse(shapeTransform[i]) * vec4(pos - shapePos[i], 1.0)).xyz;
-        float newD;
+          <% switch(s.type) {
+              case 1: //SPHERE: %>
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r) %> + boundsPadding);
+              <%     
+                  break;
+              case 2: //BOX: %>
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>) + boundsPadding;
+              <%     
+                  break;
+              case 3: //ROUND_BOX: %>
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>) + <%= _f(s.r) %> + boundsPadding;
+              <%     
+                  break;
+              case 20: //BOX_FRAME: %>
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>) + <%= _f(s.r) %> + boundsPadding;
+              <%     
+                  break;
+              case 4: //TORUS: %>
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r1) %> + <%= _f(s.r2) %> + boundsPadding, <%= _f(s.r2) %> + boundsPadding, <%= _f(s.r1) %> + <%= _f(s.r2) %> + boundsPadding);
+              <%     
+                  break;
+              case 5: //LINK:  %>
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r1) %> + <%= _f(s.r2) %> + boundsPadding, <%= _f(s.h) %> + <%= _f(s.r2) %> + boundsPadding, <%= _f(s.r1) %> + <%= _f(s.r2) %> + boundsPadding);
+              <%     
+                  break;
+              case 10: //CYLINDER: %>
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r) %> + boundsPadding, <%= _f(s.h) %> + boundsPadding, <%= _f(s.r) %> + boundsPadding);
+              <%     
+                  break;
+              case 11: //ROUND_CYLINDER: %>
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r) %> + <%= _f(s.r1) %> + boundsPadding, <%= _f(s.h) %> + <%= _f(s.r1) %> + boundsPadding, <%= _f(s.r) %> + <%= _f(s.r1) %> + boundsPadding);
+              <%     
+                  break;
+              case 9: //CAPSULE: %>
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r) %> + boundsPadding, <%= _f(s.h) %> + <%= _f(s.r) %> + boundsPadding, <%= _f(s.r) %> + boundsPadding);
+              <%     
+                  break;
+              case 6: //CONE: %>
+                  // For sdCone, s.c is sin/cos of angle, s.h is height
+                  // Base radius = h * c.x/c.y = h * tan(angle)
+                  float baseRadius<%= i %> = <%= _f(s.h) %> * (<%= _f(s.c.x) %> / <%= _f(s.c.y) %>);
+                  vec3 bounds<%= i %> = vec3(abs(baseRadius<%= i %>) + boundsPadding, <%= _f(s.h) %> + boundsPadding, abs(baseRadius<%= i %>) + boundsPadding);
+              <%     
+                  break;
+              case 12: //CUT_CONE: %>
+                  float maxCutR<%= i %> = max(<%= _f(s.r1) %>, <%= _f(s.r2) %>);
+                  vec3 bounds<%= i %> = vec3(maxCutR<%= i %> + boundsPadding, <%= _f(s.h) %> + boundsPadding, maxCutR<%= i %> + boundsPadding);
+              <%     
+                  break;
+              case 13: //SOLID_ANGLE: %>
+                  // Based on sin/cos angle and radius
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r1) %> + boundsPadding, <%= _f(s.r1) %> + boundsPadding, <%= _f(s.r1) %> + boundsPadding);
+              <%     
+                  break;
+              case 14: //CUT_SPHERE: %>
+                  // Sphere with radius s.r, cut at height s.h
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r) %> + boundsPadding, <%= _f(s.r) %> + boundsPadding, <%= _f(s.r) %> + boundsPadding);
+              <%     
+                  break;
+              case 15: //ROUND_CONE: %>
+                  // Similar to cut cone but with rounded edges
+                  float maxRoundR<%= i %> = max(<%= _f(s.r1) %>, <%= _f(s.r2) %>);
+                  vec3 bounds<%= i %> = vec3(maxRoundR<%= i %> + boundsPadding, s.h + boundsPadding, maxRoundR<%= i %> + boundsPadding);
+              <%     
+                  break;
+              case 16: //ELLIPSOID: %>
+                  // Use max of the three radii
+                  float maxEllipseR<%= i %> = max(<%= _f(s.r) %>, max(<%= _f(s.r1) %>, <%= _f(s.r2) %>));
+                  vec3 bounds<%= i %> = vec3(maxEllipseR<%= i %> + boundsPadding);
+              <%     
+                  break;
+              case 17: //FOOTBALL: %>
+                  // Football shape - analyze the sdFootball function parameters
+                  // It uses s.a, s.b (endpoints) and s.h (height/thickness)
+                  float footballLength<%= i %> = length(vec3(<%= _f(s.b.x - s.a.x) %>, <%= _f(s.b.y - s.a.y) %>, <%= _f(s.b.z - s.a.z) %>)) * 0.5;
+                  vec3 bounds<%= i %> = vec3(footballLength<%= i %> + <%= _f(s.h) %> + boundsPadding);
+              <%     
+                  break;
+              case 18: //OCTAHEDRON: %>
+                  // Regular octahedron with "radius" s.r
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r) %> + boundsPadding);
+              <%     
+                  break;
+              case 19: //PYRAMID: %>
+                  // Pyramid with height s.r and base 1x1 (from sdPyramid)
+                  vec3 bounds<%= i %> = vec3(0.71 + boundsPadding, <%= _f(s.r) %> + boundsPadding, 0.71 + boundsPadding);
+              <%     
+                  break;
+              case 7: //HEX_PRISM: %>
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.l.x) %> * 1.16, <%= _f(s.l.y) %> + boundsPadding, <%= _f(s.l.x) %> * 1.16);
+              <%     
+                  break;
+              case 8: //TRI_PRISM: %>
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.l.x) %> + boundsPadding, <%= _f(s.l.y) %> + boundsPadding, <%= _f(s.l.x) %> + boundsPadding);
+              <%     
+                  break;
+              case 0: //PLANE: %>
+                  // Plane extends infinitely, but we can use a large bound
+                  vec3 bounds<%= i %> = vec3(100.0);
+              <%     
+                  break;
+              default: %>
+                  // For unknown shapes, use conservative bound
+                  vec3 bounds<%= i %> = vec3(1.5);
+          <% } %>
 
-        if(shapeType[i] == PLANE)
-        {
-          newD = dot(newPos,s_n[i]) + s_h[i];
-        }
-        else if(shapeType[i] == SPHERE)
-        {
-          newD = length(newPos)-s_r[i];
-        }
-        else if(shapeType[i] == BOX)
-        {
-          vec3 q = abs(newPos) - s_a[i];
-          newD = length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
-        }
-        else if(shapeType[i] == ROUND_BOX)
-        {
-          vec3 q = abs(newPos) - s_a[i] + s_r[i];
-          newD = length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - s_r[i];
-        }
-        else if(shapeType[i] == TORUS)
-        {
-          vec2 q = vec2(length(newPos.xz)-s_r1[i],newPos.y);
-          newD = length(q)-s_r2[i];
-        }
-        else if(shapeType[i] == LINK)
-        {
-          vec3 q = vec3( newPos.x, max(abs(newPos.y)-s_h[i],0.0), newPos.z );
-          newD = length(vec2(length(q.xy)-s_r1[i],q.z)) - s_r2[i];
-        }
-        else if(shapeType[i] == CONE)
-        {
-          vec2 q = s_h[i]*vec2(s_c[i].x/s_c[i].y,-1.0);
-            
-          vec2 w = vec2( length(newPos.xz), newPos.y );
-          vec2 a = w - q*clamp( dot(w,q)/dot(q,q), 0.0, 1.0 );
-          vec2 b = w - q*vec2( clamp( w.x/q.x, 0.0, 1.0 ), 1.0 );
-          float k = sign( q.y );
-          float d = min(dot( a, a ),dot(b, b));
-          float s = max( k*(w.x*q.y-w.y*q.x),k*(w.y-q.y)  );
-          newD = sqrt(d)*sign(s);
-        }
-        else if(shapeType[i] == HEX_PRISM)
-        {
-          const vec3 k = vec3(-0.8660254, 0.5, 0.57735);
-          newPos = abs(newPos);
-          newPos.xy -= 2.0*min(dot(k.xy, newPos.xy), 0.0)*k.xy;
-          vec2 d = vec2(
-              length(newPos.xy-vec2(clamp(newPos.x,-k.z*s_l[i].x,k.z*s_l[i].x), s_l[i].x))*sign(newPos.y-s_l[i].x),
-              newPos.z-s_l[i].y );
-          newD = min(max(d.x,d.y),0.0) + length(max(d,0.0));
-        }
-        else if(shapeType[i] == TRI_PRISM)
-        {
-          vec3 q = abs(newPos);
-          newD = max(q.z-s_l[i].y,max(q.x*0.866025+newPos.y*0.5,-newPos.y)-s_l[i].x*0.5);
-        }
-        else if(shapeType[i] == CAPSULE)
-        {
-          vec3 pa = newPos - s_a[i], ba = s_b[i] - s_a[i];
-          float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
-          newD = length( pa - ba*h ) - s_r[i];
-        }
-        else if(shapeType[i] == CYLINDER)
-        {
-          vec3  ba = s_b[i] - s_a[i];
-          vec3  pa = newPos - s_a[i];
-          float baba = dot(ba,ba);
-          float paba = dot(pa,ba);
-          float x = length(pa*baba-ba*paba) - s_r[i]*baba;
-          float y = abs(paba-baba*0.5)-baba*0.5;
-          float x2 = x*x;
-          float y2 = y*y*baba;
-          float d = (max(x,y)<0.0)?-min(x2,y2):(((x>0.0)?x2:0.0)+((y>0.0)?y2:0.0));
-          newD = sign(d)*sqrt(abs(d))/baba;
-        }
-        else if(shapeType[i] == ROUND_CYLINDER)
-        {
-          vec2 d = vec2( length(newPos.xz)-2.0*s_r1[i]+s_r2[i], abs(newPos.y) - s_h[i] );
-          newD = min(max(d.x,d.y),0.0) + length(max(d,0.0)) - s_r2[i];
-        }
-        if(shapeType[i] == CUT_CONE)
-        {
-          float ra = s_r1[i];
-          float rb = s_r2[i];
-          float rba  = rb-ra;
-          float baba = dot(s_b[i]-s_a[i],s_b[i]-s_a[i]);
-          float papa = dot(newPos-s_a[i],newPos-s_a[i]);
-          float paba = dot(newPos-s_a[i],s_b[i]-s_a[i])/baba;
-          float x = sqrt( papa - paba*paba*baba );
-          float cax = max(0.0,x-((paba<0.5)?ra:rb));
-          float cay = abs(paba-0.5)-0.5;
-          float k = rba*rba + baba;
-          float f = clamp( (rba*(x-ra)+paba*baba)/k, 0.0, 1.0 );
-          float cbx = x-ra - f*rba;
-          float cby = paba - f;
-          float s = (cbx<0.0 && cay<0.0) ? -1.0 : 1.0;
-          newD = s*sqrt( min(cax*cax + cay*cay*baba, cbx*cbx + cby*cby*baba) );
-        }
-        else if(shapeType[i] == SOLID_ANGLE)
-        {
-          // c is the sin/cos of the angle
-          vec2 q = vec2( length(newPos.xz), newPos.y );
-          float l = length(q) - s_r1[i];
-          float m = length(q - s_c[i]*clamp(dot(q,s_c[i]),0.0,s_r1[i]) );
-          newD = max(l,m*sign(s_c[i].y*q.x-s_c[i].x*q.y));
-        }
-        else if(shapeType[i] == CUT_SPHERE)
-        {
-          // sampling independent computations (only depend on shape)
-          float w = sqrt(s_r[i]*s_r[i]-s_h[i]*s_h[i]);
-
-          // sampling dependant computations
-          vec2 q = vec2( length(newPos.xz), newPos.y );
-          float s = max( (s_h[i]-s_r[i])*q.x*q.x+w*w*(s_h[i]+s_r[i]-2.0*q.y), s_h[i]*q.x-w*q.y );
-          newD = (s<0.0) ? length(q)-s_r[i] : (q.x<w) ? s_h[i] - q.y     : length(q-vec2(w,s_h[i]));
-        }
-        else if(shapeType[i] == ROUND_CONE)
-        {
-          // sampling independent computations (only depend on shape)
-          vec3  ba = s_b[i] - s_a[i];
-          float l2 = dot(ba,ba);
-          float rr = s_r1[i] - s_r2[i];
-          float a2 = l2 - rr*rr;
-          float il2 = 1.0/l2;
-            
-          // sampling dependant computations
-          vec3 pa = newPos - s_a[i];
-          float y = dot(pa,ba);
-          float z = y - l2;
-          float x2 = dot2( pa*l2 - ba*y );
-          float y2 = y*y*l2;
-          float z2 = z*z*l2;
-
-          // single square root!
-          float k = sign(rr)*rr*rr*x2;
-          if( sign(z)*a2*z2>k ) 
-          {
-            newD = sqrt(x2 + z2)        *il2 - s_r2[i];
-          }
-          else if( sign(y)*a2*y2<k ) 
-          {
-            newD = sqrt(x2 + y2)        *il2 - s_r1[i];
-          }
-          else
-          {
-            newD = (sqrt(x2*a2*il2)+y*rr)*il2 - s_r1[i];
-          }
-        }
-        else if(shapeType[i] == ELLIPSOID)
-        {
-          vec3 r3 = vec3(s_r[i], s_r1[i], s_r2[i]);
-          float k0 = length(newPos/r3);
-          float k1 = length(newPos/(r3*r3));
-          newD = k0*(k0-1.0)/k1;
-        }
-        else if(shapeType[i] == FOOTBALL)
-        {
-          vec3  c = (s_a[i]+s_b[i])*0.5;
-          float l = length(s_b[i]-s_a[i]);
-          vec3  v = (s_b[i]-s_a[i])/l;
-          float y = dot(newPos-c,v);
-          vec2  q = vec2(length(newPos-c-y*v),abs(y));
-          
-          float r = 0.5*l;
-          float d = 0.5*(r*r-s_h[i]*s_h[i])/s_h[i];
-          vec3  h2 = (r*q.x<d*(q.y-r)) ? vec3(0.0,r,0.0) : vec3(-d,0.0,d+s_h[i]);
-      
-          newD = length(q-h2.xy) - h2.z;
-        }
-        else if(shapeType[i] == OCTAHEDRON)
-        {
-          vec3 p = abs(newPos);
-          float m = p.x+p.y+p.z-s_r[i];
-          bool alreadySet = false;
-          vec3 q;
-               if( 3.0*p.x < m ) q = p.xyz;
-          else if( 3.0*p.y < m ) q = p.yzx;
-          else if( 3.0*p.z < m ) q = p.zxy;
-          else { 
-            newD = m*0.57735027;
-            alreadySet = true;
-          }
-          if(!alreadySet)
-          {
-            float k = clamp(0.5*(q.z-q.y+s_r[i]),0.0,s_r[i]); 
-            newD = length(vec3(q.x,q.y-s_r[i]+k,q.z-k)); 
-          } 
-        }
-        else if(shapeType[i] == PYRAMID)
-        {
-          float m2 = s_r[i]*s_r[i] + 0.25;
-
-          vec3 p = newPos; 
-          p.xz = abs(p.xz);
-          p.xz = (p.z>p.x) ? p.zx : p.xz;
-          p.xz -= 0.5;
-
-          vec3 q = vec3( p.z, s_r[i]*p.y - 0.5*p.x, s_r[i]*p.x + 0.5*p.y);
-          
-          float s = max(-q.x,0.0);
-          float t = clamp( (q.y-0.5*p.z)/(m2+0.25), 0.0, 1.0 );
-            
-          float a = m2*(q.x+s)*(q.x+s) + q.y*q.y;
-          float b = m2*(q.x+0.5*t)*(q.x+0.5*t) + (q.y-m2*t)*(q.y-m2*t);
-            
-          float d2 = min(q.y,-q.x*m2-q.y*0.5) > 0.0 ? 0.0 : min(a,b);
-            
-          newD = sqrt( (d2+q.z*q.z)/m2 ) * sign(max(q.z,-p.y));
-        }
-
-        if(abs(newD) < distance)
-        {
-            distance = newD;
-        }
-    }
-    return distance * 0.9;
-}
-
-void processMarch(int index)
-{
-    rayDistance[index] += rayStepDistance[index];
-}
-
-void trace(int index) 
-{
-    int stallCount = 0;
-    float previousStepDistance = 0.;
-    bool stalled = false;
-    vec3 accumulated;
-    for(int i = 0; i <= MAX_STEPS + 1; i++)
-    {
-        march(index);
-        processMarch(index);
-        
-        /*
-        if(rayStepCount[index] > MAX_STEPS / 2 && rayStepDistance[index] < STALL_STEP && rayStepDistance[index] <= previousStepDistance && rayStepDistance[index] > previousStepDistance * 0.95)
-        {
-            stallCount++;
-        }
-        if(stallCount == 10)
-        {
-            int shapeIndex = rayStepShape[index];
-            if(shapeType[shapeIndex] == PLANE)
+          if (res.x >= earlyExitThreshold) {
+            if( sdBox( newPos<%= i %>, bounds<%= i %> ) < res.x ) 
             {
-                vec3 add = vec3(0.,0.001,0.);
-                rayPos[index] += vec3(0.,0.001,0.);
-                accumulated += add;
+                <% switch(s.type) {
+                  case 1: // SPHERE: %>
+                    res = opU( res, vec3( sdSphere(newPos<%= i %>, <%= _f(s.r) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %> ) );
+                  <%
+                    break;
+                  case 2: //BOX: %>
+                    res = opU( res, vec3( sdBox(newPos<%= i %>, vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>)) * FUDGE_FACTOR, <%= s.mat %>, <%= i %> ) );
+                  <%
+                    break;
+                  case 3: //ROUND_BOX: %>
+                    res = opU( res, vec3( sdRoundBox(newPos<%= i %>, vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>), <%= s.r %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 20: //BOX_FRAME: %>
+                    res = opU( res, vec3( sdBoxFrame(newPos<%= i %>, vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>), <%= _f(s.r) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 4: //TORUS: %>
+                    res = opU( res, vec3( sdTorus(newPos<%= i %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 5: //LINK: %>
+                    res = opU( res, vec3( sdLink(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 6: //CONE: %>
+                    res = opU( res, vec3( sdCone(newPos<%= i %>, vec2(<%= _f(s.c.x) %>, <%= _f(s.c.y) %>), <%= _f(s.h) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 7: //HEX_PRISM: %>
+                    res = opU( res, vec3( sdHexPrism(newPos<%= i %>, vec2(<%= _f(s.l.x) %>, <%= _f(s.l.y) %>)) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 8: //TRI_PRISM: %>
+                    res = opU( res, vec3( sdTriPrism(newPos<%= i %>, vec2(<%= _f(s.l.x) %>, <%= _f(s.l.y) %>)) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 9: //CAPSULE: %>
+                    res = opU( res, vec3( sdCapsule(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 10: //CYLINDER: %>
+                    res = opU( res, vec3( sdCylinder(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 11: //ROUND_CYLINDER: %>
+                    res = opU( res, vec3( sdRoundCylinder(newPos<%= i %>, <%= _f(s.r) %>, <%= _f(s.h) %>, <%= _f(s.r1) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 12: //CUT_CONE: %>
+                    res = opU( res, vec3( sdCutCone(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 13: //SOLID_ANGLE: %>
+                    res = opU( res, vec3( sdSolidAngle(newPos<%= i %>, vec2(<%= _f(s.c.x) %>, <%= _f(s.c.y) %>), <%= _f(s.r1) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 14: //CUT_SPHERE: %>
+                    res = opU( res, vec3( sdCutSphere(newPos<%= i %>, <%= _f(s.r) %>, <%= _f(s.h) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 15: //ROUND_CONE: %>
+                    res = opU( res, vec3( sdRoundCone(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 16: //ELLIPSOID: %>
+                    res = opU( res, vec3( sdEllipsoid(newPos<%= i %>, <%= _f(s.r) %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 17: //FOOTBALL: %>
+                    res = opU( res, vec3( sdFootball(newPos<%= i %>, vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>), vec3(<%= _f(s.b.x) %>, <%= _f(s.b.y) %>, <%= _f(s.b.z) %>), <%= _f(s.h) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 18: //OCTAHEDRON: %>
+                    res = opU( res, vec3( sdOctahedron(newPos<%= i %>, <%= _f(s.r) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                  case 19: //PYRAMID: %>
+                    res = opU( res, vec3( sdPyramid(newPos<%= i %>, <%= _f(s.r) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
+                  <%
+                    break;
+                } %>
+            }
+          }
+        }
+    <% }) %>
+
+    return res;
+}
+
+// Backwards compatibility version for functions that don't need distance
+vec3 map( in vec3 pos )
+{
+    // Estimate distance from origin for these calls
+    float estimatedDistance = length(pos);
+    return map(pos, estimatedDistance);
+}
+
+
+// https://iquilezles.org/articles/boxfunctions
+vec2 iBox( in vec3 ro, in vec3 rd, in vec3 rad ) 
+{
+    vec3 m = 1.0/rd;
+    vec3 n = m*ro;
+    vec3 k = abs(m)*rad;
+    vec3 t1 = -n - k;
+    vec3 t2 = -n + k;
+	  return vec2( max( max( t1.x, t1.y ), t1.z ), min( min( t2.x, t2.y ), t2.z ) );
+}
+
+vec3 raycast(in vec3 ro, in vec3 rd)
+{
+    // Initialize performance stats
+    perfStats.stepCount = 0;
+    perfStats.stallCount = 0;
+    perfStats.bounceCount = 0;
+    perfStats.terminationReason = 0;
+    perfStats.minDistance = 1e6;
+    perfStats.totalDistance = 0.0;
+    
+    vec3 res = vec3(-1.0, -1.0, -1.0);
+
+    float tmin = 0.01;
+    float tmax = 20.0;
+
+    // Raytrace floor plane
+    float tp1 = (0.0 - ro.y) / rd.y;
+    if (tp1 > 0.0)
+    {
+        tmax = min(tmax, tp1);
+        res = vec3(tp1, 0.0, -1.0);
+    }
+
+    // Raymarch bounding box
+    vec2 tb = iBox(ro - vec3(0.0, 0.4, 0.0), rd, vec3(2.0, 2.0, 2.0));
+    if (tb.x < tb.y && tb.y > 0.0 && tb.x < tmax)
+    {
+        float t = tmin;
+        float prevStep = 1e6;
+        int stallCount = 0;
+        const int STALL_LIMIT = 10;
+        const float epsilon = 0.1;
+        int bounceCount = 0;
+        int count = 0;
+
+        for (int i = 0; i < marchingSteps && t < tmax; i++)
+        {
+            perfStats.stepCount++;
+            vec3 p = ro + rd * t;
+            vec3 h = map(p, t);
+            float step = abs(h.x);
+            
+            // Track minimum distance and total distance
+            perfStats.minDistance = min(perfStats.minDistance, step);
+            perfStats.totalDistance += step;
+
+            // Hit surface
+            if (step < (distanceThreshold * t))
+            {
+                res = vec3(t, h.y, h.z);
+                perfStats.terminationReason = 0; // Hit surface
+                break;
+            }
+
+            // Refined stall detection
+            if (step == prevStep)
+            {
+                stallCount++;
+                perfStats.stallCount++;
             }
             else
             {
-                if(rayInOrOut[index] == OUTSIDE)
-                {
-                    vec3 add = normalize(rayPos[index] - shapePos[shapeIndex]) * 0.01;
-                    accumulated += add;
-                    rayPos[index] += add;
-                }
-                else if(rayInOrOut[index] == INSIDE)
-                {
-                    vec3 add = -normalize(rayPos[index] - shapePos[shapeIndex]) * 0.01;
-                    accumulated = add;
-                    rayPos[index] += add;
-                }
+                stallCount = 0;
             }
-   
-            stallCount = 0;
-            stalled = true;
+
+            prevStep = step;
+
+            bool stallTest = stallCount >= STALL_LIMIT;
+            if (stallTest)
+            {
+                vec3 jumpDir;
+                bool isFloor = h.y == 0.0;
+
+                if(isFloor)
+                {
+                    jumpDir = vec3(0.0, 1.0, 0.0);
+                }
+                else
+                {
+                    vec3 sPos;
+                    bool firstHalf = int(h.z) < numberOfShapes;
+
+                    if(firstHalf)
+                    {
+                      sPos = shapes[int(h.z)];
+                    }
+
+                    if(!firstHalf)
+                    {
+                      sPos = shapes[int(h.z) - numberOfShapes];
+                    }
+
+                    vec3 toCenter = normalize(p - sPos);
+                    jumpDir = (h.x > 0.0) ? toCenter : -toCenter;
+                }
+
+                // Nudge forward slightly in rd and laterally out of stall zone
+                t += 0.05;
+                ro += jumpDir * 0.04;
+                stallCount = 0;
+                bounceCount++;
+                perfStats.bounceCount++;
+                perfStats.terminationReason = 3; // Stalled
+            }
+            else
+            {
+                t += step;
+            }
+            count++;
         }
-        previousStepDistance = rayStepDistance[index];
-        */
-        if(rayDistance[index] > MAX_DISTANCE || rayStepCount[index] > MAX_STEPS)
-        {
-            rayHitOrMiss[index] = MISS;
-            break;
+        
+        // Check if we hit max iterations
+        if (perfStats.stepCount >= marchingSteps) {
+            perfStats.terminationReason = 1; // Max steps
         }
-        else if(abs(rayStepDistance[index]) < SURF_DISTANCE)
-        {
-            rayHitOrMiss[index] = HIT;
-            break;
+        
+        // Check if we escaped the bounding box
+        if (t >= tmax) {
+            perfStats.terminationReason = 2; // Escaped
         }
     }
-    rayPos[index] -= accumulated;
+
+    return res;
 }
 
-float map(vec3 pos, vec3 dir) {
-    float distance = 0.;
-    for(int i = 0; i < MAX_STEPS + ZERO; i++)
-    {
-        float d = abs(simpleMarch(pos + dir * distance));
+// https://iquilezles.org/articles/rmshadows
+float calcSoftShadow( in vec3 ro, in vec3 rd, in float mint, in float tmax )
+{
+    // bounding volume
+    float tp = (0.8-ro.y)/rd.y; if( tp>0.0 ) tmax = min( tmax, tp );
 
-        distance += d;
-        if(distance >= MAX_DISTANCE)
-        {
-            return distance;
-        }
-        else if(abs(d) < SURF_DISTANCE)
-        {
-            return distance;
-        }
+    float res = 1.0;
+    float t = mint;
+    for( int i=ZERO; i<24; i++ )
+    {
+      perfStats.stepCount++;
+		  float h = map( ro + rd*t, t ).x;
+      float s = clamp(8.0*h/t,0.0,1.0);
+      res = min( res, s );
+      t += clamp(h, 0.001, 0.05);
+      if( res<-1.0 || t>tmax) break;
     }
-    return MAX_DISTANCE;
+    res = max(res, -1.0);
+    return 0.25 * (1.0+res)*(1.0+res)*(2.0-res);
 }
 
 // https://iquilezles.org/articles/normalsSDF
-vec3 calcNormal( int index )
+vec3 calcNormal( in vec3 pos )
 {
-    float dist = rayDistance[index];
-
-    float h = 0.0001;      // replace by an appropriate value
+#if 0
+    vec2 e = vec2(1.0,-1.0)*0.5773*0.0005;
+    return normalize( e.xyy*map( pos + e.xyy ).x + 
+					  e.yyx*map( pos + e.yyx ).x + 
+					  e.yxy*map( pos + e.yxy ).x + 
+					  e.xxx*map( pos + e.xxx ).x );
+#else
+    // inspired by tdhooper and klems - a way to prevent the compiler from inlining map() 4 times
     vec3 n = vec3(0.0);
-    vec2 v = vec2(h,0);
-    ray(N_RAY_INDEX, rayPos[index] + v.xyy, rayDir[index], rayType[index], rayInOrOut[index]);
-    trace(N_RAY_INDEX);
-    ray(N_RAY_INDEX + 1, rayPos[index] + v.yxy, rayDir[index], rayType[index], rayInOrOut[index]);
-    trace(N_RAY_INDEX+1);
-    ray(N_RAY_INDEX + 2, rayPos[index] + v.yyx, rayDir[index], rayType[index], rayInOrOut[index]);
-    trace(N_RAY_INDEX+2);
-    return normalize(vec3(rayDistance[N_RAY_INDEX],rayDistance[N_RAY_INDEX+1],rayDistance[N_RAY_INDEX+2]) - dist);
+    for( int i=ZERO; i<4; i++ )
+    {
+        vec3 e = 0.5773*(2.0*vec3((((i+3)>>1)&1),((i>>1)&1),(i&1))-1.0);
+        n += e*map(pos+0.0005*e).x;
+      //if( n.x+n.y+n.z>100.0 ) break;
+    }
+    return normalize(n);
+#endif    
 }
 
-void processHit(int index)
+// https://iquilezles.org/articles/nvscene2008/rwwtt.pdf
+float calcAO( in vec3 pos, in vec3 nor )
 {
-    rayHitDistance[index] = rayDistance[index];
-    rayHitShape[index] = rayStepShape[index];
-    rayHitPos[index] = rayPos[index] + rayDir[index] * rayDistance[index];
-    if(rayHitShape[index] == 0)
+	float occ = 0.0;
+    float sca = 1.0;
+    for( int i=ZERO; i<5; i++ )
     {
-        rayHitNormal[index] = vec3(0.,1.,0.);      
+        float h = 0.01 + 0.12*float(i)/4.0;
+        float d = map( pos + h*nor ).x;
+        occ += (h-d)*sca;
+        sca *= 0.95;
+        if( occ>0.35 ) break;
     }
-    else
-    {
-        rayHitNormal[index] = calcNormal(index);
-    }
+    return clamp( 1.0 - 3.0*occ, 0.0, 1.0 ) * (0.5+0.5*nor.y);
 }
 
-vec3 getBackground(int index) {
-    return AMBIENT_COLOR * (1.0 - rayDir[index].y) * 0.75;
-}
-
-vec4 gi(int index) {
+vec4 gi(in vec3 pos, in vec3 nor) {
   vec4 col = vec4(0);
   for (int i=0; i<4; i++) {
-    float hr = .01 + float(i) * GI_LENGTH / 4.;
-    ray(GI_RAY_INDEX, rayHitPos[index], rayHitNormal[index]);
-    rayDistance[GI_RAY_INDEX] = hr;
-    
-    march(GI_RAY_INDEX);
-    int shapeIndex = rayStepShape[index];
-    int materialIndex = shapeMat[shapeIndex];
-    col += vec4(matDiffuseColor[materialIndex], 1.) * (hr - rayStepDistance[GI_RAY_INDEX]);
+    float hr = .01 + float(i) * giLength / 4.;
+    vec3 res = map( pos + hr*nor );
+
+    Material mat = materials[int(res.y)];
+    col += vec4(mat.color, 1.) * (hr - res.x);
   }
-  col.rgb *= GI_STRENGTH / GI_LENGTH;
-  col.w = clamp(1.-col.w * AO_STRENGTH / GI_LENGTH, 0., 1.);
+  col.rgb *= giStrength / giLength;
+  col.w = clamp(1.-col.w * aoStrength / giLength, 0., 1.);
   return col;
 }
 
-float calcSoftShadow( int index, float mint, float maxt, float w )
+// https://iquilezles.org/articles/checkerfiltering
+float checkersGradBox( in vec2 p, in vec2 dpdx, in vec2 dpdy )
 {
-    float t = mint;
-    float res = 1.0;
-    for( int i=0; (i < MAX_STEPS + ZERO) && t<maxt; i++ )
-    {
-        float h = simpleMarch(rayPos[index] + rayDir[index] * t);
-        res = min( res, w*h/t );
-        t += clamp(h, 0.05, 0.50);
-        if( res<-1.0 || t>maxt ) break;
-    }
-    res = max(res, -1.0);
-    return 0.25 * (1.0 + res)*(1.0+res)*(2.0-res);
+    // filter kernel
+    vec2 w = abs(dpdx)+abs(dpdy) + 0.001;
+    // analytical integral (box filter)
+    vec2 i = 2.0*(abs(fract((p-0.5*w)*0.5)-0.5)-abs(fract((p+0.5*w)*0.5)-0.5))/w;
+    // xor pattern
+    return 0.5 - 0.5*i.x*i.y;                  
 }
 
-vec3 lighting(int index) {
-    vec3 color = vec3(0.);
-    for(int i = 0; i < NUM_LIGHTS + 1 + ZERO; i++)
-    {
-        int shapeIndex = rayHitShape[index];
-        int materialIndex = shapeMat[shapeIndex];
-        if(lightType[i] == OMNI)
-        {
-            color += lightColor[i];
-        }
-        else if (lightType[i] == DIRECTIONAL)
-        {
-            vec3 L = normalize(-lightDir[i]);
-            vec3 N = rayHitNormal[index];
-            vec3 R = reflect(-L,N);
-            vec3 V = normalize(camPos - rayHitPos[index]);
-            ray(LIGHT_RAY_INDEX, rayHitPos[index] + rayHitNormal[index] * 0.01, L);
-            float shadow = calcSoftShadow(LIGHT_RAY_INDEX, 0.01, 10.0, 48.);
-            float diffuse = max(dot(L,N), 0.0);
-            float dotRV = clamp(dot(R,V), 0., 1.);
-            float specular = matSpecularStrength[materialIndex] * pow(dotRV, matShininess[materialIndex]);
-            color += lightColor[0] * (diffuse + specular) * shadow;
-        }
-        else if (lightType[i] == POINT)
-        {
-            vec3 L = normalize(lightPos[i] - rayHitPos[index]);
-            vec3 N = rayHitNormal[index];
-            vec3 R = reflect(-L,N);
-            vec3 V = normalize(camPos - rayHitPos[index]);
-            
-            ray(LIGHT_RAY_INDEX, rayHitPos[index] + rayHitNormal[index] * 0.01, L);
-            float shadow = calcSoftShadow(LIGHT_RAY_INDEX, 0.01, 10.0, 48.);
-            float diffuse = max(dot(L,N), 0.0);
-            float dotRV = clamp(dot(R,V), 0., 1.);
-            float specular = matSpecularStrength[materialIndex] * pow(dotRV, matShininess[materialIndex]);
-            color += lightColor[0] * (diffuse + specular) * shadow;
-        }
-    }
-    return color;
-}
-
-void traceOut(int index, int shape) {
-    float mixVal;
-    if(rayType[index] == INITIAL)
-    {
-        mixVal = 1.;
-    }
-    else if(rayType[index] == REFLECT)
-    {
-        mixVal = matReflectivity[shapeMat[shape]];
-    }
-    else if(rayType[index] == REFRACT)
-    {
-        mixVal = matTransparency[shapeMat[shape]];
-    }
-    trace(index);
-    if(rayHitOrMiss[index] == HIT)
-    {
-        processHit(index);
-        vec3 diffuse;
-        int shapeIndex = rayHitShape[index];
-        diffuse = matDiffuseColor[shapeMat[shapeIndex]] * matDiffuseStrength[shapeMat[shapeIndex]];
-        vec3 light = lighting(index);
-
-        vec4 gi = gi(index);
-
-        rayColor[index] = vec4((light * diffuse) * gi.w + gi.rgb, mixVal);
-    }
-    else if(rayHitOrMiss[index] == MISS) 
-    {
-        rayColor[index] = vec4(getBackground(index), mixVal);
-    }
-}
-
-void traceIn(int index) {
-    trace(index);
-    if(rayHitOrMiss[index] == HIT)
-    {
-        processHit(index);
-    }
-    int shapeIndex = rayHitShape[index];
-    rayInnerColor[index] = vec4(matTransparentColor[shapeMat[shapeIndex]], pow(1. - matAttenuation[shapeMat[shapeIndex]], (rayDistance[index],matAttenuationStrength[shapeMat[shapeIndex]])));
-}
-
-void reflectRay(int index, int reflectIndex) {
-    int shapeIndex = rayHitShape[index]; 
-
-    if(rayHitShape[index] == 0)
-    {
-        ray(reflectIndex, rayHitPos[index] + vec3(0.,0.001,0.), reflect(normalize(rayHitPos[index] - rayPos[index]), rayHitNormal[index]), REFLECT, OUTSIDE);
-    }
-    else
-    {
-        ray(reflectIndex, rayHitPos[index] + normalize(rayHitPos[index] - shapePos[shapeIndex]) * 0.001, reflect(normalize(rayHitPos[index] - rayPos[index]), rayHitNormal[index]), REFLECT, OUTSIDE);      
-    }
-}
-
-void refractRayIn(int index, int refractIndex) {
-    int shapeIndex = rayHitShape[index];
-    ray(refractIndex, rayHitPos[index] - normalize(rayHitPos[index] - shapePos[shapeIndex]) * 0.001, refract(normalize(rayHitPos[index] - rayPos[index]), rayHitNormal[index], 1./matRefraction[shapeMat[shapeIndex]]), REFRACT, INSIDE);
-}
-
-void refractRayOut(int index) {
-    int shapeIndex = rayHitShape[index];
-    vec3 normal = refract(normalize(rayHitPos[index] - rayPos[index]), rayHitNormal[index], matRefraction[shapeMat[shapeIndex]]);
-    float eta = matRefraction[shapeMat[shapeIndex]];
-    vec3 N = rayHitNormal[index];
-    vec3 I = normalize(rayHitPos[index] - rayPos[index]);
-    vec3 R;
-    float k = 1.0 - eta * eta * (1.0 - dot(N, I) * dot(N, I));
-    if (k < 0.0)
-        R = normalize(rayHitPos[index] - rayPos[index]) - rayHitNormal[index] * 0.001;
-    else
-        R = eta * I - (eta * dot(N, I) + sqrt(k)) * N;
-   
-    ray(index, rayHitPos[index] + normalize(rayHitPos[index] - shapePos[shapeIndex]) * 0.001, R, REFRACT, OUTSIDE);
-}
-
-vec4 render(vec2 uv) {
-    rayScreen(uv);
-    
-    traceOut(0,0);
-    
-    /*
-    int count = 0;
-    for(int i = 0; i < RAY_ITERATION + ZERO; i++)
-    {
-        int i1 = i * 2 + 1;
-        int i2 = i * 2 + 2;
-        
-        rayInitialized[i1] = true;
-
-        if(rayHitOrMiss[i] == HIT) 
-        {
-
-            int shapeIndex = rayHitShape[i];
-            if(matReflectivity[shapeMat[shapeIndex]] > 0.)
-            {
-                reflectRay(i, i1);
-                traceOut(i1, rayHitShape[i]);
-            }
-        }
-        
-        rayInitialized[i2] = false;
-        if(rayHitOrMiss[i] == HIT)
-        {
-            int shapeIndex = rayHitShape[i];        
-            if(matTransparency[shapeMat[shapeIndex]] > 0.)                          
-            {
-                refractRayIn(i,i2);             
-                traceIn(i2);
-                vec4 innerColor = rayInnerColor[i2];
-                refractRayOut(i2);
-                traceOut(i2,rayHitShape[i]);
-                rayInnerColor[i2] = innerColor;
-            }                                                    
-        }
-    }
-    vec4 rayColors[RAY_ITERATION];
-    
-    for(int i = 0; i < RAY_ITERATION + ZERO; i++)
-    {
-        int index = RAY_ITERATION - 1 - i;
-        int reflectIndex = index * 2 + 1;
-        int refractIndex = index * 2 + 2;
-        
-        if(rayInitialized[index])
-        {
-            vec4 reflectColor = rayColor[reflectIndex];
-            vec4 refractColor = rayColor[refractIndex];
-            if(int(floor(log2(float(index+1)))) + 1 < MAX_BOUNCES)
-            {
-                reflectColor = rayColors[reflectIndex];
-                refractColor = rayColors[refractIndex];
-            }
-            if(!rayInitialized[reflectIndex] && !rayInitialized[refractIndex])
-            {
-
-                rayColors[index] = rayColor[index];
-            }
-            else if(rayInitialized[reflectIndex] && !rayInitialized[refractIndex])
-            {
-                rayColors[index] = mix(rayColor[index], reflectColor, reflectColor.w);
-                rayColors[index].w = rayColor[index].w;
-            }
-            else if(!rayInitialized[reflectIndex] && rayInitialized[refractIndex])
-            {
-                vec4 attenuatedColor = mix(rayInnerColor[refractIndex], refractColor, rayInnerColor[refractIndex].w);
-                rayColors[index] = mix(refractColor, attenuatedColor, refractColor.w);
-                rayColors[index].w = rayColor[index].w;
-            }
-            else if(rayInitialized[reflectIndex] && rayInitialized[refractIndex])
-            {
-                vec4 attenuatedColor = mix(rayInnerColor[refractIndex], refractColor, rayInnerColor[refractIndex].w);
-                vec4 fromRefract = mix(rayColor[index], attenuatedColor, refractColor.w);
-                vec4 fromReflect = mix(rayColor[index], reflectColor, reflectColor.w);
-                rayColors[index] = mix(fromRefract, fromReflect, 0.5);
-                rayColors[index].w = rayColor[index].w;
-            }
-        }
-    }
-    */
-
-    //return rayColors[0];
-    return rayColor[0];
-}
-
-vec2 normalizeScreenCoords(vec2 screenCoord)
+vec3 applyLights(vec3 pos, vec3 rd, vec3 nor, vec3 ref, vec3 albedo, Material mat) 
 {
-    return (screenCoord.xy * 2. - iResolution.xy) / iResolution.x;
+    vec3 lin = vec3(0.0); 
+    vec3 V = -rd;
+
+    <% lights.forEach((l, i) => { %>
+        vec3 L<%= i %>, lightCol<%= i %> = vec3(<%= _f(l.color.r) %>, <%= _f(l.color.g) %>, <%= _f(l.color.b) %>);
+        float attenuation<%= i %> = 1.0;
+
+        <% if(l.type == 0) { %>
+            lin += lightCol<%= i %> * <%= _f(l.strength) %> * mat.kd * albedo; // Ambient light only affects diffuse
+        <% } else { %>
+
+          if(lighting)
+          {
+            <% if(l.type == 1) { %>
+                L<%= i %> = normalize(-vec3(<%= l.dir.x %>, <%= l.dir.y %>, <%= l.dir.z %>));
+            <% } %>
+            <% if(l.type == 2) { %>
+                vec3 toLight<%= i %> = vec3(<%= l.pos.x %> - pos.x, <%= l.pos.y %> - pos.y, <%= l.pos.z %> - pos.z);
+                float dist2<%= i %> = dot(toLight<%= i %>, toLight<%= i %>);
+                float dist<%= i %> = sqrt(dist2<%= i %>);
+                L<%= i %> = toLight<%= i %> / dist<%= i %>;
+                <% if(l.ranged) { %>
+                    attenuation *= clamp(1.0 - dist<%= i %> / <%= l.r %>, 0.0, 1.0);
+                <% } %>
+            <% } %>
+
+            // Shadow
+            float shadow<%= i %> = 1.0;
+            if(shadows)
+            {
+              shadow<%= i %> = calcSoftShadow(pos + nor * 0.01, L<%= i %>, 0.01, shadowRange);
+            }
+
+            // Half vector for Cook-Torrance
+            vec3 H<%= i %> = normalize(L<%= i %> + V);
+
+            float NdotL<%= i %> = max(dot(nor, L<%= i %>), 0.0);
+            float NdotV<%= i %> = max(dot(nor, V), 0.0);
+            float NdotH<%= i %> = max(dot(nor, H<%= i %>), 0.0);
+            float VdotH<%= i %> = max(dot(V, H<%= i %>), 0.0);
+
+            // Fresnel term (Schlick)
+            vec3 F0<%= i %> = mix(vec3(0.04), albedo, mat.metallic);
+            vec3 F<%= i %> = F0<%= i %> + (1.0 - F0<%= i %>) * pow(1.0 - VdotH<%= i %>, 5.0);
+
+            // Geometry term (Smith GGX Approximation)
+            float alpha<%= i %> = mat.roughness * mat.roughness;
+            float k<%= i %> = (alpha<%= i %> + 1.0) * (alpha<%= i %> + 1.0) / 8.0;
+            float G_V<%= i %> = NdotV<%= i %> / (NdotV<%= i %> * (1.0 - k<%= i %>) + k<%= i %>);
+            float G_L<%= i %> = NdotL<%= i %> / (NdotL<%= i %> * (1.0 - k<%= i %>) + k<%= i %>);
+            float G<%= i %> = G_V<%= i %> * G_L<%= i %>;
+
+            // Normal distribution function (GGX)
+            float a2<%= i %> = alpha<%= i %> * alpha<%= i %>;
+            float d<%= i %> = (NdotH<%= i %> * NdotH<%= i %>) * (a2<%= i %> - 1.0) + 1.0;
+            float D<%= i %> = a2<%= i %> / (PI * d<%= i %> * d<%= i %>);
+
+            // Cook-Torrance specular BRDF
+            vec3 spec<%= i %> = (F<%= i %> * G<%= i %> * D<%= i %>) / max(4.0 * NdotL<%= i %> * NdotV<%= i %>, 0.001);
+
+            // Diffuse (Lambert or none for metals)
+            vec3 kd<%= i %> = (1.0 - F<%= i %>) * (1.0 - mat.metallic);
+            vec3 diffuse<%= i %> = kd<%= i %> * albedo / PI;
+
+            // Combine
+            vec3 contrib<%= i %> = (diffuse<%= i %> + spec<%= i %>) * <%= _f(l.strength) %> * lightCol<%= i %> * NdotL<%= i %> * attenuation<%= i %> * shadow<%= i %>;
+            lin += contrib<%= i %>;
+          }
+        <% } %>
+    <% }) %>
+
+    // Global Illumination
+    if(globalIllumination)
+    {
+      vec4 giCol = gi(pos, nor);
+      lin = lin * giCol.w + giCol.rgb;
+    }
+
+    return lin;
 }
+
+
+// Ray structure
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+    float throughput; // Color multiplier for the ray
+    bool inside;
+    int identifier;
+};
+
+Ray rays[MAX_RAYS]; // Array to store rays
+int numRays = 0;     // The number of active rays in the array
+
+// Function to add a new ray to the ray queue
+void addRay(vec3 origin, vec3 direction, float throughput, bool inside, int identifier) {
+    if (numRays < maxRays) {
+        rays[numRays].origin = origin;
+        rays[numRays].direction = direction;
+        rays[numRays].throughput = throughput; // Color multiplier
+        rays[numRays].inside = inside; // inside
+        rays[numRays].identifier = identifier; // inside
+        numRays++;
+    }
+}
+
+vec3 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy) {
+    // Initialize background color
+    vec3 bg = vec3(0.8, 0.8, 0.8);
+    vec3 col = vec3(0.);
+
+    // Initialize the first ray
+    addRay(ro, rd, 1.0, false, -1);
+
+    // Project pixel footprint into the plane
+    vec3 dpdx = ro.y * (rd / rd.y - rdx / rdx.y);
+    vec3 dpdy = ro.y * (rd / rd.y - rdy / rdy.y);
+
+    // Process each ray
+    for (int i = 0; i < numRays; i++) {
+
+      Ray currentRay = rays[i];
+
+      // Perform raycast to find intersection point
+      vec3 res = raycast(currentRay.origin, currentRay.direction); // Use raycast here
+      float t = res.x;
+      float m = res.y;
+
+      if(!currentRay.inside)
+      {
+        if (m > -0.5) { // Hit an object
+            Material mat = materials[int(m)];
+            vec3 pos = currentRay.origin + t * currentRay.direction;
+            vec3 nor = (m < 0.5) ? vec3(0.0, 1.0, 0.0) : calcNormal(pos);
+            vec3 refDir = reflect(currentRay.direction, nor);
+            const int numberOfRefractSamples = 4;
+            const int numberOfReflectSamples = 4;
+
+            vec3 base = mat.color; 
+            /*
+            vec3 base;
+            if(m > 0.5)
+            {
+              base = vec3(1.0, 0.0, 0.0);
+            }
+            else
+            {
+              base = vec3(0.5, 0.5, 0.5);
+            }
+            */
+
+            float reflectivity = mat.reflectivity;
+            float transparency = mat.transparency;
+            float reflectRoughness = mat.reflectRoughness;
+            float refractRoughness = mat.refractRoughness;
+            float ior = mat.ior;
+            //float reflectivity = 0.0;
+            //float transparency = 0.0;
+            //float reflectRoughness = 0.0;
+            //float refractRoughness = 0.0;
+            //float ior = 1.0;
+
+            // Lighting calculations for the current point
+            vec3 lin = applyLights(pos, currentRay.direction, nor, refDir, base, mat);
+            //vec3 lin = base;
+
+            // FLATTENED BRANCHING VERSION
+            // Pre-compute conditions to avoid repeated evaluation
+            bool isOpaque = (transparency == 0.0 && reflectivity == 0.0);
+            bool isReflectiveOnly = (reflectivity > 0.0 && transparency == 0.0);
+            bool hasTransparency = (transparency > 0.0);
+
+            // Handle opaque materials
+            if (isOpaque) {
+                col += lin * currentRay.throughput;
+            }
+
+            // Handle reflective-only materials
+            if (isReflectiveOnly) {
+                col += lin * currentRay.throughput * (1.0 - reflectivity);
+                
+                // Rough reflections
+                if (reflectRoughness > 0.01) {
+                    for(int j = 0; j < numberOfReflectSamples; j++) {
+                        vec3 jitter = reflectRoughness * randomHemispherePoint(vec3(random(vec2(float(j) * 0.73, fract(t * 13.3))), random(vec2(float(j + 1) * 0.91, fract(t * 17.7))), random(vec2(float(j + 2) * 1.32, fract(t * 31.3)))), refDir);
+                        addRay(pos + nor * 0.002, normalize(refDir + jitter), currentRay.throughput * reflectivity * (1. / float(numberOfReflectSamples)), false, 0 + i);
+                    }
+                } else {
+                    addRay(pos + nor * 0.002, refDir, currentRay.throughput * reflectivity, false, 0 + i);
+                }
+            }
+
+            // Handle materials with transparency (includes both reflective+transparent)
+            if (hasTransparency) {
+                // Refractive direction (calculate if we can refract)
+                float eta = 1. / ior;
+                vec3 refractDir = refract(currentRay.direction, nor, eta);
+                bool canRefract = length(refractDir) > 0.0;
+
+                // Fresnel term (Schlick approximation)
+                float cosTheta = clamp(dot(-currentRay.direction, nor), 0.0, 1.0);
+                float fresnel = reflectivity + (1.0 - reflectivity) * pow(1.0 - cosTheta, 5.0);
+
+                // Handle transparency component
+                if (canRefract) {
+                    col += lin * currentRay.throughput * (1.0 - transparency);
+                    
+                    if (refractRoughness > 0.01) {
+                        for(int j = 0; j < numberOfRefractSamples; j++) {
+                            vec3 jitter = 0.1 * refractRoughness * randomHemispherePoint(vec3(random(vec2(float(j) * 0.73, fract(t * 13.3))), random(vec2(float(j + 1) * 0.91, fract(t * 17.7))), random(vec2(float(j + 2) * 1.32, fract(t * 31.3)))), refDir);
+                            addRay(pos + nor * 0.004, normalize(refractDir - jitter), currentRay.throughput * transparency * (1. / float(numberOfRefractSamples)), true, 10 + i);
+                        }
+                    } else {
+                        addRay(pos + nor * 0.004, refractDir, currentRay.throughput * transparency, true, 10 + i);
+                    }
+                }
+                
+                // Handle reflection component (for transparent materials)
+                if (fresnel != 0.0) {
+                    col += lin * currentRay.throughput * (1.0 - fresnel);
+                    
+                    if (reflectRoughness > 0.01) {
+                        for(int j = 0; j < numberOfReflectSamples; j++) {
+                            vec3 jitter = 0.1 * reflectRoughness * randomHemispherePoint(vec3(random(vec2(float(j) * 0.73, fract(t * 13.3))), random(vec2(float(j + 1) * 0.91, fract(t * 17.7))), random(vec2(float(j + 2) * 1.32, fract(t * 31.3)))), refDir);
+                            addRay(pos + nor * 0.002, normalize(refDir + jitter), currentRay.throughput * fresnel * 1. / float(numberOfReflectSamples), false, 20 + i);
+                        }
+                    } else {
+                        addRay(pos + nor * 0.002, refDir, currentRay.throughput * fresnel, false, 20 + i);
+                    }
+                }
+            }
+        } else {
+            // Missed the object, so keep the background color
+            col += bg * currentRay.throughput;
+        }
+      }
+      else
+      {
+        if (m > -0.5)
+        {
+          Material mat = materials[int(m)];
+          vec3 pos = currentRay.origin + t * currentRay.direction;
+          vec3 nor = -calcNormal(pos);
+          vec3 refDir = reflect(currentRay.direction, nor);
+
+          float reflectivity = mat.reflectivity;
+          float attenuation = mat.attenuation;
+          float attenuationStrength = mat.attenuationStrength;
+          vec3 innerColor = mat.innerColor;
+          bool intRef = mat.intRef;
+          float ior = mat.ior;
+
+          //float reflectivity = 0.0;
+          //float attenuation = 0.0;
+          //float attenuationStrength = 0.0;
+          //vec3 innerColor = vec3(1.0,1.0,1.0);
+          //bool intRef = false;
+          //float ior = 1.0;
+
+          float eta = ior;
+          vec3 refractDir = refract(currentRay.direction, nor, eta);
+          bool canRefract = length(refractDir) > 0.0;
+
+          // Fresnel term (Schlick approximation)
+          float cosTheta = clamp(dot(-currentRay.direction, nor), 0.0, 1.0);
+          float fresnel = reflectivity + (1.0 - reflectivity) * pow(1.0 - cosTheta, 5.0);
+
+          float att = pow((1.0 - pow(attenuation, 20.)), (pow(1.0 + t, attenuationStrength)));
+          float throughput = att; 
+          if(attenuation > 0.0)
+          {
+            col += currentRay.throughput * (1.0 - att) * innerColor;
+          }
+
+          bool escaped = false;
+          if(canRefract && fresnel != 1.0)
+          {
+            addRay(pos - nor * 0.004, refractDir, currentRay.throughput * throughput, false, 30 + i);
+          }
+          else if(numRays + 1 == maxRays)
+          {
+            escaped = true;
+            addRay(pos - nor * 0.004, currentRay.direction, currentRay.throughput * throughput, false, 40 + i);
+          }
+
+          if(!canRefract && !escaped && intRef)
+          { 
+            addRay(pos + nor * 0.002, refDir, currentRay.throughput * 0.25, true, 50 + i);
+          }
+        }
+      }
+    }
+
+    return clamp(col, 0.0, 1.0);
+}
+
+mat3 setCamera( in vec3 ro, in vec3 ta, float cr )
+{
+	vec3 cw = normalize(ta-ro);
+	vec3 cp = vec3(sin(cr), cos(cr),0.0);
+	vec3 cu = normalize( cross(cw,cp) );
+	vec3 cv =          ( cross(cu,cw) );
+    return mat3( cu, cv, cw );
+}
+
+vec3 convertColor(float color) {
+    return 0.2 + 0.2*sin( color*2.0 + vec3(0.0,1.0,2.0));
+}
+
+vec3 hsv2rgb(vec3 hsv) { return ((clamp(abs(fract(hsv.x+vec3(0,2,1)/3.)*2.-1.)*3.-1.,0.,1.)-1.)*hsv.y+1.)*hsv.z; }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-  // Normalized pixel coordinates (from 0 to 1)
-  vec2 uv = normalizeScreenCoords(fragCoord);
+    vec2 mo = clamp(iMouse.xy/iResolution.xy, 0.,1.);
 
-  initScene();
-  
-  lightPos[2] = vec3(4. * cos(iTime * 1.), 6.5, 4. * sin(iTime * 1.));
-  camPos = vec3(8. * sin(2. * PI * iMouse.x / iResolution.x), 0.5 + (iMouse.y / iResolution.y) * 10., 8. * cos(2. * PI * iMouse.x / iResolution.x));
+    // camera	
+    vec3 ro;
+    
+    if(orbit > 0.01)
+    {
+      ro = camTgt + vec3( camDist*cos(iTime * orbit), camHeight, camDist*sin(iTime * orbit) );
+    }
+    else
+    {
+      ro = camTgt + vec3( camDist*cos(PI*2.*mo.x), (0.1 + camHeight) * mo.y, camDist*sin(PI*2.*mo.x) );
+    }
+    // camera-to-world transformation
+    mat3 ca = setCamera( ro, camTgt, 0.0 );
 
-  fragColor = render(uv);
+    vec3 tot = vec3(0.0);
+    vec2 p = (2.0*fragCoord-iResolution.xy)/iResolution.y;
 
-  if(override)
-  {
+    // focal length
+    const float fl = 2.5;
+    
+    // ray direction
+    vec3 rd = ca * normalize( vec3(p,fl) );
+
+      // ray differentials
+    vec2 px = (2.0*(fragCoord+vec2(1.0,0.0))-iResolution.xy)/iResolution.y;
+    vec2 py = (2.0*(fragCoord+vec2(0.0,1.0))-iResolution.xy)/iResolution.y;
+    vec3 rdx = ca * normalize( vec3(px,fl) );
+    vec3 rdy = ca * normalize( vec3(py,fl) );
+    
+    // render	
+    vec3 col = render( ro, rd, rdx, rdy );
+
+    // Performance visualization
+    if (showPerformance) {
+        vec3 perfColor = vec3(0.0);
+        
+        if (perfMode == 0) {
+            // Step count visualization - scale controls intensity range
+            float normalizedSteps = float(perfStats.stepCount) / (float(marchingSteps)/ perfScale);
+            perfColor = heatmapColor(normalizedSteps, 1.0);
+        } else if (perfMode == 1) {
+            // Distance-based heat map
+            float avgStepSize = perfStats.totalDistance / float(max(perfStats.stepCount, 1));
+            float efficiency = clamp(avgStepSize * perfScale, 0.0, 1.0);
+            perfColor = heatmapColor(1.0 - efficiency, 1.0);
+        } else if (perfMode == 2) {
+            // Termination reason - perfScale controls blend amount
+            perfColor = terminationReasonColor(perfStats.terminationReason);
+        } else if (perfMode == 3) {
+            // Stall count visualization - scale controls sensitivity
+            float stallRatio = float(perfStats.stallCount) / float(max(perfStats.stepCount, 1));
+            perfColor = heatmapColor(stallRatio * 10.0 * perfScale, 1.0);
+        } else if (perfMode == 4) {
+            // Minimum distance reached - scale controls distance threshold
+            float minDistNorm = clamp(1.0 - (perfStats.minDistance / (0.1 / perfScale)), 0.0, 1.0);
+            perfColor = heatmapColor(minDistNorm, 1.0);
+        }
+        
+        // Blend performance visualization with original image
+        // Use perfScale to control blend amount for termination mode
+        //float blendAmount = (perfMode == 2) ? clamp(perfScale * 0.7, 0.0, 1.0) : 0.7;
+        //col = mix(col, perfColor, blendAmount);
+        col = perfColor;
+    }
+
+    // gamma
+    col = pow( col, vec3(0.4545) );
+
+    tot += col;
+    
+    fragColor = vec4( tot, 1.0 );
+
+    if(override)
+    {
       fragColor = overrideColor;
-  }
+    }
 }
 
 void main() {
