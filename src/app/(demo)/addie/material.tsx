@@ -8,12 +8,19 @@ import * as THREE from "three";
 import fragmentShaderTemplate from "./addie.frag";
 import vertexShader from "./addie.vert";
 
-import { UiData, TemplateData, type Material } from "./ui";
+import {
+  Shape,
+  InterfaceMode,
+  UiData,
+  TemplateData,
+  type Material,
+} from "./ui";
 
 import { Eta } from "eta";
 
 const eta = new Eta({ autoEscape: false, useWith: true });
 
+const MAX_SHAPES = 10;
 const MAX_MATERIALS = 20;
 
 const toFloat = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
@@ -102,15 +109,53 @@ export function ShaderMaterial({
     if (materialRef.current) {
       const { uniforms } = materialRef.current;
       const materials = [...uiUniforms.materials];
+      if (uiUniforms.globals.mode == InterfaceMode.DEVELOPMENT) {
+        const shapes = [...uiUniforms.shapes];
+        if (shapes.length < MAX_SHAPES) {
+          for (let i = shapes.length; i < MAX_SHAPES; i++) {
+            shapes.push(shapes[uiUniforms.shapes.length - 1]);
+          }
+        }
+
+        uniforms.shapes.value = shapes.map((shape: Shape) => ({
+          type: shape.type,
+          id: shape.id,
+          l: shape.l,
+          c: shape.c,
+          a: shape.a,
+          b: shape.b,
+          n: shape.n,
+          pos: shape.pos,
+          h: shape.h,
+          r: shape.r,
+          r1: shape.r1,
+          r2: shape.r2,
+          mat: shape.mat,
+          rot: new THREE.Matrix3()
+            .setFromMatrix4(
+              new THREE.Matrix4()
+                .makeRotationFromEuler(
+                  new THREE.Euler(
+                    (shape.rot.x / 180) * Math.PI,
+                    (shape.rot.y / 180) * Math.PI,
+                    (shape.rot.z / 180) * Math.PI
+                  )
+                )
+                .invert()
+            )
+            .toArray(),
+          isRot: shape.rot.x != 0 || shape.rot.y != 0 || shape.rot.z != 0,
+        }));
+      } else {
+        uniforms.shapes.value = uiUniforms.shapes.map(
+          (s) => new THREE.Vector3(s.pos.x, s.pos.y, s.pos.z)
+        );
+      }
       if (materials.length < MAX_MATERIALS) {
         for (let i = materials.length; i < MAX_MATERIALS; i++) {
           materials.push(materials[uiUniforms.materials.length - 1]);
         }
       }
-
-      uniforms.shapes.value = uiUniforms.shapes.map(
-        (s) => new THREE.Vector3(s.pos.x, s.pos.y, s.pos.z)
-      );
 
       uniforms.materials.value = materials.map((material: Material) => ({
         emissive: material.emissive,

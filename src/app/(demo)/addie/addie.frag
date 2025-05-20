@@ -20,6 +20,7 @@ uniform float camDist;
 uniform float orbit;
 uniform int marchingSteps;
 uniform float distanceThreshold;
+uniform bool devMode;
 
 // Performance visualization controls
 uniform bool showPerformance;   // Toggle performance overlay
@@ -65,6 +66,7 @@ const int   OCTAHEDRON     = 18;
 const int   PYRAMID        = 19;
 const int   BOX_FRAME      = 20;
 
+
 // Lights
 const int   OMNI           = 0;
 const int   DIRECTIONAL    = 1;
@@ -96,7 +98,7 @@ struct Material {
   float kd, ior, reflectivity, roughness, reflectRoughness, refractRoughness, metallic, transparency, attenuation, attenuationStrength, glow;
 };
 
-/*
+<% if(devMode) { %>
 struct Shape {
   int type, id;
   vec2 l, c;
@@ -106,8 +108,9 @@ struct Shape {
   mat3 rot;
   bool isRot;
 };
-*/
+<% } %>
 
+/*
 struct Light {
   int type;
   float strength;
@@ -117,8 +120,14 @@ struct Light {
   vec3 dir;
   vec3 pos;
 };
+*/
 
+<% if(devMode) { %>
+uniform Shape shapes[MAX_SHAPES];
+Shape debugShapes[MAX_SHAPES];
+<% } else { %>
 uniform vec3 shapes[MAX_SHAPES];
+<% } %>
 uniform Material materials[MAX_MATERIALS];
 
 Material debugMaterial;
@@ -406,7 +415,8 @@ vec3 randomHemispherePoint(vec3 rand, vec3 dir) {
 #define ZERO (min(iFrame,0))
 
 //------------------------------------------------------------------
-/*
+
+<% if(devMode) { %>
 float getApproximateRadius(Shape s) {
     switch(s.type) {
         case SPHERE: 
@@ -514,8 +524,108 @@ vec3 getShapeBounds(Shape s) {
             return vec3(1.5);
     }
 }
-*/
+<% } %>
 
+<% if(devMode) { %>
+vec3 map( in vec3 pos, float rayDistance)
+{
+    vec3 res = vec3( pos.y, 0.0, -1.0 );
+    
+    float earlyExitThreshold = distanceThreshold * rayDistance;
+
+    for(int i = 0; i < numberOfShapes * (int(showBoxes) + 1) + ZERO; i++)
+    {
+        Shape s;
+        if(i < numberOfShapes)
+        {
+          s = shapes[i];
+        }
+        else
+        {
+          s = debugShapes[i - numberOfShapes];
+        }
+        vec3 delta = pos - s.pos;
+
+        float approxRadius = getApproximateRadius(s);
+        if (length(delta) - approxRadius > res.x) {
+            continue; // Skip this shape entirely
+        }
+
+        vec3 rotatedDelta = s.rot * delta;
+        vec3 newPos = rotatedDelta;
+
+        vec3 bounds = getShapeBounds(s);
+
+        if( sdBox( newPos,bounds ) < res.x )
+        {
+            switch(s.type)
+            {
+              case PLANE:
+                break;
+              case SPHERE:
+                res = opU( res, vec3( sdSphere(newPos, s.r) * FUDGE_FACTOR, s.mat, i ) );
+                break;
+              case BOX:
+                res = opU( res, vec3( sdBox(newPos, s.a) * FUDGE_FACTOR, s.mat, i ) );
+                break;
+              case ROUND_BOX:
+                res = opU( res, vec3( sdRoundBox(newPos, s.a, s.r) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case BOX_FRAME:
+                res = opU( res, vec3( sdBoxFrame(newPos, s.a, s.r) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case TORUS:
+                res = opU( res, vec3( sdTorus(newPos, s.r1, s.r2) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case LINK:
+                res = opU( res, vec3( sdLink(newPos, s.h, s.r1, s.r2) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case CONE:
+                res = opU( res, vec3( sdCone(newPos, s.c, s.h) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case HEX_PRISM:
+                res = opU( res, vec3( sdHexPrism(newPos, s.l) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case TRI_PRISM:
+                res = opU( res, vec3( sdTriPrism(newPos, s.l) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case CAPSULE:
+                res = opU( res, vec3( sdCapsule(newPos, s.h, s.r) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case ROUND_CYLINDER:
+                res = opU( res, vec3( sdRoundCylinder(newPos, s.r1, s.r2, s.h) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case CUT_CONE:
+                res = opU( res, vec3( sdCutCone(newPos, s.h, s.r1, s.r2) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case SOLID_ANGLE:
+                res = opU( res, vec3( sdSolidAngle(newPos, s.c, s.r1) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case CUT_SPHERE:
+                res = opU( res, vec3( sdCutSphere(newPos, s.r, s.h) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case ROUND_CONE:
+                res = opU( res, vec3( sdRoundCone(newPos, s.h, s.r1, s.r2) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case ELLIPSOID:
+                res = opU( res, vec3( sdEllipsoid(newPos, s.r, s.r1, s.r2) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case FOOTBALL:
+                res = opU( res, vec3( sdFootball(newPos, s.a, s.b, s.h) * FUDGE_FACTOR, s.mat, i) );
+                break;
+              case PYRAMID:
+                res = opU( res, vec3( sdPyramid(newPos, s.r) * FUDGE_FACTOR, s.mat, i) );
+                break;
+            }
+        }
+        if (res.x < earlyExitThreshold) {
+          break;
+        }
+    }
+
+    return res;
+}
+<% } else { %>
 vec3 map( in vec3 pos, float rayDistance)
 {
     vec3 res = vec3( pos.y, 0.0, -1.0 );
@@ -896,6 +1006,7 @@ vec3 map( in vec3 pos, float rayDistance)
 
     return res;
 }
+<% } %>
 
 // Backwards compatibility version for functions that don't need distance
 vec3 map( in vec3 pos )
@@ -1001,15 +1112,24 @@ vec3 raycast(in vec3 ro, in vec3 rd)
 
                     if(firstHalf)
                     {
+                      <% if(devMode) { %> 
+                      sPos = shapes[int(h.z)].pos;
+                      <% } else { %> 
                       sPos = shapes[int(h.z)];
+                      <% } %>
                     }
 
                     if(!firstHalf)
                     {
+                      <% if(devMode) { %> 
+                      sPos = shapes[int(h.z)].pos;
+                      <% } else { %> 
                       sPos = shapes[int(h.z) - numberOfShapes];
+                      <% } %>
                     }
 
                     vec3 toCenter = normalize(p - sPos);
+
                     jumpDir = (h.x > 0.0) ? toCenter : -toCenter;
                 }
 
@@ -1078,6 +1198,7 @@ float calcSoftShadow(in vec3 ro, in vec3 rd, in float mint, in float tmax) {
     
     return clamp(res, 0.0, 1.0);  // Simpler calculation
 }
+
 
 // https://iquilezles.org/articles/normalsSDF
 vec3 calcNormal( in vec3 pos )
@@ -1462,6 +1583,26 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec2 py = (2.0*(fragCoord+vec2(0.0,1.0))-iResolution.xy)/iResolution.y;
     vec3 rdx = ca * normalize( vec3(px,fl) );
     vec3 rdy = ca * normalize( vec3(py,fl) );
+
+    <% if(devMode) { %>
+    if(showBoxes)
+    {
+      for(int i = 0; i < numberOfShapes; i++)
+      {
+        Shape debugShape;
+        Shape shape = shapes[i];
+        debugShape.type = BOX_FRAME;
+        debugShape.mat = 1;
+        debugShape.pos = shapes[i].pos;
+        debugShape.a = getShapeBounds(shape); 
+        debugShape.r = 0.005;
+        debugShape.isRot = shapes[i].isRot;
+        debugShape.mat = 1;
+        debugShape.rot = shape.rot;
+        debugShapes[i] = debugShape;
+      }
+    }
+    <% } %>
     
     // render	
     vec3 col = render( ro, rd, rdx, rdy );

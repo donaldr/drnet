@@ -8,6 +8,16 @@ type Vec2 = { x: number; y: number };
 type Vec3 = { x: number; y: number; z: number };
 type Color = { r: number; g: number; b: number };
 
+export enum InterfaceMode {
+  DEVELOPMENT = 0,
+  PRODUCTION = 1,
+}
+
+export enum PerformanceMode {
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
+}
 export enum ShapeType {
   SPHERE = 1,
   BOX = 2,
@@ -33,7 +43,7 @@ export enum LightType {
   POINT = 2,
 }
 
-export enum PerformanceMode {
+export enum DebugMode {
   STEP_COUNT = 0,
   EFFICIENCY = 1,
   TERMINATION = 2,
@@ -42,7 +52,8 @@ export enum PerformanceMode {
 }
 
 export interface GlobalSettings {
-  perf: "LOW" | "MEDIUM" | "HIGH";
+  mode: InterfaceMode;
+  perf: PerformanceMode;
   numberOfShapes: number;
   numberOfMaterials: number;
   numberOfLights: number;
@@ -135,6 +146,7 @@ export interface TemplateData {
   shapes: any[];
   lights: Light[];
   showBoxes: boolean;
+  devMode: boolean;
 }
 
 export class RaymarchingUI {
@@ -185,7 +197,8 @@ export class RaymarchingUI {
     });
 
     this.globals = {
-      perf: "LOW",
+      mode: InterfaceMode.DEVELOPMENT,
+      perf: PerformanceMode.LOW,
       numberOfShapes: 1,
       numberOfMaterials: 1,
       numberOfLights: 1,
@@ -314,6 +327,7 @@ export class RaymarchingUI {
         shapes,
         lights: this.lights,
         showBoxes: this.globals.showBoxes,
+        devMode: true,
       });
     }
     this.pane.on("change", () => {
@@ -353,6 +367,7 @@ export class RaymarchingUI {
         shapes,
         lights: this.lights,
         showBoxes: this.globals.showBoxes,
+        devMode: this.globals.mode == InterfaceMode.DEVELOPMENT,
       });
     }
     localStorage.setItem(
@@ -368,13 +383,32 @@ export class RaymarchingUI {
 
   setupGlobalFolder() {
     const f = this.pane.addFolder({ title: "Global Settings" });
-    this.globals.perf = this.globals.perf || "LOW";
+    this.globals.mode = this.globals.mode ?? InterfaceMode.PRODUCTION;
+    f.addBinding(this.globals, "mode", {
+      label: "Mode",
+      options: Object.keys(InterfaceMode)
+        .filter((v) => isNaN(Number(v)) === false)
+        .map((v) => ({
+          text: InterfaceMode[parseInt(v)],
+          value: parseInt(v),
+        })),
+    }).on("change", () => {
+      if (this.globals.mode == InterfaceMode.DEVELOPMENT) {
+        this.globals.globalIllumination = false;
+        this.globals.reflection = false;
+        this.globals.transparency = false;
+        this.globals.lighting = false;
+        this.globals.shadows = false;
+      }
+      f.refresh();
+    });
+    this.globals.perf = this.globals.perf ?? "LOW";
     f.addBinding(this.globals, "perf", {
       label: "Detail",
       options: [
-        { text: "Low", value: "LOW" },
-        { text: "Medium", value: "MEDIUM" },
-        { text: "High", value: "HIGH" },
+        { text: "Low", value: PerformanceMode.LOW },
+        { text: "Medium", value: PerformanceMode.MEDIUM },
+        { text: "High", value: PerformanceMode.HIGH },
       ],
     });
     this.globals.maxRays = this.globals.maxRays || 16;
@@ -508,10 +542,10 @@ export class RaymarchingUI {
     this.globals.perfMode = this.globals.perfMode ?? 0;
     f.addBinding(this.globals, "perfMode", {
       label: "Debug Mode",
-      options: Object.keys(PerformanceMode)
+      options: Object.keys(DebugMode)
         .filter((v) => isNaN(Number(v)) === false)
         .map((v) => ({
-          text: PerformanceMode[parseInt(v)],
+          text: DebugMode[parseInt(v)],
           value: parseInt(v),
         })),
     });
