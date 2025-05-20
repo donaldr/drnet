@@ -89,6 +89,7 @@ export function ShaderMaterial({
       camDist: { value: 0 },
       orbit: { value: 0 },
       shapes: { value: [] },
+      shapePositions: { value: [] },
       materials: { value: [] },
       globalIllumination: { value: true },
       lighting: { value: true },
@@ -147,7 +148,7 @@ export function ShaderMaterial({
           isRot: shape.rot.x != 0 || shape.rot.y != 0 || shape.rot.z != 0,
         }));
       } else {
-        uniforms.shapes.value = uiUniforms.shapes.map(
+        uniforms.shapePositions.value = uiUniforms.shapes.map(
           (s) => new THREE.Vector3(s.pos.x, s.pos.y, s.pos.z)
         );
       }

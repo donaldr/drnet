@@ -126,7 +126,7 @@ struct Light {
 uniform Shape shapes[MAX_SHAPES];
 Shape debugShapes[MAX_SHAPES];
 <% } else { %>
-uniform vec3 shapes[MAX_SHAPES];
+uniform vec3 shapePositions[MAX_SHAPES];
 <% } %>
 uniform Material materials[MAX_MATERIALS];
 
@@ -1115,7 +1115,7 @@ vec3 raycast(in vec3 ro, in vec3 rd)
                       <% if(devMode) { %> 
                       sPos = shapes[int(h.z)].pos;
                       <% } else { %> 
-                      sPos = shapes[int(h.z)];
+                      sPos = shapePositions[int(h.z)];
                       <% } %>
                     }
 
@@ -1124,7 +1124,7 @@ vec3 raycast(in vec3 ro, in vec3 rd)
                       <% if(devMode) { %> 
                       sPos = shapes[int(h.z)].pos;
                       <% } else { %> 
-                      sPos = shapes[int(h.z) - numberOfShapes];
+                      sPos = shapePositions[int(h.z) - numberOfShapes];
                       <% } %>
                     }
 

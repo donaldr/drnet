@@ -327,7 +327,7 @@ export class RaymarchingUI {
         shapes,
         lights: this.lights,
         showBoxes: this.globals.showBoxes,
-        devMode: true,
+        devMode: this.globals.mode == InterfaceMode.DEVELOPMENT,
       });
     }
     this.pane.on("change", () => {
