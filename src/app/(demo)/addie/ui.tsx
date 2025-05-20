@@ -197,7 +197,7 @@ export class RaymarchingUI {
     });
 
     this.globals = {
-      mode: InterfaceMode.DEVELOPMENT,
+      mode: InterfaceMode.PRODUCTION,
       perf: PerformanceMode.LOW,
       numberOfShapes: 1,
       numberOfMaterials: 1,
