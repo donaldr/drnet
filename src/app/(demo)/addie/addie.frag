@@ -18,6 +18,8 @@ uniform vec3 camTgt;
 uniform float camHeight;
 uniform float camDist;
 uniform float orbit;
+uniform vec3 boundingBoxPos;
+uniform vec3 boundingBoxDims;
 uniform int marchingSteps;
 uniform float distanceThreshold;
 uniform bool devMode;
@@ -25,6 +27,7 @@ uniform bool devMode;
 // Performance visualization controls
 uniform bool showPerformance;   // Toggle performance overlay
 uniform bool showBoxes;  
+uniform bool showBoundingBox;  
 uniform int perfMode;          // 0=steps, 1=heat map, 2=termination reasons
 uniform float perfScale;       // Scale for heat map
 
@@ -77,6 +80,8 @@ const float FUDGE_FACTOR   = 0.9;
 
 const float PI             = 3.14159265359;
 
+const float defaultPadding = 0.02;
+
 bool override = false;
 vec4 overrideColor = vec4(1.,0.,0.,1.);
 
@@ -124,7 +129,7 @@ struct Light {
 
 <% if(devMode) { %>
 uniform Shape shapes[MAX_SHAPES];
-Shape debugShapes[MAX_SHAPES];
+Shape debugShapes[MAX_SHAPES + 1];
 <% } else { %>
 uniform vec3 shapePositions[MAX_SHAPES];
 <% } %>
@@ -458,8 +463,7 @@ float getApproximateRadius(Shape s) {
     }
 }
 
-vec3 getShapeBounds(Shape s) {
-    const float padding = 0.02;
+vec3 getShapeBounds(Shape s, float padding) {
     switch(s.type) {
         case SPHERE:
             return vec3(s.r + padding);
@@ -533,7 +537,7 @@ vec3 map( in vec3 pos, float rayDistance)
     
     float earlyExitThreshold = distanceThreshold * rayDistance;
 
-    for(int i = 0; i < numberOfShapes * (int(showBoxes) + 1) + ZERO; i++)
+    for(int i = 0; i < numberOfShapes * (int(showBoxes) + 1) + (int(showBoundingBox)) + ZERO; i++)
     {
         Shape s;
         if(i < numberOfShapes)
@@ -554,7 +558,7 @@ vec3 map( in vec3 pos, float rayDistance)
         vec3 rotatedDelta = s.rot * delta;
         vec3 newPos = rotatedDelta;
 
-        vec3 bounds = getShapeBounds(s);
+        vec3 bounds = getShapeBounds(s, defaultPadding);
 
         if( sdBox( newPos,bounds ) < res.x )
         {
@@ -632,8 +636,17 @@ vec3 map( in vec3 pos, float rayDistance)
 
     float earlyExitThreshold = distanceThreshold * rayDistance;
 
-    const float boundsPadding = 0.02;
+    float boundsPadding = defaultPadding;
     <% const allShapes = showBoxes ? [...shapes, ...shapes] : shapes;
+      if(showBoundingBox) allShapes.push({
+        type: 20,
+        mat: 1,
+        pos: boundingBoxPos,
+        a: {x: boundingBoxDims.x - 0.02, y: boundingBoxDims.y - 0.02, z: boundingBoxDims.z - 0.02},
+        r: 0.005,
+        isRot: false,
+        rot: [1,0,0,0,1,0,0,0,1],
+      });
       allShapes.forEach((_s, i) => {
         if(showBoxes) {
           if(i < shapes.length)
@@ -1052,7 +1065,7 @@ vec3 raycast(in vec3 ro, in vec3 rd)
     }
 
     // Raymarch bounding box
-    vec2 tb = iBox(ro - vec3(0.0, 0.4, 0.0), rd, vec3(2.0, 2.0, 2.0));
+    vec2 tb = iBox(ro - boundingBoxPos, rd, boundingBoxDims);
     if (tb.x < tb.y && tb.y > 0.0 && tb.x < tmax)
     {
         float t = tmin;
@@ -1601,6 +1614,19 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         debugShape.rot = shape.rot;
         debugShapes[i] = debugShape;
       }
+    }
+    if(showBoundingBox)
+    {
+      Shape debugShape;
+      debugShape.type = BOX_FRAME;
+      debugShape.mat = 1;
+      debugShape.pos = boundingBoxPos;
+      debugShape.a = boundingBoxDims - defaultPadding; 
+      debugShape.r = 0.005;
+      debugShape.isRot = false;
+      debugShape.mat = 1;
+      debugShape.rot = mat3(1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0);
+      debugShapes[numberOfShapes] = debugShape;
     }
     <% } %>
     

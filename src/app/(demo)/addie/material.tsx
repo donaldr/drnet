@@ -69,6 +69,7 @@ export function ShaderMaterial({
       iMouse: { value: new THREE.Vector3(0, 0, 1) },
       showPerformance: { value: false },
       showBoxes: { value: false },
+      showBoundingBox: { value: false },
       perfMode: { value: 0 },
       perfScale: { value: 1.0 },
       numberOfShapes: { value: 0 },
@@ -88,6 +89,8 @@ export function ShaderMaterial({
       camHeight: { value: 0 },
       camDist: { value: 0 },
       orbit: { value: 0 },
+      boundingBoxPos: { value: new THREE.Vector3(0, 0, 0) },
+      boundingBoxDims: { value: new THREE.Vector3(1, 1, 1) },
       ...(uiUniforms.globals.mode == InterfaceMode.DEVELOPMENT && {
         shapes: { value: [] },
       }),
@@ -208,6 +211,7 @@ export function ShaderMaterial({
       uniforms.perfMode.value = uiUniforms.globals.perfMode;
       uniforms.perfScale.value = uiUniforms.globals.perfScale;
       uniforms.showBoxes.value = uiUniforms.globals.showBoxes;
+      uniforms.showBoundingBox.value = uiUniforms.globals.showBoundingBox;
       uniforms.numberOfShapes.value = uiUniforms.globals.numberOfShapes;
       uniforms.numberOfMaterials.value = uiUniforms.globals.numberOfMaterials;
       uniforms.numberOfLights.value = uiUniforms.globals.numberOfLights;
@@ -234,6 +238,8 @@ export function ShaderMaterial({
       uniforms.camHeight.value = uiUniforms.globals.camHeight;
       uniforms.camDist.value = uiUniforms.globals.camDist;
       uniforms.orbit.value = uiUniforms.globals.orbit;
+      uniforms.boundingBoxPos.value = uiUniforms.globals.boundingBoxPos;
+      uniforms.boundingBoxDims.value = uiUniforms.globals.boundingBoxDims;
       uniforms.globalIllumination.value = uiUniforms.globals.globalIllumination;
       uniforms.lighting.value = uiUniforms.globals.lighting;
       uniforms.shadows.value = uiUniforms.globals.shadows;

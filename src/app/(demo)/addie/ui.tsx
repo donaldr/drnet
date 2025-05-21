@@ -82,6 +82,7 @@ export interface GlobalSettings {
   perfMode: number;
   perfScale: number;
   showBoxes: boolean;
+  showBoundingBox: boolean;
 }
 
 export interface Shape {
@@ -146,6 +147,9 @@ export interface TemplateData {
   shapes: any[];
   lights: Light[];
   showBoxes: boolean;
+  showBoundingBox: boolean;
+  boundingBoxPos: Vec3;
+  boundingBoxDims: Vec3;
   devMode: boolean;
 }
 
@@ -216,8 +220,8 @@ export class RaymarchingUI {
       camHeight: 5.0,
       camDist: 5.0,
       orbit: 1.0,
-      boundingBoxPos: { x: 0, y: 0, z: 0 },
-      boundingBoxDims: { x: 1.0, y: 4.0, z: 0.0 },
+      boundingBoxPos: { x: 0, y: 0.5, z: 0 },
+      boundingBoxDims: { x: 0.5, y: 0.5, z: 0.5 },
       globalIllumination: true,
       reflection: true,
       transparency: true,
@@ -227,6 +231,7 @@ export class RaymarchingUI {
       perfMode: 0,
       perfScale: 1.0,
       showBoxes: false,
+      showBoundingBox: false,
     };
 
     this.shapes = [this.defaultShape(0)];
@@ -327,6 +332,9 @@ export class RaymarchingUI {
         shapes,
         lights: this.lights,
         showBoxes: this.globals.showBoxes,
+        showBoundingBox: this.globals.showBoundingBox,
+        boundingBoxPos: this.globals.boundingBoxPos,
+        boundingBoxDims: this.globals.boundingBoxDims,
         devMode: this.globals.mode == InterfaceMode.DEVELOPMENT,
       });
     }
@@ -367,6 +375,9 @@ export class RaymarchingUI {
         shapes,
         lights: this.lights,
         showBoxes: this.globals.showBoxes,
+        showBoundingBox: this.globals.showBoundingBox,
+        boundingBoxDims: this.globals.boundingBoxDims,
+        boundingBoxPos: this.globals.boundingBoxPos,
         devMode: this.globals.mode == InterfaceMode.DEVELOPMENT,
       });
     }
@@ -508,9 +519,26 @@ export class RaymarchingUI {
     });
     this.globals.boundingBoxPos = this.globals.boundingBoxPos ?? {
       x: 0,
-      y: 0,
+      y: 0.5,
       z: 0,
     };
+    f.addBinding(this.globals, "boundingBoxPos", {
+      label: "Bounding Box Position",
+      x: { min: -10, max: 10, step: 0.01 },
+      y: { min: 0, max: 10, step: 0.01 },
+      z: { min: -10, max: 10, step: 0.01 },
+    });
+    this.globals.boundingBoxDims = this.globals.boundingBoxDims ?? {
+      x: 0.5,
+      y: 0.5,
+      z: 0.5,
+    };
+    f.addBinding(this.globals, "boundingBoxDims", {
+      label: "Bounding Box Dimensions",
+      x: { min: 0, max: 5, step: 0.01 },
+      y: { min: 0, max: 5, step: 0.01 },
+      z: { min: 0, max: 5, step: 0.01 },
+    });
     f.addBinding(this.globals, "camTgt", {
       label: "Camera Target",
       step: 0.01,
@@ -564,7 +592,11 @@ export class RaymarchingUI {
     });
     this.globals.showBoxes = this.globals.showBoxes ?? false;
     f.addBinding(this.globals, "showBoxes", {
-      label: "Show Boxes",
+      label: "Show Shape Boxes",
+    });
+    this.globals.showBoundingBox = this.globals.showBoundingBox ?? false;
+    f.addBinding(this.globals, "showBoundingBox", {
+      label: "Show Bounding Box",
     });
   }
 
