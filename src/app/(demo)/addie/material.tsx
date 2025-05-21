@@ -88,14 +88,18 @@ export function ShaderMaterial({
       camHeight: { value: 0 },
       camDist: { value: 0 },
       orbit: { value: 0 },
-      shapes: { value: [] },
-      shapePositions: { value: [] },
+      ...(uiUniforms.globals.mode == InterfaceMode.DEVELOPMENT && {
+        shapes: { value: [] },
+      }),
+      ...(uiUniforms.globals.mode == InterfaceMode.PRODUCTION && {
+        shapePositions: { value: [] },
+      }),
       materials: { value: [] },
       globalIllumination: { value: true },
       lighting: { value: true },
       shadows: { value: true },
     }),
-    []
+    [uiUniforms.globals.mode]
   );
 
   useEffect(() => {
@@ -148,8 +152,14 @@ export function ShaderMaterial({
           isRot: shape.rot.x != 0 || shape.rot.y != 0 || shape.rot.z != 0,
         }));
       } else {
-        uniforms.shapePositions.value = uiUniforms.shapes.map(
-          (s) => new THREE.Vector3(s.pos.x, s.pos.y, s.pos.z)
+        const shapePositions = [...uiUniforms.shapes.map((s) => s.pos)];
+        if (shapePositions.length < MAX_SHAPES) {
+          for (let i = shapePositions.length; i < MAX_SHAPES; i++) {
+            shapePositions.push({ x: 0, y: 0, z: 0 });
+          }
+        }
+        uniforms.shapePositions.value = shapePositions.map(
+          (s) => new THREE.Vector3(s.x, s.y, s.z)
         );
       }
       if (materials.length < MAX_MATERIALS) {

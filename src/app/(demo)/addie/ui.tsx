@@ -399,6 +399,12 @@ export class RaymarchingUI {
         this.globals.transparency = false;
         this.globals.lighting = false;
         this.globals.shadows = false;
+      } else {
+        this.globals.globalIllumination = true;
+        this.globals.reflection = true;
+        this.globals.transparency = true;
+        this.globals.lighting = true;
+        this.globals.shadows = true;
       }
       f.refresh();
     });
