@@ -20,7 +20,7 @@ uniform int marchingSteps;
 uniform float distanceThreshold;
 
 // Performance visualization controls
-uniform bool showPerformance;   // Toggle performance overlay
+uniform bool showDebug;   // Toggle performance overlay
 uniform bool showBoxes;  
 uniform int perfMode;          // 0=steps, 1=heat map, 2=termination reasons
 uniform float perfScale;       // Scale for heat map
@@ -1474,7 +1474,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec3 col = render( ro, rd, rdx, rdy );
 
     // Performance visualization
-    if (showPerformance) {
+    if (showDebug) {
         vec3 perfColor = vec3(0.0);
         
         if (perfMode == 0) {

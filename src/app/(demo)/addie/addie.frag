@@ -25,7 +25,7 @@ uniform float distanceThreshold;
 uniform bool devMode;
 
 // Performance visualization controls
-uniform bool showPerformance;   // Toggle performance overlay
+uniform bool showDebug;   // Toggle performance overlay
 uniform bool showBoxes;  
 uniform bool showBoundingBox;  
 uniform int perfMode;          // 0=steps, 1=heat map, 2=termination reasons
@@ -35,6 +35,7 @@ uniform float perfScale;       // Scale for heat map
 uniform bool globalIllumination;
 uniform bool lighting;
 uniform bool shadows;
+uniform bool surfaceBlur;
 
 //------------------------------------------------------------------
 float dot2( in vec2 v ) { return dot(v,v); }
@@ -98,9 +99,9 @@ struct PerformanceStats {
 PerformanceStats perfStats;
 
 struct Material {
-  bool emissive, intRef;
-  vec3 color, innerColor, glowColor;
-  float kd, ior, reflectivity, roughness, reflectRoughness, refractRoughness, metallic, transparency, attenuation, attenuationStrength, glow;
+  bool intRef;
+  vec3 color, innerColor;
+  float kd, ior, reflectivity, roughness, reflectRoughness, refractRoughness, surfaceBlur, metallic, transparency, attenuation, attenuationStrength;
 };
 
 <% if(devMode) { %>
@@ -359,7 +360,7 @@ float sdPyramid( in vec3 p, in float h )
     float t = clamp( (q.y-0.5*q.x)/(m2+0.25), 0.0, 1.0 );
     
     float a = m2*(q.x+s)*(q.x+s) + q.y*q.y;
-	float b = m2*(q.x+0.5*t)*(q.x+0.5*t) + (q.y-m2*t)*(q.y-m2*t);
+	  float b = m2*(q.x+0.5*t)*(q.x+0.5*t) + (q.y-m2*t)*(q.y-m2*t);
     
     float d2 = max(-q.y,q.x*m2+q.y*0.5) < 0.0 ? 0.0 : min(a,b);
     
@@ -367,6 +368,56 @@ float sdPyramid( in vec3 p, in float h )
     return sqrt( (d2+q.z*q.z)/m2 ) * sign(max(q.z,-p.y));;
 }
 
+// Encode normalized normal to vec2 in [0,1]
+vec2 octEncode(vec3 n) {
+    n /= (abs(n.x) + abs(n.y) + abs(n.z));
+    n.xy = n.z >= 0.0 ? n.xy : (1.0 - abs(n.yx)) * sign(n.xy);
+    return n.xy * 0.5 + 0.5;
+}
+
+// Quantize float to integer bits in [0..max]
+uint quantize(float v, uint maxVal) {
+  return uint(clamp(v * float(maxVal), 0.0, float(maxVal)));
+}
+
+// Pack 5 bits normal.x, 5 bits normal.y, 6 bits roughness into 16 bits
+uint packTo16bit(vec2 octN, float surfaceBlur) {
+  uint nx = quantize(octN.x, 31u);  // 5 bits
+  uint ny = quantize(octN.y, 31u);  // 5 bits
+  uint r = quantize(surfaceBlur, 63u); // 6 bits
+
+  return (r << 10) | (ny << 5) | nx; // 16 bits packed
+}
+
+// Convert 16-bit packed uint into a float with half-float precision in alpha
+float packHalfFloat(uint packed16) {
+  // Convert 16-bit int to float by encoding it into float bits
+  // Here we normalize to [0,1] range (safe for alpha channel)
+  return float(packed16) / 65535.0;
+}
+
+vec2 octWrap(vec2 v) {
+    return (1.0 - abs(v.yx)) * sign(v.xy);
+}
+
+// Encode a normalized vec3 normal to an 8-bit uint
+uint encodeNormal8(vec3 n) {
+    n /= (abs(n.x) + abs(n.y) + abs(n.z));
+    vec2 p = n.xy;
+
+    if (n.z < 0.0) {
+        p = octWrap(p);
+    }
+
+    // Scale to [0,1]
+    p = p * 0.5 + 0.5;
+
+    // Quantize to 16 levels each (4 bits for x, 4 bits for y)
+    uint x = uint(clamp(floor(p.x * 16.0), 0.0, 15.0));
+    uint y = uint(clamp(floor(p.y * 16.0), 0.0, 15.0));
+
+    return (y << 4) | x;  // Pack into 8 bits (y high nibble, x low nibble)
+}
 
 float sdU( in vec3 p, in float r, in float le, vec2 w )
 {
@@ -567,58 +618,58 @@ vec3 map( in vec3 pos, float rayDistance)
               case PLANE:
                 break;
               case SPHERE:
-                res = opU( res, vec3( sdSphere(newPos, s.r) * FUDGE_FACTOR, s.mat, i ) );
+                res = opU( res, vec3( sdSphere(newPos, s.r), s.mat, i ) );
                 break;
               case BOX:
-                res = opU( res, vec3( sdBox(newPos, s.a) * FUDGE_FACTOR, s.mat, i ) );
+                res = opU( res, vec3( sdBox(newPos, s.a), s.mat, i ) );
                 break;
               case ROUND_BOX:
-                res = opU( res, vec3( sdRoundBox(newPos, s.a, s.r) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdRoundBox(newPos, s.a, s.r), s.mat, i) );
                 break;
               case BOX_FRAME:
-                res = opU( res, vec3( sdBoxFrame(newPos, s.a, s.r) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdBoxFrame(newPos, s.a, s.r), s.mat, i) );
                 break;
               case TORUS:
-                res = opU( res, vec3( sdTorus(newPos, s.r1, s.r2) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdTorus(newPos, s.r1, s.r2), s.mat, i) );
                 break;
               case LINK:
-                res = opU( res, vec3( sdLink(newPos, s.h, s.r1, s.r2) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdLink(newPos, s.h, s.r1, s.r2), s.mat, i) );
                 break;
               case CONE:
-                res = opU( res, vec3( sdCone(newPos, s.c, s.h) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdCone(newPos, s.c, s.h), s.mat, i) );
                 break;
               case HEX_PRISM:
-                res = opU( res, vec3( sdHexPrism(newPos, s.l) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdHexPrism(newPos, s.l), s.mat, i) );
                 break;
               case TRI_PRISM:
-                res = opU( res, vec3( sdTriPrism(newPos, s.l) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdTriPrism(newPos, s.l), s.mat, i) );
                 break;
               case CAPSULE:
-                res = opU( res, vec3( sdCapsule(newPos, s.h, s.r) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdCapsule(newPos, s.h, s.r), s.mat, i) );
                 break;
               case ROUND_CYLINDER:
-                res = opU( res, vec3( sdRoundCylinder(newPos, s.r1, s.r2, s.h) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdRoundCylinder(newPos, s.r1, s.r2, s.h), s.mat, i) );
                 break;
               case CUT_CONE:
-                res = opU( res, vec3( sdCutCone(newPos, s.h, s.r1, s.r2) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdCutCone(newPos, s.h, s.r1, s.r2), s.mat, i) );
                 break;
               case SOLID_ANGLE:
-                res = opU( res, vec3( sdSolidAngle(newPos, s.c, s.r1) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdSolidAngle(newPos, s.c, s.r1), s.mat, i) );
                 break;
               case CUT_SPHERE:
-                res = opU( res, vec3( sdCutSphere(newPos, s.r, s.h) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdCutSphere(newPos, s.r, s.h), s.mat, i) );
                 break;
               case ROUND_CONE:
-                res = opU( res, vec3( sdRoundCone(newPos, s.h, s.r1, s.r2) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdRoundCone(newPos, s.h, s.r1, s.r2), s.mat, i) );
                 break;
               case ELLIPSOID:
-                res = opU( res, vec3( sdEllipsoid(newPos, s.r, s.r1, s.r2) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdEllipsoid(newPos, s.r, s.r1, s.r2), s.mat, i) );
                 break;
               case FOOTBALL:
-                res = opU( res, vec3( sdFootball(newPos, s.a, s.b, s.h) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdFootball(newPos, s.a, s.b, s.h), s.mat, i) );
                 break;
               case PYRAMID:
-                res = opU( res, vec3( sdPyramid(newPos, s.r) * FUDGE_FACTOR, s.mat, i) );
+                res = opU( res, vec3( sdPyramid(newPos, s.r), s.mat, i) );
                 break;
             }
         }
@@ -627,6 +678,7 @@ vec3 map( in vec3 pos, float rayDistance)
         }
     }
 
+    res.x *= FUDGE_FACTOR;
     return res;
 }
 <% } else { %>
@@ -634,9 +686,8 @@ vec3 map( in vec3 pos, float rayDistance)
 {
     vec3 res = vec3( pos.y, 0.0, -1.0 );
 
-    float earlyExitThreshold = distanceThreshold * rayDistance;
-
     float boundsPadding = defaultPadding;
+    vec3 boundsPaddingVec = vec3(defaultPadding);
     <% const allShapes = showBoxes ? [...shapes, ...shapes] : shapes;
       if(showBoundingBox) allShapes.push({
         type: 20,
@@ -648,6 +699,7 @@ vec3 map( in vec3 pos, float rayDistance)
         rot: [1,0,0,0,1,0,0,0,1],
       });
       allShapes.forEach((_s, i) => {
+        let boundsPadding = 0.02;
         if(showBoxes) {
           if(i < shapes.length)
           {
@@ -656,7 +708,6 @@ vec3 map( in vec3 pos, float rayDistance)
           else
           {
             let bounds;
-            let boundsPadding = 0.02;
             switch(_s.type) {
               case 1: //SPHERE:
                   bounds = {x: _s.r + boundsPadding, y: _s.r + boundsPadding, z: _s.r + boundsPadding};
@@ -753,7 +804,8 @@ vec3 map( in vec3 pos, float rayDistance)
         } %>
         vec3 delta<%= i %> = pos - vec3(<%= _f(s.pos.x) %>,<%= _f(s.pos.y) %>,<%= _f(s.pos.z) %>);
 
-        <% switch(s.type) { 
+        <% 
+          switch(s.type) { 
             case 1: // SPHERE: %>
                 float approxRadius<%= i %> = <%= _f(s.r) %>;
             <%
@@ -818,72 +870,76 @@ vec3 map( in vec3 pos, float rayDistance)
         <% } %>
 
         if (length(delta<%= i %>) - approxRadius<%= i %> <= res.x) {
-          vec3 rotatedDelta<%= i %> = mat3(<%= s.rot.map(_f).join(",") %>) * delta<%= i %>;
-          vec3 newPos<%= i %> = rotatedDelta<%= i %>;
+          <% if(s.isRot) { %>
+            vec3 rotatedDelta<%= i %> = mat3(<%= s.rot.map(_f).join(",") %>) * delta<%= i %>;
+            vec3 newPos<%= i %> = rotatedDelta<%= i %>;
+          <% } else { %>
+            vec3 newPos<%= i %> = delta<%= i %>;
+          <% } %>
 
           <% switch(s.type) {
               case 1: //SPHERE: %>
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.r) %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r + boundsPadding) %>);
               <%     
                   break;
               case 2: //BOX: %>
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>) + boundsPadding;
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.a.x + boundsPadding) %>, <%= _f(s.a.y + boundsPadding) %>, <%= _f(s.a.z + boundsPadding) %>);
               <%     
                   break;
               case 3: //ROUND_BOX: %>
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>) + <%= _f(s.r) %> + boundsPadding;
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.a.x + s.r + boundsPadding) %>, <%= _f(s.a.y + s.r + boundsPadding) %>, <%= _f(s.a.z + s.r + boundsPadding) %>);
               <%     
                   break;
               case 20: //BOX_FRAME: %>
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>) + <%= _f(s.r) %> + boundsPadding;
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.a.x + s.r + boundsPadding) %>, <%= _f(s.a.y + s.r + boundsPadding) %>, <%= _f(s.a.z + s.r + boundsPadding) %>);
               <%     
                   break;
               case 4: //TORUS: %>
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.r1) %> + <%= _f(s.r2) %> + boundsPadding, <%= _f(s.r2) %> + boundsPadding, <%= _f(s.r1) %> + <%= _f(s.r2) %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r1 + s.r2 + boundsPadding) %>, <%= _f(s.r2 + boundsPadding) %>, <%= _f(s.r1 + s.r2 + boundsPadding) %>);
               <%     
                   break;
               case 5: //LINK:  %>
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.r1) %> + <%= _f(s.r2) %> + boundsPadding, <%= _f(s.h) %> + <%= _f(s.r2) %> + boundsPadding, <%= _f(s.r1) %> + <%= _f(s.r2) %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r1 + s.r2 + boundsPadding) %>, <%= _f(s.h + s.r2 + boundsPadding) %>, <%= _f(s.r1 + s.r2 + boundsPadding) %>);
               <%     
                   break;
               case 10: //CYLINDER: %>
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.r) %> + boundsPadding, <%= _f(s.h) %> + boundsPadding, <%= _f(s.r) %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r + boundsPadding) %>, <%= _f(s.h + boundsPadding) %>, <%= _f(s.r + boundsPadding) %>);
               <%     
                   break;
               case 11: //ROUND_CYLINDER: %>
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.r) %> + <%= _f(s.r1) %> + boundsPadding, <%= _f(s.h) %> + <%= _f(s.r1) %> + boundsPadding, <%= _f(s.r) %> + <%= _f(s.r1) %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r + s.r1 + boundsPadding) %>, <%= _f(s.h + s.r1 + boundsPadding) %>, <%= _f(s.r + s.r1 + boundsPadding) %>);
               <%     
                   break;
               case 9: //CAPSULE: %>
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.r) %> + boundsPadding, <%= _f(s.h) %> + <%= _f(s.r) %> + boundsPadding, <%= _f(s.r) %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r + boundsPadding) %>, <%= _f(s.h + s.r + boundsPadding) %>, <%= _f(s.r + boundsPadding) %>);
               <%     
                   break;
               case 6: //CONE: %>
                   // For sdCone, s.c is sin/cos of angle, s.h is height
                   // Base radius = h * c.x/c.y = h * tan(angle)
                   float baseRadius<%= i %> = <%= _f(s.h) %> * (<%= _f(s.c.x) %> / <%= _f(s.c.y) %>);
-                  vec3 bounds<%= i %> = vec3(abs(baseRadius<%= i %>) + boundsPadding, <%= _f(s.h) %> + boundsPadding, abs(baseRadius<%= i %>) + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(abs(baseRadius<%= i %>) + boundsPadding, <%= _f(s.h + boundsPadding) %>, abs(baseRadius<%= i %>) + boundsPadding);
               <%     
                   break;
               case 12: //CUT_CONE: %>
                   float maxCutR<%= i %> = max(<%= _f(s.r1) %>, <%= _f(s.r2) %>);
-                  vec3 bounds<%= i %> = vec3(maxCutR<%= i %> + boundsPadding, <%= _f(s.h) %> + boundsPadding, maxCutR<%= i %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(maxCutR<%= i %> + boundsPadding, <%= _f(s.h + boundsPadding) %>, maxCutR<%= i %> + boundsPadding);
               <%     
                   break;
               case 13: //SOLID_ANGLE: %>
                   // Based on sin/cos angle and radius
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.r1) %> + boundsPadding, <%= _f(s.r1) %> + boundsPadding, <%= _f(s.r1) %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r1 + boundsPadding) %>, <%= _f(s.r1 + boundsPadding) %>, <%= _f(s.r1 + boundsPadding) %>);
               <%     
                   break;
               case 14: //CUT_SPHERE: %>
                   // Sphere with radius s.r, cut at height s.h
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.r) %> + boundsPadding, <%= _f(s.r) %> + boundsPadding, <%= _f(s.r) %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r + boundsPadding) %>, <%= _f(s.r + boundsPadding) %>, <%= _f(s.r + boundsPadding) %>);
               <%     
                   break;
               case 15: //ROUND_CONE: %>
                   // Similar to cut cone but with rounded edges
                   float maxRoundR<%= i %> = max(<%= _f(s.r1) %>, <%= _f(s.r2) %>);
-                  vec3 bounds<%= i %> = vec3(maxRoundR<%= i %> + boundsPadding, s.h + boundsPadding, maxRoundR<%= i %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(maxRoundR<%= i %> + boundsPadding, <%= s.h + boundsPadding %>, maxRoundR<%= i %> + boundsPadding);
               <%     
                   break;
               case 16: //ELLIPSOID: %>
@@ -896,25 +952,25 @@ vec3 map( in vec3 pos, float rayDistance)
                   // Football shape - analyze the sdFootball function parameters
                   // It uses s.a, s.b (endpoints) and s.h (height/thickness)
                   float footballLength<%= i %> = length(vec3(<%= _f(s.b.x - s.a.x) %>, <%= _f(s.b.y - s.a.y) %>, <%= _f(s.b.z - s.a.z) %>)) * 0.5;
-                  vec3 bounds<%= i %> = vec3(footballLength<%= i %> + <%= _f(s.h) %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(footballLength<%= i %> + <%= _f(s.h + boundsPadding) %>);
               <%     
                   break;
               case 18: //OCTAHEDRON: %>
                   // Regular octahedron with "radius" s.r
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.r) %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.r + boundsPadding) %>);
               <%     
                   break;
               case 19: //PYRAMID: %>
                   // Pyramid with height s.r and base 1x1 (from sdPyramid)
-                  vec3 bounds<%= i %> = vec3(0.71 + boundsPadding, <%= _f(s.r) %> + boundsPadding, 0.71 + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(<%= _f(0.71 + boundsPadding) %>, <%= _f(s.r + boundsPadding) %>, <%= _f(0.71 + boundsPadding) %>);
               <%     
                   break;
               case 7: //HEX_PRISM: %>
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.l.x) %> * 1.16, <%= _f(s.l.y) %> + boundsPadding, <%= _f(s.l.x) %> * 1.16);
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.l.x * 1.16) %>, <%= _f(s.l.y + boundsPadding) %>, <%= _f(s.l.x * 1.16) %>);
               <%     
                   break;
               case 8: //TRI_PRISM: %>
-                  vec3 bounds<%= i %> = vec3(<%= _f(s.l.x) %> + boundsPadding, <%= _f(s.l.y) %> + boundsPadding, <%= _f(s.l.x) %> + boundsPadding);
+                  vec3 bounds<%= i %> = vec3(<%= _f(s.l.x + boundsPadding) %>, <%= _f(s.l.y + boundsPadding) %>, <%= _f(s.l.x + boundsPadding) %>);
               <%     
                   break;
               case 0: //PLANE: %>
@@ -927,96 +983,95 @@ vec3 map( in vec3 pos, float rayDistance)
                   vec3 bounds<%= i %> = vec3(1.5);
           <% } %>
 
-          if (res.x >= earlyExitThreshold) {
-            if( sdBox( newPos<%= i %>, bounds<%= i %> ) < res.x ) 
-            {
-                <% switch(s.type) {
-                  case 1: // SPHERE: %>
-                    res = opU( res, vec3( sdSphere(newPos<%= i %>, <%= _f(s.r) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %> ) );
-                  <%
-                    break;
-                  case 2: //BOX: %>
-                    res = opU( res, vec3( sdBox(newPos<%= i %>, vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>)) * FUDGE_FACTOR, <%= s.mat %>, <%= i %> ) );
-                  <%
-                    break;
-                  case 3: //ROUND_BOX: %>
-                    res = opU( res, vec3( sdRoundBox(newPos<%= i %>, vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>), <%= s.r %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 20: //BOX_FRAME: %>
-                    res = opU( res, vec3( sdBoxFrame(newPos<%= i %>, vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>), <%= _f(s.r) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 4: //TORUS: %>
-                    res = opU( res, vec3( sdTorus(newPos<%= i %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 5: //LINK: %>
-                    res = opU( res, vec3( sdLink(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 6: //CONE: %>
-                    res = opU( res, vec3( sdCone(newPos<%= i %>, vec2(<%= _f(s.c.x) %>, <%= _f(s.c.y) %>), <%= _f(s.h) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 7: //HEX_PRISM: %>
-                    res = opU( res, vec3( sdHexPrism(newPos<%= i %>, vec2(<%= _f(s.l.x) %>, <%= _f(s.l.y) %>)) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 8: //TRI_PRISM: %>
-                    res = opU( res, vec3( sdTriPrism(newPos<%= i %>, vec2(<%= _f(s.l.x) %>, <%= _f(s.l.y) %>)) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 9: //CAPSULE: %>
-                    res = opU( res, vec3( sdCapsule(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 10: //CYLINDER: %>
-                    res = opU( res, vec3( sdCylinder(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 11: //ROUND_CYLINDER: %>
-                    res = opU( res, vec3( sdRoundCylinder(newPos<%= i %>, <%= _f(s.r) %>, <%= _f(s.h) %>, <%= _f(s.r1) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 12: //CUT_CONE: %>
-                    res = opU( res, vec3( sdCutCone(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 13: //SOLID_ANGLE: %>
-                    res = opU( res, vec3( sdSolidAngle(newPos<%= i %>, vec2(<%= _f(s.c.x) %>, <%= _f(s.c.y) %>), <%= _f(s.r1) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 14: //CUT_SPHERE: %>
-                    res = opU( res, vec3( sdCutSphere(newPos<%= i %>, <%= _f(s.r) %>, <%= _f(s.h) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 15: //ROUND_CONE: %>
-                    res = opU( res, vec3( sdRoundCone(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 16: //ELLIPSOID: %>
-                    res = opU( res, vec3( sdEllipsoid(newPos<%= i %>, <%= _f(s.r) %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 17: //FOOTBALL: %>
-                    res = opU( res, vec3( sdFootball(newPos<%= i %>, vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>), vec3(<%= _f(s.b.x) %>, <%= _f(s.b.y) %>, <%= _f(s.b.z) %>), <%= _f(s.h) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 18: //OCTAHEDRON: %>
-                    res = opU( res, vec3( sdOctahedron(newPos<%= i %>, <%= _f(s.r) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                  case 19: //PYRAMID: %>
-                    res = opU( res, vec3( sdPyramid(newPos<%= i %>, <%= _f(s.r) %>) * FUDGE_FACTOR, <%= s.mat %>, <%= i %>) );
-                  <%
-                    break;
-                } %>
-            }
+          if( sdBox( newPos<%= i %>, bounds<%= i %> ) < res.x ) 
+          {
+              <% switch(s.type) {
+                case 1: // SPHERE: %>
+                  res = opU( res, vec3( sdSphere(newPos<%= i %>, <%= _f(s.r) %>), <%= s.mat %>, <%= i %> ) );
+                <%
+                  break;
+                case 2: //BOX: %>
+                  res = opU( res, vec3( sdBox(newPos<%= i %>, vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>)), <%= s.mat %>, <%= i %> ) );
+                <%
+                  break;
+                case 3: //ROUND_BOX: %>
+                  res = opU( res, vec3( sdRoundBox(newPos<%= i %>, vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>), <%= s.r %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 20: //BOX_FRAME: %>
+                  res = opU( res, vec3( sdBoxFrame(newPos<%= i %>, vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>), <%= _f(s.r) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 4: //TORUS: %>
+                  res = opU( res, vec3( sdTorus(newPos<%= i %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 5: //LINK: %>
+                  res = opU( res, vec3( sdLink(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 6: //CONE: %>
+                  res = opU( res, vec3( sdCone(newPos<%= i %>, vec2(<%= _f(s.c.x) %>, <%= _f(s.c.y) %>), <%= _f(s.h) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 7: //HEX_PRISM: %>
+                  res = opU( res, vec3( sdHexPrism(newPos<%= i %>, vec2(<%= _f(s.l.x) %>, <%= _f(s.l.y) %>)), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 8: //TRI_PRISM: %>
+                  res = opU( res, vec3( sdTriPrism(newPos<%= i %>, vec2(<%= _f(s.l.x) %>, <%= _f(s.l.y) %>)), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 9: //CAPSULE: %>
+                  res = opU( res, vec3( sdCapsule(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 10: //CYLINDER: %>
+                  res = opU( res, vec3( sdCylinder(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 11: //ROUND_CYLINDER: %>
+                  res = opU( res, vec3( sdRoundCylinder(newPos<%= i %>, <%= _f(s.r) %>, <%= _f(s.h) %>, <%= _f(s.r1) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 12: //CUT_CONE: %>
+                  res = opU( res, vec3( sdCutCone(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 13: //SOLID_ANGLE: %>
+                  res = opU( res, vec3( sdSolidAngle(newPos<%= i %>, vec2(<%= _f(s.c.x) %>, <%= _f(s.c.y) %>), <%= _f(s.r1) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 14: //CUT_SPHERE: %>
+                  res = opU( res, vec3( sdCutSphere(newPos<%= i %>, <%= _f(s.r) %>, <%= _f(s.h) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 15: //ROUND_CONE: %>
+                  res = opU( res, vec3( sdRoundCone(newPos<%= i %>, <%= _f(s.h) %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 16: //ELLIPSOID: %>
+                  res = opU( res, vec3( sdEllipsoid(newPos<%= i %>, <%= _f(s.r) %>, <%= _f(s.r1) %>, <%= _f(s.r2) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 17: //FOOTBALL: %>
+                  res = opU( res, vec3( sdFootball(newPos<%= i %>, vec3(<%= _f(s.a.x) %>, <%= _f(s.a.y) %>, <%= _f(s.a.z) %>), vec3(<%= _f(s.b.x) %>, <%= _f(s.b.y) %>, <%= _f(s.b.z) %>), <%= _f(s.h) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 18: //OCTAHEDRON: %>
+                  res = opU( res, vec3( sdOctahedron(newPos<%= i %>, <%= _f(s.r) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+                case 19: //PYRAMID: %>
+                  res = opU( res, vec3( sdPyramid(newPos<%= i %>, <%= _f(s.r) %>), <%= s.mat %>, <%= i %>) );
+                <%
+                  break;
+              } %>
           }
         }
     <% }) %>
 
+    res.x *= FUDGE_FACTOR;
     return res;
 }
 <% } %>
@@ -1068,7 +1123,7 @@ vec3 raycast(in vec3 ro, in vec3 rd)
     vec2 tb = iBox(ro - boundingBoxPos, rd, boundingBoxDims);
     if (tb.x < tb.y && tb.y > 0.0 && tb.x < tmax)
     {
-        float t = tmin;
+        float t = max(tmin, tb.x);
         float prevStep = 1e6;
         int stallCount = 0;
         const int STALL_LIMIT = 10;
@@ -1384,10 +1439,18 @@ void addRay(vec3 origin, vec3 direction, float throughput, bool inside, int iden
     }
 }
 
-vec3 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy) {
+void createOrthonormalBasis(vec3 n, out vec3 u, out vec3 v) {
+    // Find a vector not parallel to n
+    vec3 a = abs(n.x) > 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+    u = normalize(cross(a, n));
+    v = cross(n, u);
+}
+
+vec4 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in mat3 viewMatrix) {
     // Initialize background color
     vec3 bg = vec3(0.8, 0.8, 0.8);
     vec3 col = vec3(0.);
+    float w = 0.0;
 
     // Initialize the first ray
     addRay(ro, rd, 1.0, false, -1);
@@ -1409,10 +1472,20 @@ vec3 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy) {
       if(!currentRay.inside)
       {
         if (m > -0.5) { // Hit an object
+
             Material mat = materials[int(m)];
             vec3 pos = currentRay.origin + t * currentRay.direction;
             vec3 nor = (m < 0.5) ? vec3(0.0, 1.0, 0.0) : calcNormal(pos);
             vec3 refDir = reflect(currentRay.direction, nor);
+
+            if(!showDebug && i == 0 && mat.surfaceBlur > 0.01 && surfaceBlur && t < 4.0)
+            {
+              vec3 viewNormal = viewMatrix * nor; // or world-space ray-marched normal
+              if (viewNormal.z < 0.0) viewNormal = -viewNormal;
+
+              vec2 octNor = octEncode(viewNormal);
+              w = packHalfFloat(packTo16bit(octNor, mat.surfaceBlur));
+            }
 
             vec3 base = mat.color; 
 
@@ -1546,7 +1619,7 @@ vec3 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy) {
       }
     }
 
-    return clamp(col, 0.0, 1.0);
+    return clamp(vec4(col, w), 0.0, 1.0);
 }
 
 mat3 setCamera( in vec3 ro, in vec3 ta, float cr )
@@ -1607,7 +1680,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         debugShape.type = BOX_FRAME;
         debugShape.mat = 1;
         debugShape.pos = shapes[i].pos;
-        debugShape.a = getShapeBounds(shape); 
+        debugShape.a = getShapeBounds(shape, 0.0); 
         debugShape.r = 0.005;
         debugShape.isRot = shapes[i].isRot;
         debugShape.mat = 1;
@@ -1631,10 +1704,17 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     <% } %>
     
     // render	
-    vec3 col = render( ro, rd, rdx, rdy );
+    vec4 res = render( ro, rd, rdx, rdy, transpose(ca) );
+
+    vec3 col = res.xyz;
+    float w = res.w;
+    if(!surfaceBlur || showDebug)
+    {
+      w = 1.0;
+    }
 
     // Performance visualization
-    if (showPerformance) {
+    if (showDebug) {
         vec3 perfColor = vec3(0.0);
         
         if (perfMode == 0) {
@@ -1670,8 +1750,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     col = pow( col, vec3(0.4545) );
 
     tot += col;
-    
-    fragColor = vec4( tot, 1.0 );
+
+    fragColor = vec4( tot, w );
 
     if(override)
     {

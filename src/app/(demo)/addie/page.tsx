@@ -2,11 +2,14 @@
 import { useEffect, useState } from "react";
 
 import { invalidate, Canvas } from "@react-three/fiber";
-import { EffectComposer, FXAA } from "@react-three/postprocessing";
+import { Bloom, EffectComposer, FXAA, SMAA } from "@react-three/postprocessing";
+import { RoughnessBlur } from "./roughnesspass";
 import { OrthographicCamera } from "@react-three/drei";
 import { ShaderMaterial } from "./material";
 import NoSSR from "react-no-ssr";
 import RaymarchingUI, { TemplateData, UiData } from "./ui";
+import { BlendFunction } from "postprocessing";
+import * as THREE from "three";
 
 function useWindowSize() {
   const [size, setSize] = useState({ innerWidth: 400, innerHeight: 400 });
@@ -48,6 +51,8 @@ export default function ShaderCanvas() {
   const [key, setKey] = useState(`${innerWidth}-${innerHeight}`);
   const [uiUniforms, setUniforms] = useState<UiData>();
   const [templateVariables, setTemplateVariables] = useState<TemplateData>();
+  const [surfaceBlur, setSurfaceBlur] = useState(true);
+  const [showDebug, setShowDebug] = useState(true);
 
   // The shaders tend to be brittle and tend to break when we
   // change the window size or the underlying shader material.
@@ -58,6 +63,13 @@ export default function ShaderCanvas() {
     setKey(`${innerWidth}-${innerHeight}`);
     invalidate();
   }, [innerWidth, innerHeight, key]);
+
+  useEffect(() => {
+    if (uiUniforms?.globals.surfaceBlur !== undefined) {
+      setSurfaceBlur(uiUniforms?.globals.surfaceBlur);
+      setShowDebug(uiUniforms?.globals.showDebug);
+    }
+  }, [uiUniforms]);
 
   return (
     <div className="bg-gray-100 w-full h-screen pr-[24rem] overflow-hidden">
@@ -81,6 +93,9 @@ export default function ShaderCanvas() {
                 }}
                 camera={{ position: [0, 0, 1] }}
                 key={key}
+                gl={{
+                  antialias: false, // Disable default antialias as we're using FXAA
+                }}
               >
                 <OrthographicCamera
                   makeDefault
@@ -100,10 +115,16 @@ export default function ShaderCanvas() {
                       templateVariables={templateVariables}
                     />
                   )}
-                  <EffectComposer multisampling={0}>
-                    <FXAA />
-                  </EffectComposer>
                 </mesh>
+                <EffectComposer
+                  multisampling={0}
+                  frameBufferType={THREE.FloatType}
+                >
+                  <SMAA />
+                  {surfaceBlur && !showDebug && (
+                    <RoughnessBlur blurRadius={15} normalSensitivity={10} />
+                  )}
+                </EffectComposer>
               </Canvas>
             </NoSSR>
           </div>

@@ -23,7 +23,8 @@ const eta = new Eta({ autoEscape: false, useWith: true });
 const MAX_SHAPES = 10;
 const MAX_MATERIALS = 20;
 
-const toFloat = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
+const toFloat = (n: number) =>
+  Number.isInteger(n) ? n.toFixed(1) : n.toFixed(4);
 
 export function ShaderMaterial({
   uiUniforms,
@@ -67,7 +68,7 @@ export function ShaderMaterial({
       iFrame: { value: 0 },
       iResolution: { value: new THREE.Vector2(1, 1) },
       iMouse: { value: new THREE.Vector3(0, 0, 1) },
-      showPerformance: { value: false },
+      showDebug: { value: false },
       showBoxes: { value: false },
       showBoundingBox: { value: false },
       perfMode: { value: 0 },
@@ -101,6 +102,7 @@ export function ShaderMaterial({
       globalIllumination: { value: true },
       lighting: { value: true },
       shadows: { value: true },
+      surfaceBlur: { value: true },
     }),
     [uiUniforms.globals.mode]
   );
@@ -172,7 +174,6 @@ export function ShaderMaterial({
       }
 
       uniforms.materials.value = materials.map((material: Material) => ({
-        emissive: material.emissive,
         color: {
           x: material.color.r,
           y: material.color.g,
@@ -182,11 +183,6 @@ export function ShaderMaterial({
           x: material.innerColor.r,
           y: material.innerColor.g,
           z: material.innerColor.b,
-        },
-        glowColor: {
-          x: material.glowColor.r,
-          y: material.glowColor.g,
-          z: material.glowColor.b,
         },
         kd: material.kd,
         ior: material.ior,
@@ -199,15 +195,15 @@ export function ShaderMaterial({
           uiUniforms.globals.perf == "LOW" ? 0.0 : material.reflectRoughness,
         refractRoughness:
           uiUniforms.globals.perf == "LOW" ? 0.0 : material.refractRoughness,
+        surfaceBlur: material.surfaceBlur,
         metallic: material.metallic,
         transparency: uiUniforms.globals.transparency
           ? Math.floor(material.transparency * 1000) / 1000
           : 0,
         attenuation: material.attenuation,
         attenuationStrength: material.attenuationStrength,
-        glow: material.glow,
       }));
-      uniforms.showPerformance.value = uiUniforms.globals.showPerformance;
+      uniforms.showDebug.value = uiUniforms.globals.showDebug;
       uniforms.perfMode.value = uiUniforms.globals.perfMode;
       uniforms.perfScale.value = uiUniforms.globals.perfScale;
       uniforms.showBoxes.value = uiUniforms.globals.showBoxes;
@@ -243,6 +239,7 @@ export function ShaderMaterial({
       uniforms.globalIllumination.value = uiUniforms.globals.globalIllumination;
       uniforms.lighting.value = uiUniforms.globals.lighting;
       uniforms.shadows.value = uiUniforms.globals.shadows;
+      uniforms.surfaceBlur.value = uiUniforms.globals.surfaceBlur;
     }
   }, [uiUniforms]);
 

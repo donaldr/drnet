@@ -78,7 +78,8 @@ export interface GlobalSettings {
   transparency: boolean;
   lighting: boolean;
   shadows: boolean;
-  showPerformance: boolean;
+  surfaceBlur: boolean;
+  showDebug: boolean;
   perfMode: number;
   perfScale: number;
   showBoxes: boolean;
@@ -105,10 +106,8 @@ export interface Shape {
 
 export interface Material {
   name: string;
-  emissive: boolean;
   color: Color;
   innerColor: Color;
-  glowColor: Color;
   kd: number;
   ior: number;
   reflectivity: number;
@@ -116,11 +115,11 @@ export interface Material {
   roughness: number;
   reflectRoughness: number;
   refractRoughness: number;
+  surfaceBlur: number;
   metallic: number;
   transparency: number;
   attenuation: number;
   attenuationStrength: number;
-  glow: number;
   uuid: string;
 }
 
@@ -227,7 +226,8 @@ export class RaymarchingUI {
       transparency: true,
       lighting: true,
       shadows: true,
-      showPerformance: false,
+      surfaceBlur: true,
+      showDebug: false,
       perfMode: 0,
       perfScale: 1.0,
       showBoxes: false,
@@ -410,12 +410,14 @@ export class RaymarchingUI {
         this.globals.transparency = false;
         this.globals.lighting = false;
         this.globals.shadows = false;
+        this.globals.surfaceBlur = false;
       } else {
         this.globals.globalIllumination = true;
         this.globals.reflection = true;
         this.globals.transparency = true;
         this.globals.lighting = true;
         this.globals.shadows = true;
+        this.globals.surfaceBlur = true;
       }
       f.refresh();
     });
@@ -566,11 +568,15 @@ export class RaymarchingUI {
     f.addBinding(this.globals, "shadows", {
       label: "Shadows",
     });
+    this.globals.surfaceBlur = this.globals.surfaceBlur ?? false;
+    f.addBinding(this.globals, "surfaceBlur", {
+      label: "Surface Blur",
+    });
     f.addBlade({
       view: "separator",
     });
-    this.globals.showPerformance = this.globals.showPerformance ?? false;
-    f.addBinding(this.globals, "showPerformance", {
+    this.globals.showDebug = this.globals.showDebug ?? false;
+    f.addBinding(this.globals, "showDebug", {
       label: "Show Debug",
     });
     this.globals.perfMode = this.globals.perfMode ?? 0;
@@ -1000,6 +1006,13 @@ export class RaymarchingUI {
       step: 0.01,
       label: "Refract Roughness",
     });
+    mat.surfaceBlur = mat.surfaceBlur ?? 0.0;
+    f.addBinding(mat, "surfaceBlur", {
+      min: 0,
+      max: 1,
+      step: 0.01,
+      label: "Surface Blur",
+    });
     f.addBinding(mat, "metallic", {
       min: 0,
       max: 1,
@@ -1164,10 +1177,8 @@ export class RaymarchingUI {
   defaultMaterial(): Material {
     return {
       name: "Default Material",
-      emissive: false,
       color: { r: 1, g: 1, b: 1 },
       innerColor: { r: 1, g: 1, b: 1 },
-      glowColor: { r: 1, g: 1, b: 1 },
       kd: 0.5,
       ior: 1.5,
       reflectivity: 0.5,
@@ -1175,11 +1186,11 @@ export class RaymarchingUI {
       roughness: 0.2,
       reflectRoughness: 0.0,
       refractRoughness: 0.0,
+      surfaceBlur: 0.0,
       metallic: 0.0,
       transparency: 0.0,
       attenuation: 0.0,
       attenuationStrength: 0.0,
-      glow: 0.0,
       uuid: "DEFAULT",
     };
   }

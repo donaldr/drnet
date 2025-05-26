@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@automattic/interpolate-components": "^1.2.1",
-    "@react-three/drei": "^10.0.7",
-    "@react-three/fiber": "^9.1.2",
-    "@react-three/postprocessing": "^3.0.4",
+    "@react-three/drei": "^9.120.0",
+    "@react-three/fiber": "^9.0.0-rc.1",
+    "@react-three/postprocessing": "https://github.com/aryankarim/react-postprocessing#master",
     "@react-three/rapier": "^2.1.0",
     "@rigo-m/react-split-text": "^1.0.1",
     "@studio-freight/react-lenis": "^0.0.47",
@@ -42,7 +42,7 @@
     "paper-loader": "^0.1.2",
     "pathseg": "^1.2.1",
     "point-in-svg-path": "^1.0.2",
-    "postprocessing": "^6.36.4",
+    "postprocessing": "6.36.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hooks-global-state": "^2.1.0",
@@ -64,6 +64,9 @@
     "tweakpane": "^4.0.5",
     "uuid": "^11.1.0",
     "wheel-gestures": "^2.2.48"
+  },
+  "resolutions": {
+    "postprocessing": "6.36.4"
   },
   "devDependencies": {
     "@tweakpane/core": "^2.0.5",
