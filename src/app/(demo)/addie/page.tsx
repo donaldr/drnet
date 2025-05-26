@@ -2,13 +2,12 @@
 import { useEffect, useState } from "react";
 
 import { invalidate, Canvas } from "@react-three/fiber";
-import { Bloom, EffectComposer, FXAA, SMAA } from "@react-three/postprocessing";
+import { EffectComposer, SMAA } from "@react-three/postprocessing";
 import { RoughnessBlur } from "./roughnesspass";
 import { OrthographicCamera } from "@react-three/drei";
 import { ShaderMaterial } from "./material";
 import NoSSR from "react-no-ssr";
 import RaymarchingUI, { TemplateData, UiData } from "./ui";
-import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
 
 function useWindowSize() {
@@ -121,8 +120,10 @@ export default function ShaderCanvas() {
                   frameBufferType={THREE.FloatType}
                 >
                   <SMAA />
-                  {surfaceBlur && !showDebug && (
+                  {surfaceBlur && !showDebug ? (
                     <RoughnessBlur blurRadius={15} normalSensitivity={10} />
+                  ) : (
+                    <></>
                   )}
                 </EffectComposer>
               </Canvas>
