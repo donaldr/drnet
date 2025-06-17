@@ -1,3 +1,4 @@
+/*
 "use client";
 import React, { useEffect, useState, useRef, RefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
@@ -261,129 +262,6 @@ const CameraControls: React.FC = () => {
   return null;
 };
 
-/*
-// Debug ForceApplier to see exactly what's happening with refs
-const ForceApplier: React.FC<ForceApplierProps> = ({
-  shapes,
-  active,
-  gravityStrength,
-  dampingStrength,
-}) => {
-  const frameCount = useRef(0);
-  const lastShapeCount = useRef(0);
-
-  // Reset frame count when shapes array changes
-  useEffect(() => {
-    if (shapes.length !== lastShapeCount.current) {
-      frameCount.current = 0;
-      lastShapeCount.current = shapes.length;
-      console.log("=== ForceApplier: Shapes changed ===");
-      console.log("New shape count:", shapes.length);
-      console.log(
-        "Refs summary:",
-        shapes.map(
-          (s, i) => `Shape ${i}: ${s.ref.current ? "HAS REF" : "NO REF"}`
-        )
-      );
-    }
-  }, [shapes]);
-
-  useFrame(() => {
-    if (!active) return;
-
-    frameCount.current++;
-
-    // Check refs on every frame, not just once
-    const activeShapes = shapes.filter(
-      (shape) => shape.ref && shape.ref.current
-    );
-
-    if (frameCount.current === 1) {
-      console.log("=== ForceApplier: First frame ===");
-      console.log("Active?", active);
-      console.log("Total shapes:", shapes.length);
-      console.log("Shapes with refs:", activeShapes.length);
-      console.log("Individual ref status:");
-      shapes.forEach((shape, i) => {
-        console.log(
-          `  Shape ${i}: ref=${!!shape.ref}, ref.current=${!!shape.ref
-            ?.current}`
-        );
-      });
-    }
-
-    // Log every 60 frames to track ref status over time
-    if (frameCount.current % 60 === 5) {
-      const refsAttached = shapes.filter((s) => s.ref?.current).length;
-      console.log(
-        `Frame ${frameCount.current}: ${refsAttached}/${shapes.length} refs attached`
-      );
-    }
-
-    activeShapes.forEach((shape, index) => {
-      const rigidBody = shape.ref.current;
-
-      try {
-        const position = rigidBody.translation();
-        const velocity = rigidBody.linvel();
-
-        const distanceFromAxis = Math.sqrt(
-          position.x * position.x + position.z * position.z
-        );
-        const horizontalSpeed = Math.sqrt(
-          velocity.x * velocity.x + velocity.z * velocity.z
-        );
-
-        const direction = new THREE.Vector3(
-          -position.x,
-          0,
-          -position.z
-        ).normalize();
-
-        const velocityDamping = Math.max(
-          0.98,
-          1 - horizontalSpeed * 0.02 * dampingStrength
-        );
-
-        rigidBody.setLinvel(
-          {
-            x: velocity.x * Math.min(1.0, Math.pow(distanceFromAxis, 0.1)), // * velocityDamping,
-            y: 0,
-            z: velocity.z * Math.min(1.0, Math.pow(distanceFromAxis, 0.1)), // * velocityDamping,
-          },
-          true
-        );
-
-        let forceMultiplier;
-        if (distanceFromAxis < 10.0) {
-          forceMultiplier = distanceFromAxis / 10;
-        } else {
-          forceMultiplier = 1.0;
-        }
-
-        const impulse = {
-          x: direction.x * gravityStrength * 0.005 * forceMultiplier,
-          y: 0,
-          z: direction.z * gravityStrength * 0.005 * forceMultiplier,
-        };
-
-        rigidBody.applyImpulse(impulse, true);
-
-        if (index === 0 && frameCount.current % 60 === 5) {
-          //console.log("Applying impulse to first shape:", impulse);
-        }
-      } catch (error) {
-        console.warn(`Error processing shape ${index}:`, error);
-      }
-    });
-  });
-
-  return null;
-};
-*/
-// Corrected aggressive anti-wiggle ForceApplier for v2.1.0
-
-// Fix 2: Wake up objects when simulation starts
 const ForceApplier: React.FC<ForceApplierProps> = ({
   shapes,
   active,
@@ -444,6 +322,7 @@ const ForceApplier: React.FC<ForceApplierProps> = ({
           velocity.x * velocity.x + velocity.z * velocity.z
         );
         */
+/*
 
         const direction = new THREE.Vector3(
           -position.x,
@@ -859,6 +738,909 @@ const GravitationalArtPiece: React.FC = () => {
         resetSimulation={resetSimulation}
         simulationActive={simulationActive}
       />
+    </div>
+  );
+};
+
+export default GravitationalArtPiece;
+
+*/
+
+"use client";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import RAPIER from "@dimforge/rapier3d-compat";
+RAPIER.init();
+
+// Type definitions
+interface ConfigProps {
+  objectCount: number;
+  radius: number;
+  gravityStrength: number;
+  friction: number;
+  verticalSpread: number;
+  simulationSpeed: number;
+}
+
+interface ConfigPanelProps {
+  config: ConfigProps;
+  setConfig: React.Dispatch<React.SetStateAction<ConfigProps>>;
+  startSimulation: () => void;
+  resetSimulation: () => void;
+  simulationActive: boolean;
+  simulationComplete: boolean;
+}
+
+interface ShapeProps {
+  type: "box" | "sphere" | "cylinder" | "cone";
+  position: [number, number, number];
+  dimensions: number[];
+  color: string;
+  friction: number;
+}
+
+interface ShapeObject extends ShapeProps {
+  id: number;
+}
+
+interface ShapeResult {
+  id: number;
+  type: string;
+  color: string;
+  position: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number };
+}
+
+interface LiveDataProps {
+  liveResults: ShapeResult[];
+  frameCount: number;
+}
+
+interface PhysicsBody {
+  position: { x: number; y: number; z: number };
+  velocity: { x: number; y: number; z: number };
+  angularVelocity: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number };
+  mass: number;
+  radius: number;
+  friction: number;
+  sleeping: boolean;
+  sleepCounter: number;
+}
+
+// Live simulation data display component
+const LiveDataDisplay: React.FC<LiveDataProps> = ({
+  liveResults,
+  frameCount,
+}) => {
+  return (
+    <div className="p-4 bg-black bg-opacity-90 text-white h-full overflow-y-auto">
+      <h2 className="text-lg font-bold mb-2">Live Simulation Data</h2>
+      <div className="text-sm mb-3 text-green-400">
+        Frame: {frameCount} | Objects: {liveResults.length}
+      </div>
+      <div className="space-y-2">
+        {liveResults.map((result) => (
+          <div key={result.id} className="bg-gray-800 p-2 rounded text-xs">
+            <div className="flex items-center mb-1">
+              <div
+                className="w-3 h-3 rounded mr-2"
+                style={{ backgroundColor: result.color }}
+              />
+              <span className="font-semibold text-sm">
+                {result.type} #{result.id}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1 text-xs">
+              <div>
+                <strong>Pos:</strong>
+                <div>X: {result.position.x.toFixed(2)}</div>
+                <div>Y: {result.position.y.toFixed(2)}</div>
+                <div>Z: {result.position.z.toFixed(2)}</div>
+              </div>
+              <div>
+                <strong>Rot:</strong>
+                <div>X: {result.rotation.x.toFixed(2)}</div>
+                <div>Y: {result.rotation.y.toFixed(2)}</div>
+                <div>Z: {result.rotation.z.toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Results display component
+const ResultsDisplay: React.FC<{ results: ShapeResult[] }> = ({ results }) => {
+  return (
+    <div className="p-4 bg-black bg-opacity-90 text-white h-full overflow-y-auto">
+      <h2 className="text-xl font-bold mb-4">Final Results</h2>
+      <div className="space-y-3">
+        {results.map((result) => (
+          <div key={result.id} className="bg-gray-800 p-3 rounded text-sm">
+            <div className="flex items-center mb-2">
+              <div
+                className="w-4 h-4 rounded mr-2"
+                style={{ backgroundColor: result.color }}
+              />
+              <span className="font-semibold">
+                {result.type} #{result.id}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <strong>Position:</strong>
+                <div>X: {result.position.x.toFixed(3)}</div>
+                <div>Y: {result.position.y.toFixed(3)}</div>
+                <div>Z: {result.position.z.toFixed(3)}</div>
+              </div>
+              <div>
+                <strong>Rotation:</strong>
+                <div>X: {result.rotation.x.toFixed(3)}</div>
+                <div>Y: {result.rotation.y.toFixed(3)}</div>
+                <div>Z: {result.rotation.z.toFixed(3)}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Configuration panel component
+const ConfigPanel: React.FC<ConfigPanelProps> = ({
+  config,
+  setConfig,
+  startSimulation,
+  resetSimulation,
+  simulationActive,
+  simulationComplete,
+}) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setConfig((prev) => ({
+      ...prev,
+      [name]: parseFloat(value),
+    }));
+  };
+
+  return (
+    <div className="p-4 bg-black bg-opacity-90 text-white h-full overflow-y-auto">
+      <h2 className="text-xl font-bold mb-2">Headless Physics Simulation</h2>
+
+      <div className="text-sm mb-4 text-yellow-200">
+        Running physics without rendering for maximum speed
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Objects Count: {config.objectCount}
+          </label>
+          <input
+            type="range"
+            name="objectCount"
+            min="3"
+            max="50"
+            value={config.objectCount}
+            onChange={handleChange}
+            className="w-full"
+            disabled={simulationActive}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Radius: {config.radius}
+          </label>
+          <input
+            type="range"
+            name="radius"
+            min="2"
+            max="10"
+            step="0.5"
+            value={config.radius}
+            onChange={handleChange}
+            className="w-full"
+            disabled={simulationActive}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Gravity Strength: {config.gravityStrength}
+          </label>
+          <input
+            type="range"
+            name="gravityStrength"
+            min="0.5"
+            max="10"
+            step="0.5"
+            value={config.gravityStrength}
+            onChange={handleChange}
+            className="w-full"
+            disabled={simulationActive}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Friction: {config.friction}
+          </label>
+          <input
+            type="range"
+            name="friction"
+            min="0"
+            max="2"
+            step="0.1"
+            value={config.friction}
+            onChange={handleChange}
+            className="w-full"
+            disabled={simulationActive}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Vertical Spread: {config.verticalSpread}
+          </label>
+          <input
+            type="range"
+            name="verticalSpread"
+            min="0"
+            max="10"
+            step="0.5"
+            value={config.verticalSpread}
+            onChange={handleChange}
+            className="w-full"
+            disabled={simulationActive}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Simulation Speed: {config.simulationSpeed}x
+          </label>
+          <input
+            type="range"
+            name="simulationSpeed"
+            min="1.0"
+            max="20.0"
+            step="0.5"
+            value={config.simulationSpeed}
+            onChange={handleChange}
+            className="w-full"
+            disabled={simulationActive}
+          />
+        </div>
+
+        <button
+          onClick={startSimulation}
+          className={`w-full p-3 rounded text-lg font-semibold ${
+            simulationActive
+              ? "bg-green-500"
+              : simulationComplete
+              ? "bg-purple-500 hover:bg-purple-600"
+              : "bg-blue-500 hover:bg-blue-600"
+          }`}
+          disabled={simulationActive}
+        >
+          {simulationActive
+            ? "Running..."
+            : simulationComplete
+            ? "Complete!"
+            : "Start Simulation"}
+        </button>
+
+        <button
+          onClick={resetSimulation}
+          className="w-full p-2 bg-red-500 hover:bg-red-600 rounded"
+        >
+          Reset Simulation
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Headless physics simulation hook
+const usePhysicsSimulation = (
+  config: ConfigProps,
+  active: boolean,
+  onComplete: (results: ShapeResult[]) => void,
+  onLiveUpdate: (results: ShapeResult[], frameCount: number) => void
+) => {
+  const worldRef = useRef<any>(null);
+  const bodiesRef = useRef<any[]>([]);
+  const shapesRef = useRef<ShapeObject[]>([]);
+  const animationFrameRef = useRef<number>(0);
+
+  // Initialize physics world and bodies
+  useEffect(() => {
+    if (!active) return;
+
+    const initializeSimulation = async () => {
+      // Create physics world
+      const world = new RAPIER.World({ x: 0.0, y: 0.0, z: 0.0 });
+      worldRef.current = world;
+
+      // Generate shapes
+      const colors = [
+        "#FF5733",
+        "#33FF57",
+        "#3357FF",
+        "#F3FF33",
+        "#FF33F3",
+        "#33FFF3",
+        "#FF8033",
+        "#8033FF",
+        "#33FF80",
+        "#F380FF",
+      ];
+
+      const shapeTypes = ["box", "sphere", "cylinder", "cone"];
+      const shapes: ShapeObject[] = [];
+      const bodies: any[] = [];
+
+      // Helper functions
+      const getShapeRadius = (type: string, dimensions: number[]) => {
+        switch (type) {
+          case "sphere":
+            return dimensions[0];
+          case "box":
+            return Math.max(...dimensions) / 2;
+          case "cylinder":
+          case "cone":
+            return Math.max(dimensions[0], dimensions[1] / 2);
+          default:
+            return 0.5;
+        }
+      };
+
+      const wouldOverlap = (
+        pos1: [number, number, number],
+        pos2: [number, number, number],
+        radius1: number,
+        radius2: number,
+        buffer: number = 0.1
+      ) => {
+        const distance = Math.sqrt(
+          Math.pow(pos1[0] - pos2[0], 2) +
+            Math.pow(pos1[1] - pos2[1], 2) +
+            Math.pow(pos1[2] - pos2[2], 2)
+        );
+        return distance < radius1 + radius2 + buffer;
+      };
+
+      const findValidPosition = (
+        shapeType: string,
+        dimensions: number[],
+        existingShapes: Array<{
+          position: [number, number, number];
+          radius: number;
+        }>,
+        baseAngle: number
+      ): [number, number, number] => {
+        const radius = getShapeRadius(shapeType, dimensions);
+
+        for (let attempt = 0; attempt < 50; attempt++) {
+          let position: [number, number, number];
+
+          if (attempt < 10) {
+            const angle = baseAngle + (Math.random() - 0.5) * 0.2;
+            const x = Math.cos(angle) * config.radius;
+            const z = Math.sin(angle) * config.radius;
+            const y =
+              config.verticalSpread > 0
+                ? (Math.random() - 0.5) * config.verticalSpread * 2
+                : Math.random() * 2 - 1;
+            position = [x, y, z];
+          } else {
+            const angle = Math.random() * Math.PI * 2;
+            const r = Math.random() * (config.radius + 3);
+            const x = Math.cos(angle) * r;
+            const z = Math.sin(angle) * r;
+            const y =
+              config.verticalSpread > 0
+                ? (Math.random() - 0.5) * config.verticalSpread * 2
+                : Math.random() * 2 - 1;
+            position = [x, y, z];
+          }
+
+          let overlaps = false;
+          for (const existing of existingShapes) {
+            if (
+              wouldOverlap(position, existing.position, radius, existing.radius)
+            ) {
+              overlaps = true;
+              break;
+            }
+          }
+
+          if (!overlaps) {
+            return position;
+          }
+        }
+
+        // Fallback position
+        const angle = baseAngle;
+        const x = Math.cos(angle) * config.radius;
+        const z = Math.sin(angle) * config.radius;
+        const y =
+          config.verticalSpread > 0
+            ? (Math.random() - 0.5) * config.verticalSpread * 2
+            : Math.random() * 2 - 1;
+        return [x, y, z];
+      };
+
+      // Create bodies
+      const placedShapes: Array<{
+        position: [number, number, number];
+        radius: number;
+      }> = [];
+
+      for (let i = 0; i < config.objectCount; i++) {
+        const baseAngle = (i / config.objectCount) * Math.PI * 2;
+        const type =
+          i === 0
+            ? "sphere"
+            : (shapeTypes[
+                Math.floor(Math.random() * shapeTypes.length)
+              ] as any);
+
+        let dimensions: number[];
+        let colliderDesc: any;
+
+        switch (type) {
+          case "box":
+            dimensions = [
+              0.5 + Math.random() * 0.5,
+              0.5 + Math.random() * 0.5,
+              0.5 + Math.random() * 0.5,
+            ];
+            colliderDesc = RAPIER.ColliderDesc.cuboid(
+              dimensions[0],
+              dimensions[1],
+              dimensions[2]
+            );
+            break;
+          case "sphere":
+            dimensions = [0.4 + Math.random() * 0.4];
+            colliderDesc = RAPIER.ColliderDesc.ball(dimensions[0]);
+            break;
+          case "cylinder":
+            dimensions = [0.3 + Math.random() * 0.3, 0.8 + Math.random() * 0.8];
+            colliderDesc = RAPIER.ColliderDesc.cylinder(
+              dimensions[1] / 2,
+              dimensions[0]
+            );
+            break;
+          case "cone":
+            dimensions = [0.3 + Math.random() * 0.3, 0.8 + Math.random() * 0.8];
+            colliderDesc = RAPIER.ColliderDesc.cone(
+              dimensions[1] / 2,
+              dimensions[0]
+            );
+            break;
+          default:
+            dimensions = [0.5, 0.5, 0.5];
+            colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
+        }
+
+        const position = findValidPosition(
+          type,
+          dimensions,
+          placedShapes,
+          baseAngle
+        );
+        const radius = getShapeRadius(type, dimensions);
+        placedShapes.push({ position, radius });
+
+        // Create rigid body
+        const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(
+          position[0],
+          position[1],
+          position[2]
+        );
+        const rigidBody = world.createRigidBody(rigidBodyDesc);
+
+        // Create collider
+        colliderDesc.setFriction(config.friction);
+        colliderDesc.setRestitution(0.0);
+        world.createCollider(colliderDesc, rigidBody);
+
+        // Set physics properties
+        rigidBody.setLinearDamping(1.0);
+        rigidBody.setAngularDamping(10.0);
+
+        const shape: ShapeObject = {
+          id: i,
+          type: type as any,
+          position,
+          dimensions,
+          color: colors[i % colors.length],
+          friction: config.friction,
+        };
+
+        shapes.push(shape);
+        bodies.push(rigidBody);
+      }
+
+      shapesRef.current = shapes;
+      bodiesRef.current = bodies;
+
+      console.log(
+        `Initialized headless physics simulation with ${shapes.length} objects`
+      );
+
+      // Start simulation loop
+      runSimulation();
+    };
+
+    const runSimulation = () => {
+      const world = worldRef.current;
+      const bodies = bodiesRef.current;
+
+      if (!world || !bodies.length) return;
+
+      let frameCount = 0;
+
+      const simulationLoop = () => {
+        frameCount++;
+
+        // Apply gravitational forces
+        bodies.forEach((rigidBody) => {
+          if (!rigidBody) return;
+
+          // Wake up sleeping bodies
+          if (rigidBody.isSleeping()) {
+            rigidBody.wakeUp();
+          }
+
+          const position = rigidBody.translation();
+          const velocity = rigidBody.linvel();
+
+          const distanceFromAxis = Math.sqrt(
+            position.x * position.x + position.z * position.z
+          );
+
+          // Apply velocity damping
+          const dampingFactor = Math.min(1.0, Math.pow(distanceFromAxis, 0.1));
+          rigidBody.setLinvel(
+            {
+              x: velocity.x * dampingFactor,
+              y: velocity.y * dampingFactor,
+              z: velocity.z * dampingFactor,
+            },
+            true
+          );
+
+          // Apply gravitational force toward center
+          const direction = {
+            x: -position.x,
+            y: -position.y,
+            z: -position.z,
+          };
+          const length = Math.sqrt(
+            direction.x ** 2 + direction.y ** 2 + direction.z ** 2
+          );
+          if (length > 0) {
+            direction.x /= length;
+            direction.y /= length;
+            direction.z /= length;
+          }
+
+          const forceMultiplier =
+            distanceFromAxis < 0.5 ? distanceFromAxis : 1.0;
+          const impulse = {
+            x: direction.x * config.gravityStrength * 0.005 * forceMultiplier,
+            y:
+              direction.y *
+              config.gravityStrength *
+              0.005 *
+              forceMultiplier *
+              0.5,
+            z: direction.z * config.gravityStrength * 0.005 * forceMultiplier,
+          };
+
+          rigidBody.applyImpulse(impulse, true);
+        });
+
+        // Step the physics world
+        world.step();
+
+        // Emit live data every 10 frames for real-time updates
+        if (frameCount % 1 === 0) {
+          const liveResults: ShapeResult[] = bodies.map((rigidBody, index) => {
+            const shape = shapesRef.current[index];
+            const position = rigidBody.translation();
+            const rotation = rigidBody.rotation();
+
+            // Convert quaternion to euler angles (simplified)
+            const euler = {
+              x: Math.atan2(
+                2 * (rotation.w * rotation.x + rotation.y * rotation.z),
+                1 - 2 * (rotation.x ** 2 + rotation.y ** 2)
+              ),
+              y: Math.asin(
+                2 * (rotation.w * rotation.y - rotation.z * rotation.x)
+              ),
+              z: Math.atan2(
+                2 * (rotation.w * rotation.z + rotation.x * rotation.y),
+                1 - 2 * (rotation.y ** 2 + rotation.z ** 2)
+              ),
+            };
+
+            return {
+              id: shape.id,
+              type: shape.type,
+              color: shape.color,
+              position: {
+                x: position.x,
+                y: position.y,
+                z: position.z,
+              },
+              rotation: {
+                x: euler.x,
+                y: euler.y,
+                z: euler.z,
+              },
+            };
+          });
+
+          onLiveUpdate(liveResults, frameCount);
+        }
+
+        // Check for completion every 30 frames
+        if (frameCount % 30 === 0) {
+          const allAtRest = bodies.every((rigidBody) => {
+            if (!rigidBody) return true;
+
+            const velocity = rigidBody.linvel();
+            const angularVelocity = rigidBody.angvel();
+            const totalVelocity = Math.sqrt(
+              velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2
+            );
+            const totalAngularVelocity = Math.sqrt(
+              angularVelocity.x ** 2 +
+                angularVelocity.y ** 2 +
+                angularVelocity.z ** 2
+            );
+
+            return (
+              rigidBody.isSleeping() ||
+              (totalVelocity < 0.01 && totalAngularVelocity < 0.01)
+            );
+          });
+
+          if (allAtRest) {
+            console.log(`Simulation completed after ${frameCount} frames`);
+
+            // Collect final results
+            const results: ShapeResult[] = bodies.map((rigidBody, index) => {
+              const shape = shapesRef.current[index];
+              const position = rigidBody.translation();
+              const rotation = rigidBody.rotation();
+
+              // Convert quaternion to euler angles (simplified)
+              const euler = {
+                x: Math.atan2(
+                  2 * (rotation.w * rotation.x + rotation.y * rotation.z),
+                  1 - 2 * (rotation.x ** 2 + rotation.y ** 2)
+                ),
+                y: Math.asin(
+                  2 * (rotation.w * rotation.y - rotation.z * rotation.x)
+                ),
+                z: Math.atan2(
+                  2 * (rotation.w * rotation.z + rotation.x * rotation.y),
+                  1 - 2 * (rotation.y ** 2 + rotation.z ** 2)
+                ),
+              };
+
+              return {
+                id: shape.id,
+                type: shape.type,
+                color: shape.color,
+                position: {
+                  x: position.x,
+                  y: position.y,
+                  z: position.z,
+                },
+                rotation: {
+                  x: euler.x,
+                  y: euler.y,
+                  z: euler.z,
+                },
+              };
+            });
+
+            onComplete(results);
+            return;
+          }
+        }
+
+        // Continue simulation
+        animationFrameRef.current = requestAnimationFrame(simulationLoop);
+      };
+
+      simulationLoop();
+    };
+
+    initializeSimulation();
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (worldRef.current) {
+        worldRef.current.free();
+        worldRef.current = null;
+      }
+      bodiesRef.current = [];
+      shapesRef.current = [];
+    };
+  }, [active, config, onComplete, onLiveUpdate]);
+
+  return null;
+};
+
+// Main app component
+const GravitationalArtPiece: React.FC = () => {
+  const [config, setConfig] = useState<ConfigProps>({
+    objectCount: 8,
+    radius: 2,
+    gravityStrength: 3,
+    friction: 1.5,
+    verticalSpread: 4,
+    simulationSpeed: 5.0, // Higher default speed since we're headless
+  });
+
+  const [simulationActive, setSimulationActive] = useState<boolean>(false);
+  const [simulationComplete, setSimulationComplete] = useState<boolean>(false);
+  const [results, setResults] = useState<ShapeResult[]>([]);
+  const [liveResults, setLiveResults] = useState<ShapeResult[]>([]);
+  const [frameCount, setFrameCount] = useState<number>(0);
+  const [startTime, setStartTime] = useState<number>(0);
+  const [endTime, setEndTime] = useState<number>(0);
+
+  useEffect(() => {
+    setSimulationActive(false);
+    setSimulationComplete(false);
+    setResults([]);
+    setLiveResults([]);
+    setFrameCount(0);
+    console.log("Configuration changed, simulation reset");
+  }, [config.objectCount]);
+
+  const startSimulation = useCallback((): void => {
+    console.log("Starting headless physics simulation...");
+    setSimulationActive(true);
+    setSimulationComplete(false);
+    setResults([]);
+    setLiveResults([]);
+    setFrameCount(0);
+    setStartTime(Date.now());
+  }, []);
+
+  const resetSimulation = useCallback((): void => {
+    setSimulationActive(false);
+    setSimulationComplete(false);
+    setResults([]);
+    setLiveResults([]);
+    setFrameCount(0);
+    setStartTime(0);
+    setEndTime(0);
+  }, []);
+
+  const handleLiveUpdate = useCallback(
+    (currentResults: ShapeResult[], currentFrame: number): void => {
+      setLiveResults(currentResults);
+      setFrameCount(currentFrame);
+    },
+    []
+  );
+
+  const handleSimulationComplete = useCallback(
+    (finalResults: ShapeResult[]): void => {
+      const endTime = Date.now();
+      const duration = (endTime - startTime) / 1000;
+      console.log(
+        `Headless simulation completed in ${duration.toFixed(
+          2
+        )} seconds with results:`,
+        finalResults
+      );
+      setSimulationActive(false);
+      setSimulationComplete(true);
+      setResults(finalResults);
+      setEndTime(endTime);
+    },
+    [startTime]
+  );
+
+  // Use the headless physics simulation
+  usePhysicsSimulation(
+    config,
+    simulationActive,
+    handleSimulationComplete,
+    handleLiveUpdate
+  );
+
+  return (
+    <div className="w-full h-screen bg-gray-900 flex">
+      {/* Left Sidebar - Configuration Panel */}
+      <div className="w-80 flex-shrink-0 border-r border-gray-700">
+        <ConfigPanel
+          config={config}
+          setConfig={setConfig}
+          startSimulation={startSimulation}
+          resetSimulation={resetSimulation}
+          simulationActive={simulationActive}
+          simulationComplete={simulationComplete}
+        />
+      </div>
+
+      {/* Center Content Area */}
+      <div className="flex-1 relative">
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="w-full h-full bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900"></div>
+        </div>
+
+        {/* In Progress Overlay */}
+        {simulationActive && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center pointer-events-none">
+            <div className="text-center">
+              <div className="text-white text-4xl font-bold animate-pulse mb-2">
+                Physics Simulation Running
+              </div>
+              <div className="text-white text-xl">
+                Frame: {frameCount} • {config.objectCount} objects •{" "}
+                {config.simulationSpeed}x speed
+              </div>
+              <div className="text-gray-300 text-sm mt-2">
+                Watch live data on the right →
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Completion Time Display */}
+        {simulationComplete && (
+          <div className="absolute bottom-4 left-4 bg-black bg-opacity-80 text-white p-3 rounded">
+            <div className="text-sm">
+              Completed in {((endTime - startTime) / 1000).toFixed(2)} seconds
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Right Sidebar - Live Data / Results */}
+      <div className="w-80 flex-shrink-0 border-l border-gray-700">
+        {/* Live Data Display during simulation */}
+        {simulationActive && liveResults.length > 0 && (
+          <LiveDataDisplay liveResults={liveResults} frameCount={frameCount} />
+        )}
+
+        {/* Final Results Display after completion */}
+        {simulationComplete && results.length > 0 && (
+          <ResultsDisplay results={results} />
+        )}
+
+        {/* Empty state when not running */}
+        {!simulationActive && !simulationComplete && (
+          <div className="p-4 bg-black bg-opacity-90 text-white h-full flex items-center justify-center">
+            <div className="text-center text-gray-400">
+              <div className="text-lg mb-2">Ready to Simulate</div>
+              <div className="text-sm">
+                Start a simulation to see live data here
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

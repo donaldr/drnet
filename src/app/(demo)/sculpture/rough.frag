@@ -30,7 +30,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
     float roughness;
     unpackFromHalfFloat(inputColor.a, centerOctN, roughness);
     vec3 centerNormal = octDecode(centerOctN);
-    
+
     if (roughness < 1.0/256.0) {
       outputColor = vec4(inputColor.rgb, 1.0);
       return;

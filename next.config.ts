@@ -30,6 +30,11 @@ const nextConfig: NextConfig = {
     ];
   },
   webpack: (config, options) => {
+    config.experiments = {
+      ...config.experiments,
+      syncWebAssembly: true,
+      asyncWebAssembly: true,
+    };
     config.module.rules.push({
       test: /\.(glsl|vs|fs|vert|frag)$/,
       use: ["raw-loader", "glslify-loader"],

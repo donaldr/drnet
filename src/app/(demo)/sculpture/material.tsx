@@ -5,23 +5,17 @@ import { useRef, useState, useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-import fragmentShaderTemplate from "./addie.frag";
-import vertexShader from "./addie.vert";
+import fragmentShaderTemplate from "./sculpture.frag";
+import vertexShader from "./sculpture.vert";
 
-import {
-  Shape,
-  InterfaceMode,
-  UiData,
-  TemplateData,
-  type Material,
-} from "./ui";
+import { UiData, TemplateData, type Material } from "./ui";
 
 import { Eta } from "eta";
 
 const eta = new Eta({ autoEscape: false, useWith: true });
 
-const MAX_SHAPES = 10;
-const MAX_MATERIALS = 20;
+//const MAX_SHAPES = 10;
+//const MAX_MATERIALS = 20;
 
 const toFloat = (n: number) =>
   Number.isInteger(n) ? n.toFixed(1) : n.toFixed(4);
@@ -71,14 +65,12 @@ export function ShaderMaterial({
       showDebug: { value: false },
       showBoxes: { value: false },
       showBoundingBox: { value: false },
-      perfMode: { value: 0 },
-      perfScale: { value: 1.0 },
-      numberOfShapes: { value: 0 },
-      numberOfMaterials: { value: 0 },
-      numberOfLights: { value: 0 },
+      debugMode: { value: 0 },
+      mapScale: { value: 1.0 },
       maxRays: { value: 0 },
       marchingSteps: { value: 0 },
       distanceThreshold: { value: 0 },
+      maxDistance: { value: 0 },
       giLength: { value: 0 },
       giStrength: { value: 0 },
       aoStrength: { value: 0 },
@@ -92,19 +84,16 @@ export function ShaderMaterial({
       orbit: { value: 0 },
       boundingBoxPos: { value: new THREE.Vector3(0, 0, 0) },
       boundingBoxDims: { value: new THREE.Vector3(1, 1, 1) },
-      ...(uiUniforms.globals.mode == InterfaceMode.DEVELOPMENT && {
-        shapes: { value: [] },
-      }),
-      ...(uiUniforms.globals.mode == InterfaceMode.PRODUCTION && {
-        shapePositions: { value: [] },
-      }),
+      shapePositions: { value: [] },
+      shapeRotations: { value: [] },
+      shapeIsRotated: { value: [] },
       materials: { value: [] },
       globalIllumination: { value: true },
       lighting: { value: true },
       shadows: { value: true },
       surfaceBlur: { value: true },
     }),
-    [uiUniforms.globals.mode]
+    []
   );
 
   useEffect(() => {
@@ -119,59 +108,47 @@ export function ShaderMaterial({
     if (materialRef.current) {
       const { uniforms } = materialRef.current;
       const materials = [...uiUniforms.materials];
-      if (uiUniforms.globals.mode == InterfaceMode.DEVELOPMENT) {
-        const shapes = [...uiUniforms.shapes];
-        if (shapes.length < MAX_SHAPES) {
-          for (let i = shapes.length; i < MAX_SHAPES; i++) {
-            shapes.push(shapes[uiUniforms.shapes.length - 1]);
-          }
-        }
+      const shapePositions = [...uiUniforms.shapes.map((s) => s.pos)];
+      uniforms.shapePositions.value = shapePositions.map(
+        (s) => new THREE.Vector3(s.x, s.y, s.z)
+      );
 
-        uniforms.shapes.value = shapes.map((shape: Shape) => ({
-          type: shape.type,
-          id: shape.id,
-          l: shape.l,
-          c: shape.c,
-          a: shape.a,
-          b: shape.b,
-          n: shape.n,
-          pos: shape.pos,
-          h: shape.h,
-          r: shape.r,
-          r1: shape.r1,
-          r2: shape.r2,
-          mat: shape.mat,
-          rot: new THREE.Matrix3()
-            .setFromMatrix4(
+      const shapeRotations = [
+        ...uiUniforms.shapes.map(
+          (s) =>
+            new THREE.Matrix3().setFromMatrix4(
               new THREE.Matrix4()
                 .makeRotationFromEuler(
-                  new THREE.Euler(
-                    (shape.rot.x / 180) * Math.PI,
-                    (shape.rot.y / 180) * Math.PI,
-                    (shape.rot.z / 180) * Math.PI
-                  )
+                  new THREE.Euler(s.rot.x, s.rot.y, s.rot.z)
                 )
                 .invert()
             )
-            .toArray(),
-          isRot: shape.rot.x != 0 || shape.rot.y != 0 || shape.rot.z != 0,
-        }));
-      } else {
-        const shapePositions = [...uiUniforms.shapes.map((s) => s.pos)];
-        if (shapePositions.length < MAX_SHAPES) {
-          for (let i = shapePositions.length; i < MAX_SHAPES; i++) {
-            shapePositions.push({ x: 0, y: 0, z: 0 });
-          }
+          //.toArray()
+        ),
+      ];
+      /*
+      if (shapeRotations.length < MAX_SHAPES) {
+        for (let i = shapeRotations.length; i < MAX_SHAPES; i++) {
+          shapeRotations.push([0, 0, 0, 0, 0, 0, 0, 0, 0]);
         }
-        uniforms.shapePositions.value = shapePositions.map(
-          (s) => new THREE.Vector3(s.x, s.y, s.z)
-        );
       }
+      */
+      uniforms.shapeRotations.value = shapeRotations;
+
+      uniforms.shapeIsRotated.value = uiUniforms.shapes.map(
+        (s) => s.rot.x != 0 || s.rot.y != 0 || s.rot.z != 0
+      );
+
+      /*
       if (materials.length < MAX_MATERIALS) {
         for (let i = materials.length; i < MAX_MATERIALS; i++) {
           materials.push(materials[uiUniforms.materials.length - 1]);
         }
       }
+      */
+
+      const performanceSettings =
+        uiUniforms.performanceSettings[uiUniforms.globals.perf];
 
       uniforms.materials.value = materials.map((material: Material) => ({
         color: {
@@ -186,60 +163,51 @@ export function ShaderMaterial({
         },
         kd: material.kd,
         ior: material.ior,
-        reflectivity: uiUniforms.globals.reflection
+        reflectivity: performanceSettings.reflection
           ? Math.floor(material.reflectivity * 1000) / 1000
           : 0,
         intRef: material.intRef,
         roughness: material.roughness,
-        reflectRoughness:
-          uiUniforms.globals.perf == "LOW" ? 0.0 : material.reflectRoughness,
-        refractRoughness:
-          uiUniforms.globals.perf == "LOW" ? 0.0 : material.refractRoughness,
+        reflectRoughness: material.reflectRoughness,
+        refractRoughness: material.refractRoughness,
         surfaceBlur: material.surfaceBlur,
         metallic: material.metallic,
-        transparency: uiUniforms.globals.transparency
+        transparency: performanceSettings.transparency
           ? Math.floor(material.transparency * 1000) / 1000
           : 0,
         attenuation: material.attenuation,
         attenuationStrength: material.attenuationStrength,
       }));
       uniforms.showDebug.value = uiUniforms.globals.showDebug;
-      uniforms.perfMode.value = uiUniforms.globals.perfMode;
-      uniforms.perfScale.value = uiUniforms.globals.perfScale;
+      uniforms.debugMode.value = uiUniforms.globals.debugMode;
+      uniforms.mapScale.value = uiUniforms.globals.mapScale;
       uniforms.showBoxes.value = uiUniforms.globals.showBoxes;
       uniforms.showBoundingBox.value = uiUniforms.globals.showBoundingBox;
-      uniforms.numberOfShapes.value = uiUniforms.globals.numberOfShapes;
-      uniforms.numberOfMaterials.value = uiUniforms.globals.numberOfMaterials;
-      uniforms.numberOfLights.value = uiUniforms.globals.numberOfLights;
 
-      const maxRays =
-        uiUniforms.globals.perf == "LOW"
-          ? 5
-          : uiUniforms.globals.perf == "MEDIUM"
-          ? 10
-          : 40;
-      uniforms.maxRays.value = Math.min(uiUniforms.globals.maxRays, maxRays);
-      uniforms.marchingSteps.value = uiUniforms.globals.marchingSteps;
-      uniforms.distanceThreshold.value = uiUniforms.globals.distanceThreshold;
-      uniforms.giLength.value = uiUniforms.globals.giLength;
-      uniforms.giStrength.value = uiUniforms.globals.giStrength;
-      uniforms.aoStrength.value = uiUniforms.globals.aoStrength;
-      uniforms.shadowRange.value = uiUniforms.globals.shadowRange;
-      uniforms.shadowAccuracy.value = uiUniforms.globals.shadowAccuracy;
+      uniforms.maxRays.value = performanceSettings.maxRays;
+      uniforms.marchingSteps.value = performanceSettings.marchingSteps;
+      uniforms.distanceThreshold.value = performanceSettings.distanceThreshold;
+      uniforms.maxDistance.value = performanceSettings.maxDistance;
+      uniforms.giLength.value = performanceSettings.giLength;
+      uniforms.giStrength.value = performanceSettings.giStrength;
+      uniforms.aoStrength.value = performanceSettings.aoStrength;
+      uniforms.shadowRange.value = performanceSettings.shadowRange;
+      uniforms.shadowAccuracy.value = performanceSettings.shadowAccuracy;
       uniforms.roughReflectSamples.value =
-        uiUniforms.globals.roughReflectSamples;
+        performanceSettings.roughReflectSamples;
       uniforms.roughRefractSamples.value =
-        uiUniforms.globals.roughRefractSamples;
+        performanceSettings.roughRefractSamples;
       uniforms.camTgt.value = uiUniforms.globals.camTgt;
       uniforms.camHeight.value = uiUniforms.globals.camHeight;
       uniforms.camDist.value = uiUniforms.globals.camDist;
       uniforms.orbit.value = uiUniforms.globals.orbit;
       uniforms.boundingBoxPos.value = uiUniforms.globals.boundingBoxPos;
       uniforms.boundingBoxDims.value = uiUniforms.globals.boundingBoxDims;
-      uniforms.globalIllumination.value = uiUniforms.globals.globalIllumination;
-      uniforms.lighting.value = uiUniforms.globals.lighting;
-      uniforms.shadows.value = uiUniforms.globals.shadows;
-      uniforms.surfaceBlur.value = uiUniforms.globals.surfaceBlur;
+      uniforms.globalIllumination.value =
+        performanceSettings.globalIllumination;
+      uniforms.lighting.value = performanceSettings.lighting;
+      uniforms.shadows.value = performanceSettings.shadows;
+      uniforms.surfaceBlur.value = performanceSettings.surfaceBlur;
     }
   }, [uiUniforms]);
 
