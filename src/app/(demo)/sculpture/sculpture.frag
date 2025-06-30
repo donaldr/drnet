@@ -2,7 +2,7 @@ uniform float iTime;
 uniform float iTimeDelta;
 uniform int iFrame;
 uniform vec2 iResolution;
-uniform vec3 iMouse;
+//uniform vec3 iMouse;
 uniform int maxRays;
 uniform float giLength;
 uniform float giStrength;
@@ -12,9 +12,10 @@ uniform int shadowAccuracy;
 uniform int roughReflectSamples;
 uniform int roughRefractSamples;
 uniform vec3 camTgt;
-uniform float camHeight;
 uniform float camDist;
-uniform float orbit;
+uniform float camHAngle;
+uniform float camVAngle;
+uniform float camHShift;
 uniform vec3 boundingBoxPos;
 uniform vec3 boundingBoxDims;
 uniform int marchingSteps;
@@ -104,7 +105,7 @@ struct Shape {
   int type, id;
   vec2 c;
   vec3 a, n, pos;
-  float h, r, r2;
+  float h, r, r1, r2;
   int mat;
   mat3 rot;
   bool isRot;
@@ -1097,6 +1098,27 @@ vec3 raycast(in vec3 ro, in vec3 rd)
     return res;
 }
 
+float calcSoftShadow( in vec3 ro, in vec3 rd, in float mint, in float tmax ) 
+{
+    // bounding volume
+    float tp = (0.8-ro.y)/rd.y; if( tp>0.0 ) tmax = min( tmax, tp );
+
+    float res = 1.0;
+    float t = mint;
+    for( int i=ZERO; i< shadowAccuracy; i++ )
+    {
+      perfStats.stepCount++;
+      float h = map( ro + rd*t, t ).x;
+      float s = clamp(8.0*h/t,0.0,1.0);
+      res = min( res, s );
+      t += clamp(h, 0.001, 0.05);
+      if( res<-1.0 || t>tmax) break;
+    }
+    res = max(res, -1.0);
+    return 0.25 * (1.0+res)*(1.0+res)*(2.0-res);
+}
+
+/*
 float calcSoftShadow(in vec3 ro, in vec3 rd, in float mint, in float tmax) {
     float t = mint;
     float res = 1.0;
@@ -1110,6 +1132,7 @@ float calcSoftShadow(in vec3 ro, in vec3 rd, in float mint, in float tmax) {
     
     return clamp(res, 0.0, 1.0);  // Simpler calculation
 }
+*/
 
 
 // https://iquilezles.org/articles/normalsSDF
@@ -1272,13 +1295,6 @@ void addRay(vec3 origin, vec3 direction, float throughput, bool inside, int iden
     }
 }
 
-void createOrthonormalBasis(vec3 n, out vec3 u, out vec3 v) {
-    // Find a vector not parallel to n
-    vec3 a = abs(n.x) > 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
-    u = normalize(cross(a, n));
-    v = cross(n, u);
-}
-
 vec4 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in mat3 viewMatrix) {
     perfStats.rayCount = 0;
 
@@ -1360,7 +1376,7 @@ vec4 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in mat3 viewMatrix
 
                     for(int j = 0; j < roughReflectSamples; j++) {
                         vec3 jitter = reflectRoughness * randomHemispherePoint(vec3(random(vec2(float(j) * 0.73, fract(t * 13.3))), random(vec2(float(j + 1) * 0.91, fract(t * 17.7))), random(vec2(float(j + 2) * 1.32, fract(t * 31.3)))), refDir);
-                        addRay(pos + nor * 0.002, normalize(jitter + refDir), currentRay.throughput * reflectivity * (1. / float(roughReflectSamples)), false, 0 + i);
+                        addRay(pos + nor * 0.002, normalize(refDir + jitter), currentRay.throughput * reflectivity * (1. / float(roughReflectSamples)), false, 0 + i);
                     }
                     alreadyRoughReflected = true;
                 } else {
@@ -1396,7 +1412,8 @@ vec4 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in mat3 viewMatrix
                 
                 // Handle reflection component (for transparent materials)
                 if (fresnel != 0.0) {
-                    col += lin * currentRay.throughput * (1.0 - fresnel);
+
+                    col += lin * currentRay.throughput * (1.0 - fresnel) * reflectivity;
                     
                     if (reflectRoughness > 0.01 && roughReflectSamples > 0 && !alreadyRoughReflected) {
                         for(int j = 0; j < roughReflectSamples; j++) {
@@ -1445,16 +1462,19 @@ vec4 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in mat3 viewMatrix
             col += currentRay.throughput * (1.0 - att) * innerColor;
           }
 
+          addRay(pos - nor * 0.004, refractDir, currentRay.throughput * throughput, false, 30 + i);
+          
           bool escaped = false;
+          /*
           if(canRefract && fresnel != 1.0)
           {
-            addRay(pos - nor * 0.004, refractDir, currentRay.throughput * throughput, false, 30 + i);
           }
           else if(numRays + 1 == maxRays)
           {
             escaped = true;
             addRay(pos - nor * 0.004, currentRay.direction, currentRay.throughput * throughput, false, 40 + i);
           }
+          */
 
           if(!canRefract && !escaped && intRef)
           { 
@@ -1485,19 +1505,12 @@ vec3 hsv2rgb(vec3 hsv) { return ((clamp(abs(fract(hsv.x+vec3(0,2,1)/3.)*2.-1.)*3
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-    vec2 mo = clamp(iMouse.xy/iResolution.xy, 0.,1.);
+    //vec2 mo = clamp(iMouse.xy/iResolution.xy, 0.,1.);
 
     // camera	
     vec3 ro;
     
-    if(orbit > 0.01)
-    {
-      ro = camTgt + vec3( camDist*cos(iTime * orbit), camHeight, camDist*sin(iTime * orbit) );
-    }
-    else
-    {
-      ro = camTgt + vec3( camDist*cos(PI*2.*mo.x), (0.1 + camHeight) * mo.y, camDist*sin(PI*2.*mo.x) );
-    }
+    ro = camTgt + vec3( camDist*sin(camHAngle), camDist*cos(camVAngle), camDist*cos(camHAngle));
     // camera-to-world transformation
     mat3 ca = setCamera( ro, camTgt, 0.0 );
 

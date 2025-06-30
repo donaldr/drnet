@@ -69,7 +69,7 @@ export function createMultiSelectBlade(
   );
 
   // Ensure at least one item is selected - default to first item if none provided
-  let initialValues =
+  const initialValues =
     values.length > 0 ? values : [normalizedOptions[0]?.value].filter(Boolean);
 
   // Create container div
@@ -315,7 +315,9 @@ export function createCheckboxMultiSelect(
 
   function updateSelection(): void {
     const selected = Object.entries(selections)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .filter(([_, value]) => value)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .map(([key, _]) => key);
 
     // Update folder title with count
@@ -326,9 +328,13 @@ export function createCheckboxMultiSelect(
 
   return {
     getSelected(): string[] {
-      return Object.entries(selections)
-        .filter(([_, value]) => value)
-        .map(([key, _]) => key);
+      return (
+        Object.entries(selections)
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          .filter(([_, value]) => value)
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          .map(([key, _]) => key)
+      );
     },
 
     setSelected(values: string[]): void {

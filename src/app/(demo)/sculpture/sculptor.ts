@@ -1,4 +1,4 @@
-import RAPIER, { EventQueue } from "@dimforge/rapier3d";
+"use client";
 import {
   SphereDims,
   BoxDims,
@@ -18,21 +18,21 @@ import {
   CutSphereDims,
   RoundConeDims,
   OctahedronDims,
-} from "./ui";
+} from "./datamanager";
 import * as THREE from "three";
 import Rand from "rand-seed";
 
-// Initialize RAPIER once
-/*
-let rapierInitialized = false;
-const initRapier = async () => {
-  if (!rapierInitialized) {
-    await RAPIER.init();
-    rapierInitialized = true;
-  }
-};
-*/
+let RAPIER: any = null;
+let EventQueue: any = null;
 
+const initRapier = async () => {
+  if (typeof window !== "undefined" && !RAPIER) {
+    const rapierModule = await import("@dimforge/rapier3d");
+    RAPIER = rapierModule.default || rapierModule;
+    EventQueue = rapierModule.EventQueue;
+  }
+  return RAPIER;
+};
 // Type definitions
 export interface ShapeDefinition {
   type: ShapeType;
@@ -45,6 +45,7 @@ export interface SimulationConfig {
   gravityStrength: number;
   friction: number;
   verticalSpread: number;
+  verticalOffset: number;
   stepsPerIteration: number;
   timeStep: number;
   seed: string;
@@ -53,6 +54,9 @@ export interface SimulationConfig {
   maxAttempts: number;
   substeps?: number; // Number of physics substeps per iteration
 
+  // NEW: Initial static shapes from previous simulation
+  initialStaticShapes?: ShapeState[];
+
   // Overlap resolution settings
   enableOverlapResolution?: boolean; // Whether to resolve overlaps
   maxResolutionIterations?: number; // Max iterations for overlap resolution
@@ -60,15 +64,18 @@ export interface SimulationConfig {
   separationBuffer?: number; // Extra buffer distance when separating overlaps
   resolutionFramesPerStep?: number; // How many simulation frames between resolution steps (for visibility)
   settleFramesPerStep?: number; // How many frames to show settling physics
+  addFromTop?: boolean; // Whether to add new shapes from the top
 }
 
 export interface ShapeState {
   type: ShapeType;
+  dimensions: ShapeDims;
   position: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z: number };
   velocity: { x: number; y: number; z: number };
   angularVelocity: { x: number; y: number; z: number };
   sleeping: boolean;
+  isStatic?: boolean; // NEW: Track if this shape is static
 }
 
 export interface SimulationResult {
@@ -447,8 +454,12 @@ export class PhysicsSimulator {
   private isInitialized: boolean = false;
   private isRunning: boolean = false;
   private rand: Rand;
-  private eventQueue?: EventQueue;
+  private eventQueue?: typeof EventQueue;
   private contactGraph: Map<number, Set<number>>;
+
+  // NEW: Track static vs dynamic bodies
+  private staticBodyCount: number = 0;
+  private staticBodyHandles: Set<number> = new Set();
 
   // Overlap resolution state
   private resolutionState: "idle" | "separating" | "settling" = "idle";
@@ -465,11 +476,13 @@ export class PhysicsSimulator {
     this.config = {
       substeps: 1, // Default to 1 substep (original behavior)
       enableOverlapResolution: true, // Enable overlap resolution by default
-      maxResolutionIterations: 200, // More iterations for smoother movement
+      maxResolutionIterations: 10, // More iterations for smoother movement
       resolutionStep: 0.003, // Small steps for smooth movement
       separationBuffer: 0.01, // Smaller buffer to reduce separation distance
       resolutionFramesPerStep: 1, // Process every frame for smoothness
       settleFramesPerStep: 1, // Faster settling physics processing
+      initialStaticShapes: [], // Default to no static shapes
+      addFromTop: false,
       ...config,
     };
     this.rand = new Rand(config.seed);
@@ -479,10 +492,168 @@ export class PhysicsSimulator {
   }
 
   /**
+   * Create collider descriptor for a given shape type and dimensions
+   */
+  private createColliderDesc(shapeType: ShapeType, dimensions: ShapeDims): any {
+    switch (shapeType) {
+      case ShapeType.BOX:
+        const boxDims: BoxDims = dimensions;
+        return RAPIER.ColliderDesc.cuboid(
+          boxDims.a.x,
+          boxDims.a.y,
+          boxDims.a.z
+        );
+      case ShapeType.ROUND_BOX:
+        const roundBoxDims: RoundBoxDims = dimensions;
+        return RAPIER.ColliderDesc.roundCuboid(
+          roundBoxDims.a.x - roundBoxDims.r,
+          roundBoxDims.a.y - roundBoxDims.r,
+          roundBoxDims.a.z - roundBoxDims.r,
+          roundBoxDims.r
+        );
+      case ShapeType.SPHERE:
+        const sphereDims: SphereDims = dimensions;
+        return RAPIER.ColliderDesc.ball(sphereDims.r);
+      case ShapeType.CYLINDER:
+        const cylinderDims: CylinderDims = dimensions;
+        return RAPIER.ColliderDesc.cylinder(cylinderDims.h, cylinderDims.r);
+      case ShapeType.ROUND_CYLINDER:
+        const roundCylinderDims: RoundCylinderDims = dimensions;
+        return RAPIER.ColliderDesc.roundCylinder(
+          roundCylinderDims.h,
+          roundCylinderDims.r,
+          roundCylinderDims.r2
+        );
+      case ShapeType.CONE:
+        const coneDims: ConeDims = dimensions;
+        return RAPIER.ColliderDesc.cone(
+          coneDims.h / 2,
+          coneDims.h * (coneDims.c.x / coneDims.c.y)
+        );
+      case ShapeType.TORUS:
+        const torusDims: TorusDims = dimensions;
+        const torusPoints = generateTorusPoints(torusDims.r1, torusDims.r2);
+        return RAPIER.ColliderDesc.convexHull(torusPoints);
+      case ShapeType.LINK:
+        const linkDims: LinkDims = dimensions;
+        const linkPoints = generateLinkPoints(
+          linkDims.r1,
+          linkDims.r2,
+          linkDims.h * 2
+        );
+        return RAPIER.ColliderDesc.convexHull(linkPoints);
+      case ShapeType.HEX_PRISM:
+        const hexPrismDims: HexPrismDims = dimensions;
+        const hexPrismPoints = generateHexPrismPoints(
+          hexPrismDims.c.x,
+          hexPrismDims.c.y
+        );
+        return RAPIER.ColliderDesc.convexHull(hexPrismPoints);
+      case ShapeType.TRI_PRISM:
+        const triPrismDims: TriPrismDims = dimensions;
+        const triPrismPoints = generateTriPrismPoints(
+          triPrismDims.c.x,
+          triPrismDims.c.y
+        );
+        return RAPIER.ColliderDesc.convexHull(triPrismPoints);
+      case ShapeType.CAPSULE:
+        const capsuleDims: CapsuleDims = dimensions;
+        return RAPIER.ColliderDesc.capsule(capsuleDims.h / 2, capsuleDims.r);
+      case ShapeType.CUT_CONE:
+        const cutConeDims: CutConeDims = dimensions;
+        const cutConePoints = generateCutConePoints(
+          cutConeDims.r,
+          cutConeDims.r2,
+          cutConeDims.h
+        );
+        return RAPIER.ColliderDesc.convexHull(cutConePoints);
+      case ShapeType.SOLID_ANGLE:
+        const solidAngleDims: SolidAngleDims = dimensions;
+        const solidAnglePoints = generateSolidAnglePoints(
+          solidAngleDims.h / 2,
+          solidAngleDims.r
+        );
+        return RAPIER.ColliderDesc.convexHull(solidAnglePoints);
+      case ShapeType.CUT_SPHERE:
+        const cutSphereDims: CutSphereDims = dimensions;
+        const cutSpherePoints = generateCutSpherePoints(
+          cutSphereDims.r,
+          cutSphereDims.h
+        );
+        return RAPIER.ColliderDesc.convexHull(cutSpherePoints);
+      case ShapeType.ROUND_CONE:
+        const roundConeDims: RoundConeDims = dimensions;
+        const roundConePoints = generateRoundedConePoints(
+          roundConeDims.r1,
+          roundConeDims.r2,
+          roundConeDims.h
+        );
+        return RAPIER.ColliderDesc.convexHull(roundConePoints);
+      case ShapeType.OCTAHEDRON:
+        const octahedronDims: OctahedronDims = dimensions;
+        const octahedronPoints = generateOctahedronPoints(octahedronDims.r);
+        return RAPIER.ColliderDesc.convexHull(octahedronPoints);
+
+      default:
+        return RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
+    }
+  }
+
+  /**
+   * Get shape dimensions from ShapeState for recreating static shapes
+   * This is a fallback method for backward compatibility when dimensions aren't stored
+   */
+  private getShapeDimensionsFromType(shapeType: ShapeType): Partial<ShapeDims> {
+    // This provides default dimensions for each type as a fallback
+    // In practice, dimensions should be stored in ShapeState.dimensions
+    switch (shapeType) {
+      case ShapeType.SPHERE:
+        return { r: 0.5 } as SphereDims;
+      case ShapeType.BOX:
+        return { a: { x: 0.5, y: 0.5, z: 0.5 } } as BoxDims;
+      case ShapeType.ROUND_BOX:
+        return { a: { x: 0.5, y: 0.5, z: 0.5 }, r: 0.1 } as RoundBoxDims;
+      case ShapeType.CYLINDER:
+        return { r: 0.5, h: 1.0 } as CylinderDims;
+      case ShapeType.ROUND_CYLINDER:
+        return { r: 0.5, h: 1.0, r2: 0.1 } as RoundCylinderDims;
+      case ShapeType.CONE:
+        return { h: 1.0, c: { x: 0.5, y: 1.0 } } as ConeDims;
+      case ShapeType.TORUS:
+        return { r1: 0.5, r2: 0.2 } as TorusDims;
+      case ShapeType.LINK:
+        return { r1: 0.5, r2: 0.2, h: 1.0 } as LinkDims;
+      case ShapeType.HEX_PRISM:
+        return { c: { x: 0.5, y: 1.0 }, r: 0.5, h: 1.0 } as HexPrismDims;
+      case ShapeType.TRI_PRISM:
+        return { c: { x: 0.5, y: 1.0 }, r: 0.5, h: 1.0 } as TriPrismDims;
+      case ShapeType.CAPSULE:
+        return { r: 0.5, h: 1.0 } as CapsuleDims;
+      case ShapeType.CUT_CONE:
+        return { r: 0.5, r2: 0.3, h: 1.0 } as CutConeDims;
+      case ShapeType.SOLID_ANGLE:
+        return { r: 0.5, h: 1.0 } as SolidAngleDims;
+      case ShapeType.CUT_SPHERE:
+        return { r: 0.5, h: 0.0 } as CutSphereDims;
+      case ShapeType.ROUND_CONE:
+        return { r1: 0.5, r2: 0.3, h: 1.0 } as RoundConeDims;
+      case ShapeType.OCTAHEDRON:
+        return { r: 0.5 } as OctahedronDims;
+      default:
+        return { r: 0.5 } as SphereDims;
+    }
+  }
+
+  /**
    * Initialize the physics simulation
    */
   async initialize(): Promise<void> {
-    //await initRapier();
+    await initRapier();
+
+    if (!RAPIER) {
+      throw new Error("Failed to initialize Rapier physics engine");
+    }
+
     this.eventQueue = new EventQueue(true);
     // Create physics world
     this.world = new RAPIER.World({ x: 0.0, y: 0.0, z: 0.0 });
@@ -490,161 +661,91 @@ export class PhysicsSimulator {
     this.shapeDefinitions = [...this.config.shapes];
     this.frameCount = 0;
     this.isRunning = false;
+    this.staticBodyCount = 0;
+    this.staticBodyHandles.clear();
+    this.attempts = 0;
+    this.frameCount = 0;
 
-    // Create physics bodies for each shape
+    // STEP 1: Create static bodies from initial static shapes
+    if (
+      this.config.initialStaticShapes &&
+      this.config.initialStaticShapes.length > 0
+    ) {
+      for (const staticShape of this.config.initialStaticShapes) {
+        // Use the stored dimensions from the static shape, or fall back to type-based defaults
+        const dimensions =
+          staticShape.dimensions ||
+          this.getShapeDimensionsFromType(staticShape.type);
+        const colliderDesc = this.createColliderDesc(
+          staticShape.type,
+          dimensions
+        );
+
+        // Create static rigid body with exact position and rotation
+        const rigidBodyDesc = RAPIER.RigidBodyDesc.fixed().setTranslation(
+          staticShape.position.x,
+          staticShape.position.y,
+          staticShape.position.z
+        );
+
+        // Set rotation from euler angles
+        const q = new THREE.Quaternion();
+        q.setFromEuler(
+          new THREE.Euler(
+            staticShape.rotation.x,
+            staticShape.rotation.y,
+            staticShape.rotation.z
+          )
+        );
+        rigidBodyDesc.setRotation(q);
+
+        const rigidBody = this.world.createRigidBody(rigidBodyDesc);
+
+        // Create collider
+        colliderDesc.setFriction(this.config.friction);
+        colliderDesc.setRestitution(0.0);
+        colliderDesc.setActiveEvents(RAPIER.ActiveEvents.CONTACT_FORCE_EVENTS);
+
+        const collider = this.world.createCollider(colliderDesc, rigidBody);
+        collider.setContactForceEventThreshold(0);
+
+        this.rigidBodies.push(rigidBody);
+        this.staticBodyHandles.add(rigidBody.handle);
+        this.staticBodyCount++;
+      }
+    }
+
+    // STEP 2: Create dynamic physics bodies for new shapes
     const placedShapes: Array<{
       position: [number, number, number];
       radius: number;
     }> = [];
 
+    const angleOffset = this.rand.next() * Math.PI * 2;
     for (let i = 0; i < this.config.shapes.length; i++) {
       const shapeConfig = this.config.shapes[i];
-      const baseAngle = (i / this.config.shapes.length) * Math.PI * 2;
+      const baseAngle =
+        angleOffset + (i / this.config.shapes.length) * Math.PI * 2;
 
       // Create collider based on shape type
-      let colliderDesc: any;
-      const dimensions = shapeConfig.dimensions;
-
-      switch (shapeConfig.type) {
-        case ShapeType.BOX:
-          const boxDims: BoxDims = dimensions;
-          colliderDesc = RAPIER.ColliderDesc.cuboid(
-            boxDims.a.x,
-            boxDims.a.y,
-            boxDims.a.z
-          );
-          break;
-        case ShapeType.ROUND_BOX:
-          const roundBoxDims: RoundBoxDims = dimensions;
-          colliderDesc = RAPIER.ColliderDesc.roundCuboid(
-            roundBoxDims.a.x - roundBoxDims.r,
-            roundBoxDims.a.y - roundBoxDims.r,
-            roundBoxDims.a.z - roundBoxDims.r,
-            roundBoxDims.r
-          );
-          break;
-        case ShapeType.SPHERE:
-          const sphereDims: SphereDims = dimensions;
-          colliderDesc = RAPIER.ColliderDesc.ball(sphereDims.r);
-          break;
-        case ShapeType.CYLINDER:
-          const cylinderDims: CylinderDims = dimensions;
-          colliderDesc = RAPIER.ColliderDesc.cylinder(
-            cylinderDims.h,
-            cylinderDims.r
-          );
-          break;
-        case ShapeType.ROUND_CYLINDER:
-          const roundCylinderDims: RoundCylinderDims = dimensions;
-          colliderDesc = RAPIER.ColliderDesc.roundCylinder(
-            roundCylinderDims.h,
-            roundCylinderDims.r,
-            roundCylinderDims.r2
-          );
-          break;
-        case ShapeType.CONE:
-          const coneDims: ConeDims = dimensions;
-          colliderDesc = RAPIER.ColliderDesc.cone(
-            coneDims.h / 2,
-            coneDims.h * (coneDims.c.x / coneDims.c.y)
-          );
-          break;
-        case ShapeType.TORUS:
-          const torusDims: TorusDims = dimensions;
-          const torusPoints = generateTorusPoints(torusDims.r1, torusDims.r2);
-          colliderDesc = RAPIER.ColliderDesc.convexHull(torusPoints);
-          break;
-        case ShapeType.LINK:
-          const linkDims: LinkDims = dimensions;
-          const linkPoints = generateLinkPoints(
-            linkDims.r1,
-            linkDims.r2,
-            linkDims.h * 2
-          );
-          colliderDesc = RAPIER.ColliderDesc.convexHull(linkPoints);
-          break;
-        case ShapeType.HEX_PRISM:
-          const hexPrismDims: HexPrismDims = dimensions;
-          const hexPrismPoints = generateHexPrismPoints(
-            hexPrismDims.c.x,
-            hexPrismDims.c.y
-          );
-          colliderDesc = RAPIER.ColliderDesc.convexHull(hexPrismPoints);
-          break;
-        case ShapeType.TRI_PRISM:
-          const triPrismDims: TriPrismDims = dimensions;
-          const triPrismPoints = generateTriPrismPoints(
-            triPrismDims.c.x,
-            triPrismDims.c.y
-          );
-          colliderDesc = RAPIER.ColliderDesc.convexHull(triPrismPoints);
-          break;
-        case ShapeType.CAPSULE:
-          const capsuleDims: CapsuleDims = dimensions;
-          colliderDesc = RAPIER.ColliderDesc.capsule(
-            capsuleDims.h / 2,
-            capsuleDims.r
-          );
-          break;
-        case ShapeType.CUT_CONE:
-          const cutConeDims: CutConeDims = dimensions;
-          const cutConePoints = generateCutConePoints(
-            cutConeDims.r,
-            cutConeDims.r2,
-            cutConeDims.h
-          );
-          colliderDesc = RAPIER.ColliderDesc.convexHull(cutConePoints);
-          break;
-        case ShapeType.SOLID_ANGLE:
-          const solidAngleDims: SolidAngleDims = dimensions;
-          const solidAnglePoints = generateSolidAnglePoints(
-            solidAngleDims.h / 2,
-            solidAngleDims.r
-          );
-          colliderDesc = RAPIER.ColliderDesc.convexHull(solidAnglePoints);
-          break;
-        case ShapeType.CUT_SPHERE:
-          const cutSphereDims: CutSphereDims = dimensions;
-          const cutSpherePoints = generateCutSpherePoints(
-            cutSphereDims.r,
-            cutSphereDims.h
-          );
-          colliderDesc = RAPIER.ColliderDesc.convexHull(cutSpherePoints);
-          break;
-        case ShapeType.ROUND_CONE:
-          const roundConeDims: RoundConeDims = dimensions;
-          const roundConePoints = generateRoundedConePoints(
-            roundConeDims.r1,
-            roundConeDims.r2,
-            roundConeDims.h
-          );
-          colliderDesc = RAPIER.ColliderDesc.convexHull(roundConePoints);
-          break;
-        case ShapeType.OCTAHEDRON:
-          const octahedronDims: OctahedronDims = dimensions;
-          const octahedronPoints = generateOctahedronPoints(octahedronDims.r);
-          colliderDesc = RAPIER.ColliderDesc.convexHull(octahedronPoints);
-          break;
-
-        default:
-          colliderDesc = RAPIER.ColliderDesc.cuboid(0.5, 0.5, 0.5);
-      }
+      const colliderDesc = this.createColliderDesc(
+        shapeConfig.type,
+        shapeConfig.dimensions
+      );
 
       // Calculate position around circle
       const position = this.findValidPosition(
         shapeConfig.type,
-        dimensions,
+        shapeConfig.dimensions,
         placedShapes,
-        baseAngle
+        baseAngle,
+        !!this.config.addFromTop
       );
-      //const position = [0, 0, 0] as [number, number, number];
 
-      //const radius = this.getShapeRadius(shapeConfig.type, dimensions);
       const radius = this.config.radius;
-
       placedShapes.push({ position, radius });
 
-      // Create rigid body
+      // Create dynamic rigid body
       const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(
         position[0],
         position[1],
@@ -683,12 +784,23 @@ export class PhysicsSimulator {
     this.isInitialized = true;
   }
 
+  /**
+   * Check if a body is static based on its handle
+   */
+  private isBodyStatic(body: any): boolean {
+    return this.staticBodyHandles.has(body.handle);
+  }
+
+  /**
+   * Check if all dynamic bodies are connected to the static structure
+   * For simulations with static bodies: all dynamic bodies must be reachable from static bodies
+   * For simulations without static bodies: all dynamic bodies must be connected to each other
+   */
   areAllBodiesConnected() {
-    // Initialize graph with all dynamic bodies
+    // Initialize graph with ALL bodies (both static and dynamic)
+    this.contactGraph.clear();
     this.world.bodies.forEach((body: any) => {
-      if (body.isDynamic()) {
-        this.contactGraph.set(body.handle, new Set());
-      }
+      this.contactGraph.set(body.handle, new Set());
     });
 
     // Build connectivity graph from contact force events (proper touching)
@@ -705,6 +817,7 @@ export class PhysicsSimulator {
       )
         return;
 
+      // Track ALL connections (static-static, static-dynamic, dynamic-dynamic)
       this.contactGraph.get(body1.handle)!.add(body2.handle);
       this.contactGraph.get(body2.handle)!.add(body1.handle);
     });
@@ -722,29 +835,77 @@ export class PhysicsSimulator {
       )
         return;
 
-      // Add overlap connections to the graph
+      // Add ALL overlap connections to the graph
       this.contactGraph.get(body1.handle)!.add(body2.handle);
       this.contactGraph.get(body2.handle)!.add(body1.handle);
     });
 
-    // Check connectivity via BFS
-    const handles = [...this.contactGraph.keys()];
-    if (handles.length === 0) return true;
+    // Get all dynamic body handles
+    const dynamicHandles: number[] = [];
+    this.world.bodies.forEach((body: any) => {
+      if (body.isDynamic()) {
+        dynamicHandles.push(body.handle);
+      }
+    });
 
-    const visited = new Set();
-    const queue = [handles[0]];
+    // If no dynamic bodies, consider it connected
+    if (dynamicHandles.length === 0) return true;
 
-    while (queue.length) {
-      const current = queue.pop();
-      if (!visited.has(current)) {
-        visited.add(current);
-        for (const neighbor of this.contactGraph.get(current!)!) {
-          queue.push(neighbor);
+    // If we have static bodies, check that all dynamic bodies are connected to static structure
+    if (this.staticBodyCount > 0) {
+      // Start BFS from all static bodies
+      const visited = new Set<number>();
+      const queue: number[] = [];
+
+      // Add all static body handles to the queue
+      this.staticBodyHandles.forEach((handle) => {
+        if (this.contactGraph.has(handle)) {
+          queue.push(handle);
+          visited.add(handle);
+        }
+      });
+
+      // BFS to find all bodies reachable from static bodies
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        const neighbors = this.contactGraph.get(current);
+        if (neighbors) {
+          for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+              visited.add(neighbor);
+              queue.push(neighbor);
+            }
+          }
         }
       }
-    }
 
-    return visited.size === handles.length;
+      // Check that all dynamic bodies are reachable from static bodies
+      return dynamicHandles.every((handle) => visited.has(handle));
+    } else {
+      // No static bodies - use original logic: all dynamic bodies must be connected to each other
+      if (dynamicHandles.length <= 1) return true;
+
+      const visited = new Set<number>();
+      const queue = [dynamicHandles[0]];
+
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        if (!visited.has(current)) {
+          visited.add(current);
+          const neighbors = this.contactGraph.get(current);
+          if (neighbors) {
+            for (const neighbor of neighbors) {
+              // Only follow connections to other dynamic bodies
+              if (dynamicHandles.includes(neighbor)) {
+                queue.push(neighbor);
+              }
+            }
+          }
+        }
+      }
+
+      return visited.size === dynamicHandles.length;
+    }
   }
 
   /**
@@ -812,16 +973,19 @@ export class PhysicsSimulator {
    */
   getConnectivityInfo(): {
     totalBodies: number;
-    connectedBodies: number;
+    staticBodies: number;
+    dynamicBodies: number;
+    connectedDynamicBodies: number;
+    disconnectedDynamicBodies: number[];
     isFullyConnected: boolean;
     overlappingPairs: number;
     contactPairs: number;
+    connectivityType: "static_anchored" | "peer_to_peer";
   } {
-    // Initialize graph
+    // Initialize graph with ALL bodies
+    this.contactGraph.clear();
     this.world.bodies.forEach((body: any) => {
-      if (body.isDynamic()) {
-        this.contactGraph.set(body.handle, new Set());
-      }
+      this.contactGraph.set(body.handle, new Set());
     });
 
     // Count contact pairs
@@ -861,39 +1025,115 @@ export class PhysicsSimulator {
       this.contactGraph.get(body2.handle)!.add(body1.handle);
     });
 
-    // Check connectivity
-    const handles = [...this.contactGraph.keys()];
-    const totalBodies = handles.length;
+    // Get dynamic body handles
+    const dynamicHandles: number[] = [];
+    this.world.bodies.forEach((body: any) => {
+      if (body.isDynamic()) {
+        dynamicHandles.push(body.handle);
+      }
+    });
 
-    if (totalBodies === 0) {
+    const totalDynamicBodies = dynamicHandles.length;
+    const connectivityType =
+      this.staticBodyCount > 0 ? "static_anchored" : "peer_to_peer";
+
+    if (totalDynamicBodies === 0) {
       return {
-        totalBodies: 0,
-        connectedBodies: 0,
+        totalBodies: this.rigidBodies.length,
+        staticBodies: this.staticBodyCount,
+        dynamicBodies: 0,
+        connectedDynamicBodies: 0,
+        disconnectedDynamicBodies: [],
         isFullyConnected: true,
         overlappingPairs: overlaps.length,
         contactPairs,
+        connectivityType,
       };
     }
 
-    const visited = new Set();
-    const queue = [handles[0]];
+    let connectedDynamicBodies = 0;
+    let disconnectedDynamicBodies: number[] = [];
+    let isFullyConnected = false;
 
-    while (queue.length) {
-      const current = queue.pop();
-      if (!visited.has(current)) {
-        visited.add(current);
-        for (const neighbor of this.contactGraph.get(current!)!) {
-          queue.push(neighbor);
+    if (this.staticBodyCount > 0) {
+      // Static-anchored mode: check reachability from static bodies
+      const visited = new Set<number>();
+      const queue: number[] = [];
+
+      // Start BFS from all static bodies
+      this.staticBodyHandles.forEach((handle) => {
+        if (this.contactGraph.has(handle)) {
+          queue.push(handle);
+          visited.add(handle);
         }
+      });
+
+      // BFS to find all reachable bodies
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        const neighbors = this.contactGraph.get(current);
+        if (neighbors) {
+          for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+              visited.add(neighbor);
+              queue.push(neighbor);
+            }
+          }
+        }
+      }
+
+      // Count connected dynamic bodies
+      dynamicHandles.forEach((handle) => {
+        if (visited.has(handle)) {
+          connectedDynamicBodies++;
+        } else {
+          disconnectedDynamicBodies.push(handle);
+        }
+      });
+
+      isFullyConnected = connectedDynamicBodies === totalDynamicBodies;
+    } else {
+      // Peer-to-peer mode: check if all dynamic bodies are connected to each other
+      if (totalDynamicBodies <= 1) {
+        connectedDynamicBodies = totalDynamicBodies;
+        isFullyConnected = true;
+      } else {
+        const visited = new Set<number>();
+        const queue = [dynamicHandles[0]];
+
+        while (queue.length > 0) {
+          const current = queue.shift()!;
+          if (!visited.has(current)) {
+            visited.add(current);
+            const neighbors = this.contactGraph.get(current);
+            if (neighbors) {
+              for (const neighbor of neighbors) {
+                if (dynamicHandles.includes(neighbor)) {
+                  queue.push(neighbor);
+                }
+              }
+            }
+          }
+        }
+
+        connectedDynamicBodies = visited.size;
+        disconnectedDynamicBodies = dynamicHandles.filter(
+          (handle) => !visited.has(handle)
+        );
+        isFullyConnected = connectedDynamicBodies === totalDynamicBodies;
       }
     }
 
     return {
-      totalBodies,
-      connectedBodies: visited.size,
-      isFullyConnected: visited.size === totalBodies,
+      totalBodies: this.rigidBodies.length,
+      staticBodies: this.staticBodyCount,
+      dynamicBodies: totalDynamicBodies,
+      connectedDynamicBodies,
+      disconnectedDynamicBodies,
+      isFullyConnected,
       overlappingPairs: overlaps.length,
       contactPairs,
+      connectivityType,
     };
   }
 
@@ -1020,8 +1260,8 @@ export class PhysicsSimulator {
     this.resolutionFrameCounter = 0;
     this.pendingOverlaps = overlaps;
 
-    // Lock rotations to prevent spinning during separation
-    this.lockAllRotations();
+    // Lock rotations only for dynamic bodies to prevent spinning during separation
+    this.lockDynamicRotations();
   }
 
   /**
@@ -1046,10 +1286,10 @@ export class PhysicsSimulator {
           this.resolutionIteration >= this.config.maxResolutionIterations!
         ) {
           // Unlock rotations before settling
-          this.unlockAllRotations();
+          this.unlockDynamicRotations();
 
           // Clear all momentum before transitioning to settling
-          this.clearAllMomentum();
+          this.clearDynamicMomentum();
 
           // Start settling phase
           this.resolutionState = "settling";
@@ -1058,22 +1298,30 @@ export class PhysicsSimulator {
           return this.resolutionIteration;
         }
 
-        // For each overlap, move the further object by a small step
+        // For each overlap, move the appropriate body by a small step
         currentOverlaps.forEach((overlap) => {
           const body1 = this.rigidBodies[overlap.index1];
           const body2 = this.rigidBodies[overlap.index2];
 
           if (!body1 || !body2) return;
 
-          // Determine which body is further from y-axis (center)
-          const distance1 = this.getDistanceFromYAxis(body1);
-          const distance2 = this.getDistanceFromYAxis(body2);
-
           let bodyToMove;
-          if (distance1 >= distance2) {
-            bodyToMove = body1;
-          } else {
+
+          // MODIFIED: Prioritize moving dynamic bodies over static bodies
+          if (this.isBodyStatic(body1) && !this.isBodyStatic(body2)) {
+            // body1 is static, body2 is dynamic - move body2
             bodyToMove = body2;
+          } else if (!this.isBodyStatic(body1) && this.isBodyStatic(body2)) {
+            // body1 is dynamic, body2 is static - move body1
+            bodyToMove = body1;
+          } else if (!this.isBodyStatic(body1) && !this.isBodyStatic(body2)) {
+            // Both are dynamic - use distance-based logic as before
+            const distance1 = this.getDistanceFromYAxis(body1);
+            const distance2 = this.getDistanceFromYAxis(body2);
+            bodyToMove = distance1 >= distance2 ? body1 : body2;
+          } else {
+            // Both are static - shouldn't happen, but skip if it does
+            return;
           }
 
           // Get optimal separation direction based on contact normals and penetration depths
@@ -1112,37 +1360,37 @@ export class PhysicsSimulator {
   }
 
   /**
-   * Lock rotation for all bodies during separation
+   * Lock rotation for dynamic bodies only during separation
    */
-  private lockAllRotations(): void {
+  private lockDynamicRotations(): void {
     this.rigidBodies.forEach((rigidBody) => {
-      if (!rigidBody) return;
+      if (!rigidBody || this.isBodyStatic(rigidBody)) return;
 
-      // Lock all rotations
+      // Lock all rotations for dynamic bodies only
       rigidBody.lockRotations(true, true);
     });
   }
 
   /**
-   * Unlock all rotations (restore normal rotation)
+   * Unlock rotations for dynamic bodies (restore normal rotation)
    */
-  private unlockAllRotations(): void {
+  private unlockDynamicRotations(): void {
     this.rigidBodies.forEach((rigidBody) => {
-      if (!rigidBody) return;
+      if (!rigidBody || this.isBodyStatic(rigidBody)) return;
 
-      // Unlock rotations - restore normal state
+      // Unlock rotations for dynamic bodies only - restore normal state
       rigidBody.lockRotations(false, true);
     });
   }
 
   /**
-   * Clear all momentum (linear and angular velocity) from all bodies
+   * Clear all momentum (linear and angular velocity) from dynamic bodies only
    */
-  private clearAllMomentum(): void {
+  private clearDynamicMomentum(): void {
     this.rigidBodies.forEach((rigidBody) => {
-      if (!rigidBody) return;
+      if (!rigidBody || this.isBodyStatic(rigidBody)) return;
 
-      // Set all velocities to zero
+      // Set all velocities to zero for dynamic bodies only
       rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
       rigidBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
 
@@ -1168,11 +1416,11 @@ export class PhysicsSimulator {
     for (let i = 0; i < this.config.stepsPerIteration; i++) {
       this.frameCount++;
 
-      // Only apply gravitational forces when NOT in separating mode
+      // Only apply gravitational forces when NOT in separating mode and only to dynamic bodies
       if (this.resolutionState === "idle") {
-        // Apply gravitational forces to each body
+        // Apply gravitational forces to each dynamic body
         this.rigidBodies.forEach((rigidBody) => {
-          if (!rigidBody) return;
+          if (!rigidBody || this.isBodyStatic(rigidBody)) return;
 
           // Wake up sleeping bodies
           if (rigidBody.isSleeping()) {
@@ -1209,7 +1457,7 @@ export class PhysicsSimulator {
           // Apply gravitational force toward center
           const direction = {
             x: -position.x,
-            y: -position.y,
+            y: -position.y + this.config.verticalOffset,
             z: -position.z,
           };
           const length = Math.sqrt(
@@ -1283,9 +1531,8 @@ export class PhysicsSimulator {
     // Detect any remaining overlaps for reporting
     const overlaps = this.detectOverlaps();
 
-    // Extract current state
+    // Extract current state - include both static and dynamic shapes
     const shapes: ShapeState[] = this.rigidBodies.map((rigidBody, index) => {
-      const shapeConfig = this.shapeDefinitions[index];
       const position = rigidBody.translation();
       const rotation = rigidBody.rotation();
       const velocity = rigidBody.linvel();
@@ -1301,8 +1548,29 @@ export class PhysicsSimulator {
       const euler = new THREE.Euler();
       euler.setFromQuaternion(rot);
 
+      // Determine shape type, dimensions, and static status
+      let shapeType: ShapeType;
+      let dimensions: ShapeDims;
+      let isStatic = false;
+
+      if (index < this.staticBodyCount) {
+        // This is a static shape - get from initialStaticShapes
+        const staticShape = this.config.initialStaticShapes![index];
+        shapeType = staticShape.type;
+        dimensions =
+          staticShape.dimensions ||
+          this.getShapeDimensionsFromType(staticShape.type);
+        isStatic = true;
+      } else {
+        // This is a dynamic shape - get from shapeDefinitions
+        const dynamicIndex = index - this.staticBodyCount;
+        const shapeDefinition = this.shapeDefinitions[dynamicIndex];
+        shapeType = shapeDefinition.type;
+        dimensions = shapeDefinition.dimensions;
+      }
+
       return {
-        type: shapeConfig.type,
+        type: shapeType,
         position: {
           x: position.x,
           y: position.y,
@@ -1324,6 +1592,8 @@ export class PhysicsSimulator {
           z: angularVelocity.z,
         },
         sleeping: rigidBody.isSleeping(),
+        isStatic,
+        dimensions, // Include the original dimensions
       };
     });
 
@@ -1331,18 +1601,36 @@ export class PhysicsSimulator {
     let isComplete = false;
     let completionReason: SimulationResult["completionReason"];
 
-    if (this.resolutionState == "settling" && overlaps.length == 0) {
-      if (bodiesConnected || this.attempts >= this.maxAttempts) {
+    if (this.rigidBodies.length > 1) {
+      const settledState =
+        this.resolutionState == "settling" && overlaps.length == 0;
+      const immediateConnectionState =
+        this.resolutionState == "idle" &&
+        overlaps.length == 0 &&
+        bodiesConnected;
+      if (immediateConnectionState || settledState) {
+        if (bodiesConnected || this.attempts >= this.maxAttempts) {
+          isComplete = true;
+          completionReason = "all_connected";
+        } else {
+          this.attempts++;
+          this.frameCount = 0;
+        }
+      }
+
+      if (isComplete) {
+        this.isRunning = false;
+      }
+    } else {
+      const velocity = this.rigidBodies[0].linvel();
+      const speedSquared =
+        Math.pow(velocity.x, 2) +
+        Math.pow(velocity.y, 2) +
+        Math.pow(velocity.z, 2);
+      if (speedSquared < Math.pow(0.01, 2)) {
         isComplete = true;
         completionReason = "all_connected";
-      } else {
-        this.attempts++;
-        this.frameCount = 0;
       }
-    }
-
-    if (isComplete) {
-      this.isRunning = false;
     }
 
     return {
@@ -1424,7 +1712,7 @@ export class PhysicsSimulator {
   reset(): void {
     // Unlock rotations before cleanup
     if (this.rigidBodies && this.rigidBodies.length > 0) {
-      this.unlockAllRotations();
+      this.unlockDynamicRotations();
     }
 
     if (this.world) {
@@ -1435,6 +1723,8 @@ export class PhysicsSimulator {
     this.frameCount = 0;
     this.isInitialized = false;
     this.isRunning = false;
+    this.staticBodyCount = 0;
+    this.staticBodyHandles.clear();
 
     // Reset overlap resolution state
     this.resolutionState = "idle";
@@ -1452,12 +1742,16 @@ export class PhysicsSimulator {
     isRunning: boolean;
     frameCount: number;
     attempts: number;
+    staticBodyCount: number;
+    dynamicBodyCount: number;
   } {
     return {
       isInitialized: this.isInitialized,
       isRunning: this.isRunning,
       frameCount: this.frameCount,
       attempts: this.attempts,
+      staticBodyCount: this.staticBodyCount,
+      dynamicBodyCount: this.rigidBodies.length - this.staticBodyCount,
     };
   }
 
@@ -1518,7 +1812,7 @@ export class PhysicsSimulator {
       case ShapeType.ROUND_CONE:
         const roundConeDims: RoundConeDims = dimensions;
         return (
-          Math.max(roundConeDims.r, roundConeDims.r2) * 2 + roundConeDims.h
+          Math.max(roundConeDims.r1, roundConeDims.r2) * 2 + roundConeDims.h
         );
       case ShapeType.OCTAHEDRON:
         const octahedronDims: OctahedronDims = dimensions;
@@ -1550,7 +1844,8 @@ export class PhysicsSimulator {
       position: [number, number, number];
       radius: number;
     }>,
-    baseAngle: number
+    baseAngle: number,
+    addFromTop?: boolean
   ): [number, number, number] {
     const radius = this.getShapeRadius(shapeType, dimensions);
 
@@ -1562,9 +1857,10 @@ export class PhysicsSimulator {
         const x = Math.cos(angle) * this.config.radius;
         const z = Math.sin(angle) * this.config.radius;
         const y =
-          this.config.verticalSpread > 0
-            ? (this.rand.next() - 0.5) * this.config.verticalSpread * 2
-            : this.rand.next() * 2 - 1;
+          this.config.verticalOffset +
+          (addFromTop
+            ? this.rand.next() * this.config.verticalSpread
+            : (this.rand.next() - 0.5) * this.config.verticalSpread * 2);
         position = [x, y, z];
       } else {
         const angle = this.rand.next() * Math.PI * 2;
@@ -1572,9 +1868,10 @@ export class PhysicsSimulator {
         const x = Math.cos(angle) * r;
         const z = Math.sin(angle) * r;
         const y =
-          this.config.verticalSpread > 0
-            ? (this.rand.next() - 0.5) * this.config.verticalSpread * 2
-            : this.rand.next() * 2 - 1;
+          this.config.verticalOffset +
+          (addFromTop
+            ? this.rand.next() * this.config.verticalSpread
+            : (this.rand.next() - 0.5) * this.config.verticalSpread * 2);
         position = [x, y, z];
       }
 
@@ -1603,9 +1900,10 @@ export class PhysicsSimulator {
     const x = Math.cos(angle) * this.config.radius;
     const z = Math.sin(angle) * this.config.radius;
     const y =
-      this.config.verticalSpread > 0
-        ? (this.rand.next() - 0.5) * this.config.verticalSpread * 2
-        : this.rand.next() * 2 - 1;
+      this.config.verticalOffset +
+      (addFromTop
+        ? this.rand.next() * this.config.verticalSpread
+        : (this.rand.next() - 0.5) * this.config.verticalSpread * 2);
     return [x, y, z];
   }
 }

@@ -89,12 +89,21 @@ export default {
             opacity: "1",
           },
         },
+        halfpulse: {
+          "0%": {
+            transform: "scale(1.2)",
+          },
+          "50%": {
+            transform: "scale(1.0)",
+          },
+        },
       },
       animation: {
         boldify: "boldify 0.5s linear forwards",
         unboldify: "unboldify 0.5s linear forwards",
         glowpulse: "glowpulse 1.5s ease-in forwards",
         pulse: "pulse 1s ease-in-out forwards infinite",
+        halfpulse: "halfpulse 1.0s ease-out forwards infinite",
         scalebounce:
           "scalebounce 0.25s cubic-bezier(0.355, 0.525, 0.485, 1.650) forwards",
         unscalebounce:
