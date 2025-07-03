@@ -96,8 +96,8 @@ PerformanceStats perfStats;
 
 struct Material {
   bool intRef;
-  vec3 color, innerColor;
-  float kd, ior, reflectivity, roughness, reflectRoughness, refractRoughness, surfaceBlur, metallic, transparency, attenuation, attenuationStrength;
+  vec3 color, secondaryColor;
+  float kd, ior, reflectivity, roughness, reflectRoughness, refractRoughness, surfaceBlur, metallic, transparency, attenuation, attenuationStrength, edgeTintStrength;
 };
 
 <% if(devMode) { %>
@@ -410,6 +410,66 @@ vec3 randomHemispherePoint(vec3 rand, vec3 dir) {
     if (dot(v, vec3(0, 0, 1)) < 0.0) v = -v; // ensure it's in the upper hemisphere
     mat3 tbn = makeTBN(normalize(dir)); // align Z-axis with dir
     return normalize(tbn * v); // rotate to world space
+}
+
+vec3 hsv2rgb(vec3 hsv) { return ((clamp(abs(fract(hsv.x+vec3(0,2,1)/3.)*2.-1.)*3.-1.,0.,1.)-1.)*hsv.y+1.)*hsv.z; }
+
+vec3 rgb2hsv(vec3 c) {
+    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0), p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g)), q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r)); float d = q.x - min(q.w, q.y); return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + 1.0e-10)), d / (q.x + 1.0e-10), q.x);
+}
+
+vec3 colorForTint(vec3 rgb) {
+    vec3 hsv = rgb2hsv(rgb);
+    
+    // Set saturation to 1.0
+    hsv.y = 1.0;
+    
+    // Ensure minimum brightness of 0.5
+    hsv.z = max(hsv.z, 0.5);
+    
+    return hsv2rgb(hsv);
+}
+
+vec3 calcIridescence(vec3 pos, vec3 nor, vec3 viewDir, float strength) {
+    float cosTheta = clamp(dot(viewDir, nor), 0.0, 1.0);
+    
+    // Only at very specific angles
+    float angleMask = pow(sin(cosTheta * PI), 2.0) * 0.5;
+    
+    float interference = sin(cosTheta * 8.0 + pos.y * 0.5);
+    float hue = fract(interference * 0.4 + 0.6); // Shift hue range
+    
+    // Return a color multiplier rather than additive color
+    return mix(vec3(1.0), hsv2rgb(vec3(hue, 0.4, 1.2)), strength * angleMask);
+} 
+
+vec3 calcBackfaceTint(float depth, vec3 baseColor, vec3 tintColor, float strength) {
+    // Convert tint color to HSV
+    vec3 tintHSV = rgb2hsv(tintColor);
+    
+    // Create multiple hue shifts for different depths
+    float hueShift1 = 0.15 * clamp(depth, 0.0, 1.0);        // Shallow: slight shift
+    float hueShift2 = 0.4 * clamp(depth - 0.5, 0.0, 1.0);   // Medium: bigger shift  
+    float hueShift3 = 0.2 * clamp(depth - 1.0, 0.0, 1.0);   // Deep: subtle adjustment
+    
+    float totalHueShift = hueShift1 + hueShift2 + hueShift3;
+    
+    // Create hue-shifted color
+    vec3 shiftedHSV = vec3(fract(tintHSV.x + totalHueShift), tintHSV.y, tintHSV.z * 0.9);
+    vec3 shiftedColor = hsv2rgb(shiftedHSV);
+    
+    // Depth zones
+    float shallowDepth = clamp(depth * 2.0, 0.0, 1.0);
+    float mediumDepth = clamp((depth - 0.3) * 1.5, 0.0, 1.0);
+    float deepDepth = clamp((depth - 0.7) * 2.0, 0.0, 1.0);
+    
+    // Blend through the hue shifts
+    vec3 shallowTint = mix(tintColor, shiftedColor, shallowDepth * 0.3);
+    vec3 mediumTint = mix(shallowTint, shiftedColor, mediumDepth * 0.6);
+    vec3 deepTint = mix(mediumTint, shiftedColor, deepDepth * 0.8);
+    
+    // Mix with base color
+    return mix(baseColor, deepTint, strength);
 }
 
 //------------------------------------------------------------------
@@ -1307,6 +1367,8 @@ vec4 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in mat3 viewMatrix
     vec3 col = vec3(0.);
     float w = 0.0;
 
+    //Secondary color to tint
+
     // Initialize the first ray
     addRay(ro, rd, 1.0, false, -1);
 
@@ -1333,6 +1395,12 @@ vec4 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in mat3 viewMatrix
             vec3 pos = currentRay.origin + t * currentRay.direction;
             vec3 nor = (m < 0.5) ? vec3(0.0, 1.0, 0.0) : calcNormal(pos);
             vec3 refDir = reflect(currentRay.direction, nor);
+
+            // Calculate edge tinting variables (used across all material types)
+            float cosTheta = clamp(dot(-currentRay.direction, nor), 0.0, 1.0);
+            float edgeTint = pow(1.0 - cosTheta, 2.0) * mat.edgeTintStrength * 5.0;
+
+            vec3 tintColor = colorForTint(mat.secondaryColor);
 
             if(!showDebug && i == 0 && mat.surfaceBlur > 0.01 && surfaceBlur && t < 4.0)
             {
@@ -1364,12 +1432,40 @@ vec4 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in mat3 viewMatrix
 
             // Handle opaque materials
             if (isOpaque) {
-                col += lin * currentRay.throughput;
+                // Add rim lighting to opaque materials
+                if(m > 0.5)
+                {
+                  float rimIntensity = pow(1.0 - cosTheta, 3.0) * 0.2;
+                  vec3 rimContribution = tintColor * rimIntensity;
+                  vec3 iridescence = calcIridescence(pos, nor, -currentRay.direction, mat.edgeTintStrength * 0.3);
+                  //col = iridescence;
+      
+                  col += (lin + rimContribution ) * iridescence * currentRay.throughput;
+                  //col += (lin + rimContribution) * currentRay.throughput;
+                }
+                else
+                {
+                  col += lin * currentRay.throughput;
+                }
             }
 
             // Handle reflective-only materials
             if (isReflectiveOnly) {
-                col += lin * currentRay.throughput * (1.0 - reflectivity);
+                // Add edge tint to base lighting
+                if(m > 0.5)
+                {
+                  vec3 edgeTintedColor = (tintColor * edgeTint * 0.3);
+                  
+                  vec3 iridescence = calcIridescence(pos, nor, -currentRay.direction, mat.edgeTintStrength * 0.4);
+                  //col = iridescence;
+      
+                  col += (edgeTintedColor + lin) * iridescence * currentRay.throughput * (1.0 - reflectivity);
+                  //col += (edgeTintedColor + lin) * currentRay.throughput * (1.0 - reflectivity);
+                }
+                else
+                {
+                  col += lin * currentRay.throughput * (1.0 - reflectivity);
+                }
                 
                 // Rough reflections
                 if (reflectRoughness > 0.01 && roughReflectSamples > 0 && !alreadyRoughReflected) {
@@ -1392,12 +1488,24 @@ vec4 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in mat3 viewMatrix
                 bool canRefract = length(refractDir) > 0.0;
 
                 // Fresnel term (Schlick approximation)
-                float cosTheta = clamp(dot(-currentRay.direction, nor), 0.0, 1.0);
                 float fresnel = reflectivity + (1.0 - reflectivity) * pow(1.0 - cosTheta, 5.0);
 
                 // Handle transparency component
                 if (canRefract) {
-                    col += lin * currentRay.throughput * (1.0 - transparency);
+                    // Add edge tint using secondaryColor for transparent materials
+                    if(m > 0.5)
+                    {
+                      vec3 edgeTintedColor = (tintColor * edgeTint * 0.5);
+                      vec3 iridescence = calcIridescence(pos, nor, -currentRay.direction, mat.edgeTintStrength * 0.6);
+                      //col = iridescence;
+      
+                      col += (lin + edgeTintedColor) * iridescence * currentRay.throughput * (1.0 - transparency);
+                      //col += (lin + edgeTintedColor) * currentRay.throughput * (1.0 - transparency);
+                    }
+                    else
+                    {
+                      col += lin * currentRay.throughput * (1.0 - transparency);
+                    }
                     
                     if (refractRoughness > 0.01 && roughRefractSamples > 0 && !alreadyRoughRefracted) {
                         for(int j = 0; j < roughRefractSamples; j++) {
@@ -1412,8 +1520,20 @@ vec4 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in mat3 viewMatrix
                 
                 // Handle reflection component (for transparent materials)
                 if (fresnel != 0.0) {
-
-                    col += lin * currentRay.throughput * (1.0 - fresnel) * reflectivity;
+                    // Add edge tint to reflection component
+                    if(m > 0.5)
+                    {
+                      vec3 edgeTintedColor = (mat.secondaryColor * edgeTint * 0.3);
+                      vec3 iridescence = calcIridescence(pos, nor, -currentRay.direction, mat.edgeTintStrength * 0.3);
+                      //col = iridescence;
+      
+                      col += (lin + edgeTintedColor) * iridescence * currentRay.throughput * (1.0 - fresnel) * reflectivity;
+                      //col += (lin + edgeTintedColor) * currentRay.throughput * (1.0 - fresnel) * reflectivity;
+                    }
+                    else
+                    {
+                      col += lin * currentRay.throughput * (1.0 - fresnel) * reflectivity;
+                    }
                     
                     if (reflectRoughness > 0.01 && roughReflectSamples > 0 && !alreadyRoughReflected) {
                         for(int j = 0; j < roughReflectSamples; j++) {
@@ -1431,56 +1551,60 @@ vec4 render(in vec3 ro, in vec3 rd, in vec3 rdx, in vec3 rdy, in mat3 viewMatrix
             col += bg * currentRay.throughput;
         }
       }
-      else
+      else // currentRay.inside == true
       {
-        if (m > -0.5)
-        {
-          Material mat = materials[int(m)];
-          vec3 pos = currentRay.origin + t * currentRay.direction;
-          vec3 nor = -calcNormal(pos);
-          vec3 refDir = reflect(currentRay.direction, nor);
-
-          float reflectivity = mat.reflectivity;
-          float attenuation = mat.attenuation;
-          float attenuationStrength = mat.attenuationStrength;
-          vec3 innerColor = mat.innerColor;
-          bool intRef = mat.intRef;
-          float ior = mat.ior;
-
-          float eta = ior;
-          vec3 refractDir = refract(currentRay.direction, nor, eta);
-          bool canRefract = length(refractDir) > 0.0;
-
-          // Fresnel term (Schlick approximation)
-          float cosTheta = clamp(dot(-currentRay.direction, nor), 0.0, 1.0);
-          float fresnel = reflectivity + (1.0 - reflectivity) * pow(1.0 - cosTheta, 5.0);
-
-          float att = pow((1.0 - pow(attenuation, 20.)), (pow(1.0 + t, attenuationStrength)));
-          float throughput = att; 
-          if(attenuation > 0.0)
+          if (m > -0.5)
           {
-            col += currentRay.throughput * (1.0 - att) * innerColor;
-          }
+              Material mat = materials[int(m)];
+              vec3 pos = currentRay.origin + t * currentRay.direction;
+              vec3 nor = -calcNormal(pos);
+              vec3 refDir = reflect(currentRay.direction, nor);
 
-          addRay(pos - nor * 0.004, refractDir, currentRay.throughput * throughput, false, 30 + i);
-          
-          bool escaped = false;
-          /*
-          if(canRefract && fresnel != 1.0)
-          {
-          }
-          else if(numRays + 1 == maxRays)
-          {
-            escaped = true;
-            addRay(pos - nor * 0.004, currentRay.direction, currentRay.throughput * throughput, false, 40 + i);
-          }
-          */
+              float reflectivity = mat.reflectivity;
+              float attenuation = mat.attenuation;
+              float attenuationStrength = mat.attenuationStrength;
+              vec3 secondaryColor = mat.secondaryColor;
+              bool intRef = mat.intRef;
+              float ior = mat.ior;
 
-          if(!canRefract && !escaped && intRef)
-          { 
-            addRay(pos + nor * 0.002, refDir, currentRay.throughput * 0.25, true, 50 + i);
+              float eta = ior;
+              vec3 refractDir = refract(currentRay.direction, nor, eta);
+              bool canRefract = length(refractDir) > 0.0;
+
+              // Fresnel term (Schlick approximation)
+              float cosTheta = clamp(dot(-currentRay.direction, nor), 0.0, 1.0);
+              float fresnel = reflectivity + (1.0 - reflectivity) * pow(1.0 - cosTheta, 5.0);
+
+              // Enhanced backface tinting based on depth
+              float normalizedDepth = clamp(t * 2.5, 0.0, 2.0); // Adjust 0.1 to control depth sensitivity
+              
+              // Calculate backface tint using depth and secondary color
+              vec3 backfaceTint = calcBackfaceTint(normalizedDepth, mat.color, secondaryColor, 1.0);
+              
+              // Original attenuation system enhanced with backface tinting
+              float att = pow((1.0 - pow(attenuation, 20.)), (pow(1.0 + t, attenuationStrength)));
+              float throughput = att; 
+              
+              if(attenuation > 0.0)
+              {
+                  // Use backface tint instead of just secondaryColor
+                  col += currentRay.throughput * (1.0 - att) * backfaceTint;
+              }
+              else
+              {
+                  // If no attenuation, still apply subtle backface tint
+                  col += currentRay.throughput * 0.1 * backfaceTint * normalizedDepth;
+              }
+
+              addRay(pos - nor * 0.004, refractDir, currentRay.throughput * throughput, false, 30 + i);
+              
+              bool escaped = false;
+
+              if(!canRefract && !escaped && intRef)
+              { 
+                  addRay(pos + nor * 0.002, refDir, currentRay.throughput * 0.25, true, 50 + i);
+              }
           }
-        }
       }
       perfStats.rayCount++;
     }
@@ -1496,13 +1620,6 @@ mat3 setCamera( in vec3 ro, in vec3 ta, float cr )
 	vec3 cv =          ( cross(cu,cw) );
     return mat3( cu, cv, cw );
 }
-
-vec3 convertColor(float color) {
-    return 0.2 + 0.2*sin( color*2.0 + vec3(0.0,1.0,2.0));
-}
-
-vec3 hsv2rgb(vec3 hsv) { return ((clamp(abs(fract(hsv.x+vec3(0,2,1)/3.)*2.-1.)*3.-1.,0.,1.)-1.)*hsv.y+1.)*hsv.z; }
-
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
     //vec2 mo = clamp(iMouse.xy/iResolution.xy, 0.,1.);

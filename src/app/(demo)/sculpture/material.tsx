@@ -202,10 +202,10 @@ export function ShaderMaterial({
           y: material.color.g,
           z: material.color.b,
         },
-        innerColor: {
-          x: material.innerColor.r,
-          y: material.innerColor.g,
-          z: material.innerColor.b,
+        secondaryColor: {
+          x: material.secondaryColor.r,
+          y: material.secondaryColor.g,
+          z: material.secondaryColor.b,
         },
         kd: material.kd,
         ior: material.ior,
@@ -223,6 +223,7 @@ export function ShaderMaterial({
           : 0,
         attenuation: material.attenuation,
         attenuationStrength: material.attenuationStrength,
+        edgeTintStrength: material.edgeTintStrength,
       }));
     }
     dataReady.current |= MATERIALS_SET;

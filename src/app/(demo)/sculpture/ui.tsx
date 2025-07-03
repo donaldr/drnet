@@ -1124,7 +1124,7 @@ export class RaymarchingUI {
   addMaterialMultiSelect(
     f: FolderApi,
     mat: MaterialGeneratorDetails,
-    key: keyof Pick<MaterialGeneratorDetails, "color" | "innerColor">,
+    key: keyof Pick<MaterialGeneratorDetails, "color" | "secondaryColor">,
     label: string,
     index?: number
   ) {
@@ -1157,7 +1157,7 @@ export class RaymarchingUI {
     });
 
     this.addMaterialMultiSelect(f, mat, "color", "Color");
-    this.addMaterialMultiSelect(f, mat, "innerColor", "Inner Color");
+    this.addMaterialMultiSelect(f, mat, "secondaryColor", "Secondary Color");
 
     f.addBinding(mat, "kd", {
       min: 0,
@@ -1229,6 +1229,13 @@ export class RaymarchingUI {
       max: 50,
       step: 0.1,
       label: "Attenuation Strength",
+    });
+    mat.edgeTintStrength = mat.edgeTintStrength ?? { min: 0, max: 1 };
+    f.addBinding(mat, "edgeTintStrength", {
+      min: 0,
+      max: 1,
+      step: 0.1,
+      label: "Edge Tint Strength",
     });
     mat.probability = mat.probability ?? 1.0;
     f.addBinding(mat, "probability", {

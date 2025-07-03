@@ -276,7 +276,7 @@ export type ShapeGeneratorDetails = {
 export interface Material {
   name: string;
   color: Color;
-  innerColor: Color;
+  secondaryColor: Color;
   kd: number;
   ior: number;
   reflectivity: number;
@@ -289,13 +289,14 @@ export interface Material {
   transparency: number;
   attenuation: number;
   attenuationStrength: number;
+  edgeTintStrength: number;
   uuid: string;
 }
 
 export interface MaterialGeneratorDetails {
   name: string;
   color: Array<string>; //reference to color palette
-  innerColor: Array<string>; //reference to color palette
+  secondaryColor: Array<string>; //reference to color palette
   kd: RuleValue<number>;
   ior: RuleValue<number>;
   reflectivity: RuleValue<number>;
@@ -308,6 +309,7 @@ export interface MaterialGeneratorDetails {
   transparency: RuleValue<number>;
   attenuation: RuleValue<number>;
   attenuationStrength: RuleValue<number>;
+  edgeTintStrength: RuleValue<number>;
   probability: number;
   uuid: string;
 }
@@ -955,28 +957,30 @@ export class DataManager {
       );
       const colorPalette = palettes[foundPaletteIndex];
 
-      let innerPaletteProbabilitySum = 0;
-      let innerPaletteProbabilities = [];
-      const innerPalettes = this.colorPalettes.filter((c) =>
-        foundMaterialRule.innerColor.includes(c.uuid)
+      let secondaryPaletteProbabilitySum = 0;
+      let secondaryPaletteProbabilities = [];
+      const secondaryPalettes = this.colorPalettes.filter((c) =>
+        foundMaterialRule.secondaryColor.includes(c.uuid)
       );
-      for (let i = 0; i < foundMaterialRule.innerColor.length; i++) {
-        const innerPalette = innerPalettes[i];
-        innerPaletteProbabilities.push(
-          innerPalette!.probability + innerPaletteProbabilitySum
+      for (let i = 0; i < foundMaterialRule.secondaryColor.length; i++) {
+        const secondaryPalette = secondaryPalettes[i];
+        secondaryPaletteProbabilities.push(
+          secondaryPalette!.probability + secondaryPaletteProbabilitySum
         );
-        innerPaletteProbabilitySum += innerPalette!.probability;
+        secondaryPaletteProbabilitySum += secondaryPalette!.probability;
       }
 
-      innerPaletteProbabilities = innerPaletteProbabilities.map(
-        (p) => p / innerPaletteProbabilitySum
+      secondaryPaletteProbabilities = secondaryPaletteProbabilities.map(
+        (p) => p / secondaryPaletteProbabilitySum
       );
 
-      const innerPaletteSelected = rand.next();
-      const foundinnerPaletteIndex = innerPaletteProbabilities.findIndex(
-        (el) => el >= innerPaletteSelected
-      );
-      const innerColorPalette = innerPalettes[foundinnerPaletteIndex];
+      const secondaryPaletteSelected = rand.next();
+      const foundsecondaryPaletteIndex =
+        secondaryPaletteProbabilities.findIndex(
+          (el) => el >= secondaryPaletteSelected
+        );
+      const secondaryColorPalette =
+        secondaryPalettes[foundsecondaryPaletteIndex];
 
       const material = this.defaultMaterial();
 
@@ -1000,12 +1004,12 @@ export class DataManager {
         const foundColor = colorPalette.colors[foundColorIndex];
         material.color = foundColor.color;
 
-        if (innerColorPalette) {
-          material.innerColor =
-            innerColorPalette.colors[
+        if (secondaryColorPalette) {
+          material.secondaryColor =
+            secondaryColorPalette.colors[
               Math.floor(
                 (foundColorIndex / colorPalette.colors.length) *
-                  innerColorPalette.colors.length
+                  secondaryColorPalette.colors.length
               )
             ].color;
         }
@@ -1048,6 +1052,10 @@ export class DataManager {
           foundMaterialRule.surfaceBlur
         );
       }
+
+      material.edgeTintStrength = chooseInRangeNumber(
+        foundMaterialRule.edgeTintStrength
+      );
 
       this.materials.push(material);
 
@@ -1123,7 +1131,7 @@ export class DataManager {
     return {
       name: "Default Material",
       color: { r: 1, g: 1, b: 1 },
-      innerColor: { r: 1, g: 1, b: 1 },
+      secondaryColor: { r: 1, g: 1, b: 1 },
       kd: 0.0,
       ior: 1.0,
       reflectivity: 0.0,
@@ -1136,6 +1144,7 @@ export class DataManager {
       transparency: 0.0,
       attenuation: 0.0,
       attenuationStrength: 0.0,
+      edgeTintStrength: 0.0,
       uuid: "DEFAULT",
     };
   }
@@ -1144,7 +1153,7 @@ export class DataManager {
     return {
       name: "Default Material Rule",
       color: [],
-      innerColor: [],
+      secondaryColor: [],
       kd: { min: 0.0, max: 10.0 },
       ior: { min: 1.0, max: 5.0 },
       reflectivity: { min: 0.0, max: 1.0 },
@@ -1157,6 +1166,7 @@ export class DataManager {
       transparency: { min: 0.0, max: 1.0 },
       attenuation: { min: 0.0, max: 1.0 },
       attenuationStrength: { min: 0.0, max: 50.0 },
+      edgeTintStrength: { min: 0.0, max: 1.0 },
       uuid: "DEFAULT",
       probability: 1,
     };

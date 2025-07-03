@@ -95,7 +95,7 @@
   },
   "colorPalettes": [
     {
-      "name": "Silver",
+      "name": "Silvers",
       "colors": [
         {
           "name": "Silver #1",
@@ -148,11 +148,11 @@
           "uuid": "7fc6cba1-99e7-49b4-a96d-6dccf0ce4143"
         }
       ],
-      "uuid": "DEFAULT",
+      "uuid": "Silvers",
       "probability": 1
     },
     {
-      "name": "Gold",
+      "name": "Golds",
       "colors": [
         {
           "name": "Gold #1",
@@ -205,11 +205,11 @@
           "uuid": "c8ccbf8d-d083-46f6-bd57-7a5f8ff87d12"
         }
       ],
-      "uuid": "b7656f31-fa03-4372-8b0c-f055e73789e0",
+      "uuid": "Golds",
       "probability": 1
     },
     {
-      "name": "Rose Gold",
+      "name": "Rose Golds",
       "colors": [
         {
           "name": "Rose Gold #1",
@@ -262,11 +262,11 @@
           "uuid": "04c318be-91b3-4395-901b-9ea70b6f80c3"
         }
       ],
-      "uuid": "98c45260-06b1-4875-8337-b0383eb8e717",
+      "uuid": "Rose Golds",
       "probability": 1
     },
     {
-      "name": "Copper",
+      "name": "Coppers",
       "colors": [
         {
           "name": "Copper #1",
@@ -320,10 +320,10 @@
         }
       ],
       "probability": 1,
-      "uuid": "6c35b006-d43d-4546-9d35-e83cd3942b84"
+      "uuid": "Coppers"
     },
     {
-      "name": "Gun Metal",
+      "name": "Gun Metals",
       "colors": [
         {
           "name": "Gun Metal #1",
@@ -377,10 +377,10 @@
         }
       ],
       "probability": 1,
-      "uuid": "e0899052-2ac4-4525-9a44-26d8ec1d304b"
+      "uuid": "Gun Metals"
     },
     {
-      "name": "Plastic Extrusion",
+      "name": "Plastic Extrusions",
       "colors": [
         {
           "name": "Red",
@@ -434,7 +434,7 @@
         }
       ],
       "probability": 1,
-      "uuid": "93f3f5af-fd35-47fe-a7f7-1659f51eb9b7"
+      "uuid": "Plastic Extrusions"
     },
     {
       "name": "Reds",
@@ -1141,7 +1141,7 @@
         }
       ],
       "probability": 1,
-      "uuid": "608b3f34-9ceb-4fff-b477-46058a717703"
+      "uuid": "Reds"
     },
     {
       "name": "Oranges",
@@ -1578,7 +1578,7 @@
         }
       ],
       "probability": 1,
-      "uuid": "0f3b32ff-95cc-4b75-b712-a58acfcb1091"
+      "uuid": "Oranges"
     },
     {
       "name": "Browns",
@@ -2265,7 +2265,7 @@
         }
       ],
       "probability": 1,
-      "uuid": "browns"
+      "uuid": "Browns"
     },
     {
       "name": "Yellows",
@@ -7643,7 +7643,7 @@
       "type": 11,
       "r": {
         "min": 0.01,
-        "max": 0.04
+        "max": 0.03
       },
       "uuid": "b2e6afd7-c0ac-4f8e-ae31-8fa5372f0858",
       "mats": [
@@ -7655,12 +7655,12 @@
       "probability": 1,
       "upgrade": "BASE",
       "r2": {
-        "min": 0.02,
+        "min": 0.03,
         "max": 0.05
       },
       "h": {
-        "min": 0.1,
-        "max": 0.2
+        "min": 0.03,
+        "max": 0.06
       }
     },
     {
@@ -7762,15 +7762,15 @@
       "upgrade": "BASE",
       "h": {
         "min": 0.1,
-        "max": 0.2
+        "max": 0.15
       },
       "r1": {
-        "min": 0.07,
-        "max": 0.13
+        "min": 0.05,
+        "max": 0.1
       },
       "r2": {
-        "min": 0.03,
-        "max": 0.05
+        "min": 0.01,
+        "max": 0.04
       }
     },
     {
@@ -7795,15 +7795,15 @@
     {
       "name": "Shiny Metal",
       "color": [
-        "DEFAULT",
-        "b7656f31-fa03-4372-8b0c-f055e73789e0",
-        "98c45260-06b1-4875-8337-b0383eb8e717",
-        "6c35b006-d43d-4546-9d35-e83cd3942b84",
-        "e0899052-2ac4-4525-9a44-26d8ec1d304b",
-        "93f3f5af-fd35-47fe-a7f7-1659f51eb9b7",
-        "608b3f34-9ceb-4fff-b477-46058a717703",
-        "0f3b32ff-95cc-4b75-b712-a58acfcb1091",
-        "browns",
+        "Silvers",
+        "Golds",
+        "Rose Golds",
+        "Coppers",
+        "Gun Metals",
+        "Plastic Extrusions",
+        "Reds",
+        "Oranges",
+        "Browns",
         "Yellows",
         "Greens",
         "Turquoises",
@@ -7814,16 +7814,16 @@
         "Grays",
         "Blacks"
       ],
-      "innerColor": [
-        "DEFAULT",
-        "b7656f31-fa03-4372-8b0c-f055e73789e0",
-        "98c45260-06b1-4875-8337-b0383eb8e717",
-        "6c35b006-d43d-4546-9d35-e83cd3942b84",
-        "e0899052-2ac4-4525-9a44-26d8ec1d304b",
-        "93f3f5af-fd35-47fe-a7f7-1659f51eb9b7",
-        "608b3f34-9ceb-4fff-b477-46058a717703",
-        "0f3b32ff-95cc-4b75-b712-a58acfcb1091",
-        "browns",
+      "secondaryColor": [
+        "Silvers",
+        "Golds",
+        "Rose Golds",
+        "Coppers",
+        "Gun Metals",
+        "Plastic Extrusions",
+        "Reds",
+        "Oranges",
+        "Browns",
         "Yellows",
         "Greens",
         "Turquoises",
@@ -7880,20 +7880,24 @@
         "max": 0
       },
       "uuid": "77bb8839-437e-4fa6-95d7-9877e53db7e1",
-      "probability": 1
+      "probability": 1,
+      "edgeTintStrength": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "name": "Dull Metal",
       "color": [
-        "DEFAULT",
-        "b7656f31-fa03-4372-8b0c-f055e73789e0",
-        "98c45260-06b1-4875-8337-b0383eb8e717",
-        "6c35b006-d43d-4546-9d35-e83cd3942b84",
-        "e0899052-2ac4-4525-9a44-26d8ec1d304b",
-        "93f3f5af-fd35-47fe-a7f7-1659f51eb9b7",
-        "608b3f34-9ceb-4fff-b477-46058a717703",
-        "0f3b32ff-95cc-4b75-b712-a58acfcb1091",
-        "browns",
+        "Silvers",
+        "Golds",
+        "Rose Golds",
+        "Coppers",
+        "Gun Metals",
+        "Plastic Extrusions",
+        "Reds",
+        "Oranges",
+        "Browns",
         "Yellows",
         "Greens",
         "Turquoises",
@@ -7904,16 +7908,16 @@
         "Grays",
         "Blacks"
       ],
-      "innerColor": [
-        "DEFAULT",
-        "b7656f31-fa03-4372-8b0c-f055e73789e0",
-        "98c45260-06b1-4875-8337-b0383eb8e717",
-        "6c35b006-d43d-4546-9d35-e83cd3942b84",
-        "e0899052-2ac4-4525-9a44-26d8ec1d304b",
-        "93f3f5af-fd35-47fe-a7f7-1659f51eb9b7",
-        "608b3f34-9ceb-4fff-b477-46058a717703",
-        "0f3b32ff-95cc-4b75-b712-a58acfcb1091",
-        "browns",
+      "secondaryColor": [
+        "Silvers",
+        "Golds",
+        "Rose Golds",
+        "Coppers",
+        "Gun Metals",
+        "Plastic Extrusions",
+        "Reds",
+        "Oranges",
+        "Browns",
         "Yellows",
         "Greens",
         "Turquoises",
@@ -7970,15 +7974,24 @@
         "max": 0
       },
       "uuid": "a5312773-27e0-4226-b3e5-42c35020291b",
-      "probability": 1
+      "probability": 1,
+      "edgeTintStrength": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "name": "Plastic Extrusion",
       "color": [
-        "93f3f5af-fd35-47fe-a7f7-1659f51eb9b7",
-        "608b3f34-9ceb-4fff-b477-46058a717703",
-        "0f3b32ff-95cc-4b75-b712-a58acfcb1091",
-        "browns",
+        "Silvers",
+        "Golds",
+        "Rose Golds",
+        "Coppers",
+        "Gun Metals",
+        "Plastic Extrusions",
+        "Reds",
+        "Oranges",
+        "Browns",
         "Yellows",
         "Greens",
         "Turquoises",
@@ -7989,11 +8002,16 @@
         "Grays",
         "Blacks"
       ],
-      "innerColor": [
-        "93f3f5af-fd35-47fe-a7f7-1659f51eb9b7",
-        "608b3f34-9ceb-4fff-b477-46058a717703",
-        "0f3b32ff-95cc-4b75-b712-a58acfcb1091",
-        "browns",
+      "secondaryColor": [
+        "Silvers",
+        "Golds",
+        "Rose Golds",
+        "Coppers",
+        "Gun Metals",
+        "Plastic Extrusions",
+        "Reds",
+        "Oranges",
+        "Browns",
         "Yellows",
         "Greens",
         "Turquoises",
@@ -8050,20 +8068,18 @@
         "max": 0
       },
       "uuid": "c92c51be-81fb-493e-b24d-9f3d2044898d",
-      "probability": 1
+      "probability": 1,
+      "edgeTintStrength": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "name": "Glass",
       "color": [
-        "DEFAULT",
-        "b7656f31-fa03-4372-8b0c-f055e73789e0",
-        "98c45260-06b1-4875-8337-b0383eb8e717",
-        "6c35b006-d43d-4546-9d35-e83cd3942b84",
-        "e0899052-2ac4-4525-9a44-26d8ec1d304b",
-        "93f3f5af-fd35-47fe-a7f7-1659f51eb9b7",
-        "608b3f34-9ceb-4fff-b477-46058a717703",
-        "0f3b32ff-95cc-4b75-b712-a58acfcb1091",
-        "browns",
+        "Plastic Extrusions",
+        "Reds",
+        "Oranges",
         "Yellows",
         "Greens",
         "Turquoises",
@@ -8074,16 +8090,10 @@
         "Grays",
         "Blacks"
       ],
-      "innerColor": [
-        "DEFAULT",
-        "b7656f31-fa03-4372-8b0c-f055e73789e0",
-        "98c45260-06b1-4875-8337-b0383eb8e717",
-        "6c35b006-d43d-4546-9d35-e83cd3942b84",
-        "e0899052-2ac4-4525-9a44-26d8ec1d304b",
-        "93f3f5af-fd35-47fe-a7f7-1659f51eb9b7",
-        "608b3f34-9ceb-4fff-b477-46058a717703",
-        "0f3b32ff-95cc-4b75-b712-a58acfcb1091",
-        "browns",
+      "secondaryColor": [
+        "Plastic Extrusions",
+        "Reds",
+        "Oranges",
         "Yellows",
         "Greens",
         "Turquoises",
@@ -8140,7 +8150,11 @@
         "max": 36.4
       },
       "uuid": "fda1771e-ddd6-4e36-8b4b-680c31b3d57b",
-      "probability": 1
+      "probability": 1,
+      "edgeTintStrength": {
+        "min": 0,
+        "max": 1
+      }
     }
   ],
   "shapes": [
@@ -8434,7 +8448,7 @@
         "g": 1,
         "b": 1
       },
-      "innerColor": {
+      "secondaryColor": {
         "r": 1,
         "g": 1,
         "b": 1
@@ -8452,6 +8466,7 @@
       "transparency": 0,
       "attenuation": 0.000009999999999999254,
       "attenuationStrength": 0,
+      "edgeTintStrength": 0,
       "glow": 0,
       "intRef": false,
       "reflectRoughness": 0.07000000000000002,
@@ -8466,7 +8481,7 @@
         "g": 0.7215686274509804,
         "b": 0.7215686274509804
       },
-      "innerColor": {
+      "secondaryColor": {
         "r": 1,
         "g": 0.7019607843137254,
         "b": 0
@@ -8483,6 +8498,7 @@
       "transparency": 0.8782159591838717,
       "attenuation": 0.7688714951276779,
       "attenuationStrength": 36.4,
+      "edgeTintStrength": 1,
       "uuid": "DEFAULT"
     },
     {
@@ -8492,7 +8508,7 @@
         "g": 0.20392156862745098,
         "b": 0.2235294117647059
       },
-      "innerColor": {
+      "secondaryColor": {
         "r": 1,
         "g": 0.8431372549019608,
         "b": 0
@@ -8509,6 +8525,7 @@
       "transparency": 0.8622310459986329,
       "attenuation": 0.7612722447142005,
       "attenuationStrength": 36.4,
+      "edgeTintStrength": 1,
       "uuid": "DEFAULT"
     },
     {
@@ -8518,7 +8535,7 @@
         "g": 0.8,
         "b": 0
       },
-      "innerColor": {
+      "secondaryColor": {
         "r": 0.6823529411764706,
         "g": 0.7215686274509804,
         "b": 0.7490196078431373
@@ -8535,6 +8552,7 @@
       "transparency": 0,
       "attenuation": 0,
       "attenuationStrength": 0,
+      "edgeTintStrength": 1,
       "uuid": "DEFAULT"
     },
     {
@@ -8544,7 +8562,7 @@
         "g": 0.8,
         "b": 0
       },
-      "innerColor": {
+      "secondaryColor": {
         "r": 0.9490196078431372,
         "g": 0.7568627450980392,
         "b": 0.615686274509804
@@ -8561,6 +8579,7 @@
       "transparency": 0,
       "attenuation": 0,
       "attenuationStrength": 0,
+      "edgeTintStrength": 1,
       "uuid": "DEFAULT"
     },
     {
@@ -8570,7 +8589,7 @@
         "g": 0.8196078431372549,
         "b": 0.17647058823529413
       },
-      "innerColor": {
+      "secondaryColor": {
         "r": 0.9647058823529412,
         "g": 0.8196078431372549,
         "b": 0.17647058823529413
@@ -8587,6 +8606,7 @@
       "transparency": 0,
       "attenuation": 0,
       "attenuationStrength": 0,
+      "edgeTintStrength": 1,
       "uuid": "DEFAULT"
     },
     {
@@ -8596,7 +8616,7 @@
         "g": 0.32941176470588235,
         "b": 0.34509803921568627
       },
-      "innerColor": {
+      "secondaryColor": {
         "r": 1,
         "g": 0.7647058823529411,
         "b": 0
@@ -8613,6 +8633,7 @@
       "transparency": 0.8477564397081733,
       "attenuation": 0.7093864638125524,
       "attenuationStrength": 36.4,
+      "edgeTintStrength": 1,
       "uuid": "DEFAULT"
     },
     {
@@ -8622,7 +8643,7 @@
         "g": 0.6470588235294118,
         "b": 0
       },
-      "innerColor": {
+      "secondaryColor": {
         "r": 0.7490196078431373,
         "g": 0.7490196078431373,
         "b": 0.7490196078431373
@@ -8639,6 +8660,7 @@
       "transparency": 0.859781316332519,
       "attenuation": 0.7966305512469263,
       "attenuationStrength": 36.4,
+      "edgeTintStrength": 1,
       "uuid": "DEFAULT"
     },
     {
@@ -8648,7 +8670,7 @@
         "g": 0.7215686274509804,
         "b": 0.7215686274509804
       },
-      "innerColor": {
+      "secondaryColor": {
         "r": 0.4196078431372549,
         "g": 0.4588235294117647,
         "b": 0.47843137254901963
@@ -8665,6 +8687,7 @@
       "transparency": 0.9856081487983466,
       "attenuation": 0.7904293325031176,
       "attenuationStrength": 36.4,
+      "edgeTintStrength": 1,
       "uuid": "DEFAULT"
     },
     {
@@ -8674,7 +8697,7 @@
         "g": 0.6039215686274509,
         "b": 0.6039215686274509
       },
-      "innerColor": {
+      "secondaryColor": {
         "r": 0.7725490196078432,
         "g": 0.4823529411764706,
         "b": 0.22745098039215686
@@ -8691,6 +8714,7 @@
       "transparency": 0,
       "attenuation": 0,
       "attenuationStrength": 0,
+      "edgeTintStrength": 1,
       "uuid": "DEFAULT"
     },
     {
@@ -8700,7 +8724,7 @@
         "g": 0.7529411764705882,
         "b": 0.7529411764705882
       },
-      "innerColor": {
+      "secondaryColor": {
         "r": 0.7176470588235294,
         "g": 0.43137254901960786,
         "b": 0.4745098039215686
@@ -8717,6 +8741,7 @@
       "transparency": 0,
       "attenuation": 0,
       "attenuationStrength": 0,
+      "edgeTintStrength": 1,
       "uuid": "DEFAULT"
     }
   ],

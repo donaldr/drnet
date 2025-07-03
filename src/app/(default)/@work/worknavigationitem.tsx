@@ -82,7 +82,7 @@ export default function WorkNavigationItem({
         window.history.pushState(null, "", `/work/${work.slug}`);
       }
     },
-    [work]
+    [work, setParentHover]
   );
 
   const pointerDownElsewhere = useCallback(
@@ -98,7 +98,7 @@ export default function WorkNavigationItem({
         setShowText(false);
       }
     },
-    [work, index]
+    [index]
   );
 
   useEffect(() => {
