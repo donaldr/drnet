@@ -41,13 +41,24 @@ export class RaymarchingUI {
     this.pane.registerPlugin(EssentialsPlugin);
 
     const stored = localStorage.getItem("uidata");
+
     let data;
     if (stored) {
       data = JSON.parse(stored) as UiData;
     }
     this.container = container;
 
+    if (data && data.globals) {
+      if ((data?.globals?.perf as unknown) == "LOW")
+        data.globals.perf = PerformanceMode.GOOD;
+      if ((data?.globals?.perf as unknown) == "MEDIUM")
+        data.globals.perf = PerformanceMode.BETTER;
+      if ((data?.globals?.perf as unknown) == "HIGH")
+        data.globals.perf = PerformanceMode.BEST;
+    }
+
     this.build(data);
+
     if (!stored) {
       this.save();
     }
@@ -178,9 +189,9 @@ export class RaymarchingUI {
     f.addBinding(this.dataManager.globals, "perf", {
       label: "Detail",
       options: [
-        { text: "Low", value: PerformanceMode.LOW },
-        { text: "Medium", value: PerformanceMode.MEDIUM },
-        { text: "High", value: PerformanceMode.HIGH },
+        { text: "Good", value: PerformanceMode.GOOD },
+        { text: "Better", value: PerformanceMode.BETTER },
+        { text: "Best", value: PerformanceMode.BEST },
       ],
     }).on("change", () => {
       if (this.dataManager.setPerfUpdated) {
@@ -270,10 +281,10 @@ export class RaymarchingUI {
       expanded: false,
     });
     const tabs = f.addTab({
-      pages: [{ title: "Low" }, { title: "Medium" }, { title: "High" }],
+      pages: [{ title: "Good" }, { title: "Better" }, { title: "Best" }],
     });
 
-    const mode = ["LOW", "MEDIUM", "HIGH"] as Array<
+    const mode = ["GOOD", "BETTER", "BEST"] as Array<
       keyof AllPerformanceSettings
     >;
     for (let i = 0; i < 3; i++) {

@@ -138,9 +138,9 @@ export default function ShaderCanvas() {
   const debounceMouseMove = useDebounce();
 
   const options = [
-    { label: "Low", value: PerformanceMode.LOW },
-    { label: "Medium", value: PerformanceMode.MEDIUM },
-    { label: "High", value: PerformanceMode.HIGH },
+    { label: "Good", value: PerformanceMode.GOOD },
+    { label: "Better", value: PerformanceMode.BETTER },
+    { label: "Best", value: PerformanceMode.BEST },
   ];
 
   const mouseMoved = useCallback(() => {
@@ -330,6 +330,7 @@ export default function ShaderCanvas() {
               z: Math.random(),
             };
             dataManager.updateShader();
+            console.log(dataManager.globals);
             setGenerationState(PageState.DATA_LOADED);
             requestAnimationFrame((time) => doDot(time));
           }
@@ -350,21 +351,21 @@ export default function ShaderCanvas() {
           setTimeout(() => {
             let fps = Math.floor(1000 / deltaRef.current!);
             if (fps > 50) {
-              setSelected(PerformanceMode.MEDIUM);
+              setSelected(PerformanceMode.BETTER);
               setTimeout(() => {
                 fps = Math.floor(1000 / deltaRef.current!);
                 if (fps > 50) {
-                  setSelected(PerformanceMode.HIGH);
+                  setSelected(PerformanceMode.BEST);
                   setTimeout(() => {
                     fps = Math.floor(1000 / deltaRef.current!);
                     if (fps > 50) {
                     } else {
-                      setSelected(PerformanceMode.MEDIUM);
+                      setSelected(PerformanceMode.BETTER);
                     }
                     setGenerationState(PageState.READY_TO_GENERATE);
                   }, 3000);
                 } else {
-                  setSelected(PerformanceMode.LOW);
+                  setSelected(PerformanceMode.GOOD);
                   setGenerationState(PageState.READY_TO_GENERATE);
                 }
               }, 3000);
@@ -448,8 +449,11 @@ export default function ShaderCanvas() {
   useEffect(() => {
     compiledRef.current = compiled;
     if (generationStateRef.current == PageState.DATA_LOADED && compiled) {
-      const savedData = localStorage.getItem(sculptureId as string);
+      let savedData = localStorage.getItem(sculptureId as string);
       if (sculptureId == "infinite" && savedData) {
+        if (savedData == "LOW") savedData = "GOOD";
+        if (savedData == "MEDIUM") savedData = "BETTER";
+        if (savedData == "HIGH") savedData = "BEST";
         setSelected(savedData);
         setGenerationState(PageState.READY_TO_GENERATE);
       } else {
@@ -676,7 +680,7 @@ export default function ShaderCanvas() {
                     })}
                 `}
                 >
-                  <div className="text-[8px]">PERFORMANCE</div>
+                  <div className="text-[8px]">QUALITY</div>
                   <div>
                     <TinyDropdown
                       value={perf as string}

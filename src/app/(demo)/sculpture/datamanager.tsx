@@ -15,9 +15,9 @@ export enum InterfaceMode {
 }
 
 export enum PerformanceMode {
-  LOW = "LOW",
-  MEDIUM = "MEDIUM",
-  HIGH = "HIGH",
+  GOOD = "GOOD",
+  BETTER = "BETTER",
+  BEST = "BEST",
 }
 
 export enum UpgradeGroup {
@@ -417,7 +417,7 @@ export class DataManager {
     };
 
     this.globals = {
-      perf: PerformanceMode.LOW,
+      perf: PerformanceMode.GOOD,
       camTgt: { x: 0, y: 0.4, z: 0 },
       camHAngle: 0.0,
       camVAngle: 0.67,
@@ -433,7 +433,7 @@ export class DataManager {
     };
 
     this.performanceSettings = {
-      LOW: {
+      GOOD: {
         maxRays: 10,
         marchingSteps: 150,
         distanceThreshold: 0.0001,
@@ -452,7 +452,7 @@ export class DataManager {
         shadows: true,
         surfaceBlur: true,
       },
-      MEDIUM: {
+      BETTER: {
         maxRays: 10,
         marchingSteps: 150,
         distanceThreshold: 0.0001,
@@ -471,7 +471,7 @@ export class DataManager {
         shadows: true,
         surfaceBlur: true,
       },
-      HIGH: {
+      BEST: {
         maxRays: 10,
         marchingSteps: 150,
         distanceThreshold: 0.0001,
@@ -526,7 +526,7 @@ export class DataManager {
       }
 
       if (data.performanceSettings) {
-        const mode = ["LOW", "MEDIUM", "HIGH"] as Array<
+        const mode = ["GOOD", "BETTER", "BEST"] as Array<
           keyof AllPerformanceSettings
         >;
         for (let i = 0; i < 3; i++) {

@@ -8,7 +8,7 @@
     "upgradeShapeCount": 1
   },
   "globals": {
-    "perf": "LOW",
+    "perf": "GOOD",
     "camTgt": {
       "x": 0,
       "y": 0.4,
@@ -35,7 +35,7 @@
     "showBoundingBox": false
   },
   "performanceSettings": {
-    "LOW": {
+    "GOOD": {
       "maxRays": 10,
       "marchingSteps": 150,
       "distanceThreshold": 0.0001,
@@ -54,7 +54,7 @@
       "shadows": false,
       "surfaceBlur": false
     },
-    "MEDIUM": {
+    "BETTER": {
       "maxRays": 10,
       "marchingSteps": 150,
       "distanceThreshold": 0.0001,
@@ -73,7 +73,7 @@
       "shadows": false,
       "surfaceBlur": true
     },
-    "HIGH": {
+    "BEST": {
       "maxRays": 10,
       "marchingSteps": 150,
       "distanceThreshold": 0.0001,
