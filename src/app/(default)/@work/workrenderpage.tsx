@@ -510,22 +510,25 @@ export default function WorkComponent({
               </Profiler>
             </div>
           )}
-          {work.video && size && size[0] > 640 && (
-            <div
-              className="absolute h-[300dvh] box-content w-screen z-40 pointer-events-none"
-              data-scroll
-              data-scroll-repeat
-              data-scroll-speed={-5}
-              data-scroll-id={`work-${index}-video-pull-container`}
-              style={{
-                top: `${50 + desc.length * 100}dvh`,
-              }}
-            >
-              <Profiler id={`video-pull-${index}`} onRender={profilerRender}>
-                <VideoPull work={work} index={index!} videoRef={videoRef} />
-              </Profiler>
-            </div>
-          )}
+          {
+            //@ts-expect-error undefined
+            false && work.video && size && size[0] > 640 && (
+              <div
+                className="absolute h-[300dvh] box-content w-screen z-40 pointer-events-none"
+                data-scroll
+                data-scroll-repeat
+                data-scroll-speed={-5}
+                data-scroll-id={`work-${index}-video-pull-container`}
+                style={{
+                  top: `${50 + desc.length * 100}dvh`,
+                }}
+              >
+                <Profiler id={`video-pull-${index}`} onRender={profilerRender}>
+                  <VideoPull work={work} index={index!} videoRef={videoRef} />
+                </Profiler>
+              </div>
+            )
+          }
           <div
             className="absolute w-screen z-[51] overflow-hidden pointer-events-none"
             style={{
