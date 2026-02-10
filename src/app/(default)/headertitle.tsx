@@ -9,7 +9,7 @@ import React, {
 import { useLocomotiveScroll } from "@/lib/locomotive";
 import Image from "next/image";
 import clsx from "clsx";
-import { WorkData } from "./@work/workitems";
+import type { WorkData } from "./@work/types";
 import {
   decrementEventHandlerCount,
   incrementEventHandlerCount,
@@ -154,13 +154,12 @@ export default function HeaderTitle({
                   ? "opacity-100"
                   : "transition-opacity duration-1000 transition-none opacity-0"
               }`}
-              alt="boop"
-              width={0}
-              height={0}
+              alt={work?.project || ""}
+              width={1920}
+              height={1080}
               sizes="100dvw"
               src={imageSrc}
               priority={false}
-              unoptimized
             />
           )}
         </div>

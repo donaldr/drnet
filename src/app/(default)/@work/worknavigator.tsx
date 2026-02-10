@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { WorkData } from "./workitems";
+import type { WorkData } from "./types";
 import WorkNavigationItem from "./worknavigationitem";
 import {
   useGlobalState,

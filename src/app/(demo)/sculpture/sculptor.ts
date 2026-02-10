@@ -91,6 +91,12 @@ export interface SimulationResult {
   resolutionIterations?: number; // Number of iterations used to resolve overlaps
   resolutionState?: "idle" | "separating" | "settling"; // Current resolution state
   connectivityInfo?: any; // Debug info during settling
+
+  // NEW: Spatial Y-coordinate information for the sculpture
+  bottomY?: number; // Lowest Y coordinate of the entire sculpture
+  middleY?: number; // Spatial middle Y coordinate (midpoint between absolute min and max)
+  topY?: number; // Highest Y coordinate of the entire sculpture
+  sculptureHeight?: number; // Total height of the sculpture (topY - bottomY)
 }
 
 function generateCutConePoints(
@@ -642,6 +648,352 @@ export class PhysicsSimulator {
       default:
         return { r: 0.5 } as SphereDims;
     }
+  }
+
+  private getShapeLocalExtents(
+    shapeType: ShapeType,
+    dimensions: ShapeDims
+  ): Array<{ x: number; y: number; z: number }> {
+    const points: Array<{ x: number; y: number; z: number }> = [];
+
+    switch (shapeType) {
+      case ShapeType.SPHERE:
+        const sphereDims = dimensions as SphereDims;
+        // Sample points around sphere surface
+        for (let theta = 0; theta < Math.PI * 2; theta += Math.PI / 4) {
+          for (let phi = 0; phi < Math.PI; phi += Math.PI / 4) {
+            points.push({
+              x: sphereDims.r * Math.sin(phi) * Math.cos(theta),
+              y: sphereDims.r * Math.cos(phi),
+              z: sphereDims.r * Math.sin(phi) * Math.sin(theta),
+            });
+          }
+        }
+        break;
+
+      case ShapeType.BOX:
+        const boxDims = dimensions as BoxDims;
+        // All 8 corners of the box
+        for (const x of [-boxDims.a.x, boxDims.a.x]) {
+          for (const y of [-boxDims.a.y, boxDims.a.y]) {
+            for (const z of [-boxDims.a.z, boxDims.a.z]) {
+              points.push({ x, y, z });
+            }
+          }
+        }
+        break;
+
+      case ShapeType.ROUND_BOX:
+        const roundBoxDims = dimensions as RoundBoxDims;
+        // Box corners plus rounding radius
+        for (const x of [
+          -roundBoxDims.a.x - roundBoxDims.r,
+          roundBoxDims.a.x + roundBoxDims.r,
+        ]) {
+          for (const y of [
+            -roundBoxDims.a.y - roundBoxDims.r,
+            roundBoxDims.a.y + roundBoxDims.r,
+          ]) {
+            for (const z of [
+              -roundBoxDims.a.z - roundBoxDims.r,
+              roundBoxDims.a.z + roundBoxDims.r,
+            ]) {
+              points.push({ x, y, z });
+            }
+          }
+        }
+        break;
+
+      case ShapeType.CYLINDER:
+        const cylinderDims = dimensions as CylinderDims;
+        // Top and bottom circles plus side points
+        for (let theta = 0; theta < Math.PI * 2; theta += Math.PI / 4) {
+          const x = cylinderDims.r * Math.cos(theta);
+          const z = cylinderDims.r * Math.sin(theta);
+          points.push({ x, y: cylinderDims.h, z }); // Top circle
+          points.push({ x, y: -cylinderDims.h, z }); // Bottom circle
+        }
+        break;
+
+      case ShapeType.ROUND_CYLINDER:
+        const roundCylinderDims = dimensions as RoundCylinderDims;
+        // Cylinder with rounded edges
+        for (let theta = 0; theta < Math.PI * 2; theta += Math.PI / 4) {
+          const x =
+            (roundCylinderDims.r + roundCylinderDims.r2) * Math.cos(theta);
+          const z =
+            (roundCylinderDims.r + roundCylinderDims.r2) * Math.sin(theta);
+          points.push({ x, y: roundCylinderDims.h + roundCylinderDims.r2, z }); // Top
+          points.push({ x, y: -roundCylinderDims.h - roundCylinderDims.r2, z }); // Bottom
+        }
+        break;
+
+      case ShapeType.CONE:
+        const coneDims = dimensions as ConeDims;
+        const coneRadius = coneDims.h * (coneDims.c.x / coneDims.c.y);
+        // Apex and base circle
+        points.push({ x: 0, y: coneDims.h / 2, z: 0 }); // Apex
+        for (let theta = 0; theta < Math.PI * 2; theta += Math.PI / 4) {
+          points.push({
+            x: coneRadius * Math.cos(theta),
+            y: -coneDims.h / 2,
+            z: coneRadius * Math.sin(theta),
+          });
+        }
+        break;
+
+      case ShapeType.TORUS:
+        const torusDims = dimensions as TorusDims;
+        // Sample points around torus surface
+        for (let theta = 0; theta < Math.PI * 2; theta += Math.PI / 2) {
+          for (let phi = 0; phi < Math.PI * 2; phi += Math.PI / 2) {
+            const x =
+              (torusDims.r1 + torusDims.r2 * Math.cos(phi)) * Math.cos(theta);
+            const y = torusDims.r2 * Math.sin(phi);
+            const z =
+              (torusDims.r1 + torusDims.r2 * Math.cos(phi)) * Math.sin(theta);
+            points.push({ x, y, z });
+          }
+        }
+        break;
+
+      case ShapeType.LINK:
+        const linkDims = dimensions as LinkDims;
+        // Sample key points along the link path
+        const h = linkDims.h / 2;
+        // Top arc
+        for (let i = 0; i <= 4; i++) {
+          const theta = Math.PI - (i / 4) * Math.PI;
+          points.push({
+            x: (linkDims.r1 + linkDims.r2) * Math.cos(theta),
+            y: h + (linkDims.r1 + linkDims.r2) * Math.sin(theta),
+            z: 0,
+          });
+        }
+        // Bottom arc
+        for (let i = 0; i <= 4; i++) {
+          const theta = (i / 4) * Math.PI;
+          points.push({
+            x: (linkDims.r1 + linkDims.r2) * Math.cos(theta),
+            y: -h - (linkDims.r1 + linkDims.r2) * Math.sin(theta),
+            z: 0,
+          });
+        }
+        break;
+
+      case ShapeType.HEX_PRISM:
+        const hexPrismDims = dimensions as HexPrismDims;
+        const hexRadius = hexPrismDims.c.x * (2 / Math.sqrt(3));
+        // Hexagon vertices at top and bottom
+        for (let i = 0; i < 6; i++) {
+          const angle = (i * Math.PI) / 3;
+          const x = hexRadius * Math.cos(angle);
+          const z = hexRadius * Math.sin(angle);
+          points.push({ x, y: hexPrismDims.c.y, z }); // Top
+          points.push({ x, y: -hexPrismDims.c.y, z }); // Bottom
+        }
+        break;
+
+      case ShapeType.TRI_PRISM:
+        const triPrismDims = dimensions as TriPrismDims;
+        const sqrt3_2 = Math.sqrt(3) / 2;
+        // Triangle vertices at top and bottom
+        const triVertices = [
+          [0, triPrismDims.c.x],
+          [-triPrismDims.c.x * sqrt3_2, -triPrismDims.c.x / 2],
+          [triPrismDims.c.x * sqrt3_2, -triPrismDims.c.x / 2],
+        ];
+        triVertices.forEach(([x, z]) => {
+          points.push({ x, y: triPrismDims.c.y, z }); // Top
+          points.push({ x, y: -triPrismDims.c.y, z }); // Bottom
+        });
+        break;
+
+      case ShapeType.CAPSULE:
+        const capsuleDims = dimensions as CapsuleDims;
+        // Cylinder body + hemisphere caps
+        for (let theta = 0; theta < Math.PI * 2; theta += Math.PI / 4) {
+          const x = capsuleDims.r * Math.cos(theta);
+          const z = capsuleDims.r * Math.sin(theta);
+          // Cylinder ends
+          points.push({ x, y: capsuleDims.h / 2, z });
+          points.push({ x, y: -capsuleDims.h / 2, z });
+          // Hemisphere tops/bottoms
+          points.push({ x, y: capsuleDims.h / 2 + capsuleDims.r, z });
+          points.push({ x, y: -capsuleDims.h / 2 - capsuleDims.r, z });
+        }
+        break;
+
+      case ShapeType.CUT_CONE:
+        const cutConeDims = dimensions as CutConeDims;
+        // Top circle and bottom circle
+        for (let theta = 0; theta < Math.PI * 2; theta += Math.PI / 4) {
+          points.push({
+            x: cutConeDims.r2 * Math.cos(theta),
+            y: cutConeDims.h,
+            z: cutConeDims.r2 * Math.sin(theta),
+          });
+          points.push({
+            x: cutConeDims.r * Math.cos(theta),
+            y: -cutConeDims.h,
+            z: cutConeDims.r * Math.sin(theta),
+          });
+        }
+        break;
+
+      case ShapeType.SOLID_ANGLE:
+        const solidAngleDims = dimensions as SolidAngleDims;
+        // Apex and surface points
+        points.push({ x: 0, y: 0, z: 0 }); // Apex
+        const angleRad = solidAngleDims.h / 2;
+        for (let i = 0; i < 6; i++) {
+          const phi = (i / 6) * 2 * Math.PI;
+          points.push({
+            x: solidAngleDims.r * Math.sin(angleRad) * Math.cos(phi),
+            y: solidAngleDims.r * Math.cos(angleRad),
+            z: solidAngleDims.r * Math.sin(angleRad) * Math.sin(phi),
+          });
+        }
+        break;
+
+      case ShapeType.CUT_SPHERE:
+        const cutSphereDims = dimensions as CutSphereDims;
+        const cutHeight = cutSphereDims.h * cutSphereDims.r;
+        // Sample sphere surface points above/below cut
+        for (let theta = 0; theta < Math.PI * 2; theta += Math.PI / 4) {
+          for (let phi = 0; phi < Math.PI; phi += Math.PI / 8) {
+            const y = cutSphereDims.r * Math.cos(phi);
+            if (y >= cutHeight) {
+              // Only points above cut
+              points.push({
+                x: cutSphereDims.r * Math.sin(phi) * Math.cos(theta),
+                y: y,
+                z: cutSphereDims.r * Math.sin(phi) * Math.sin(theta),
+              });
+            }
+          }
+        }
+        break;
+
+      case ShapeType.ROUND_CONE:
+        const roundConeDims = dimensions as RoundConeDims;
+        // Bottom hemisphere, top hemisphere, and cone surface
+        for (let theta = 0; theta < Math.PI * 2; theta += Math.PI / 4) {
+          // Bottom hemisphere
+          for (let phi = Math.PI / 2; phi <= Math.PI; phi += Math.PI / 8) {
+            points.push({
+              x: roundConeDims.r1 * Math.sin(phi) * Math.cos(theta),
+              y: roundConeDims.r1 * Math.cos(phi),
+              z: roundConeDims.r1 * Math.sin(phi) * Math.sin(theta),
+            });
+          }
+          // Top hemisphere
+          for (let phi = 0; phi <= Math.PI / 2; phi += Math.PI / 8) {
+            points.push({
+              x: roundConeDims.r2 * Math.sin(phi) * Math.cos(theta),
+              y: roundConeDims.h + roundConeDims.r2 * Math.cos(phi),
+              z: roundConeDims.r2 * Math.sin(phi) * Math.sin(theta),
+            });
+          }
+        }
+        break;
+
+      case ShapeType.OCTAHEDRON:
+        const octahedronDims = dimensions as OctahedronDims;
+        // 6 vertices of octahedron
+        points.push(
+          { x: octahedronDims.r, y: 0, z: 0 },
+          { x: -octahedronDims.r, y: 0, z: 0 },
+          { x: 0, y: octahedronDims.r, z: 0 },
+          { x: 0, y: -octahedronDims.r, z: 0 },
+          { x: 0, y: 0, z: octahedronDims.r },
+          { x: 0, y: 0, z: -octahedronDims.r }
+        );
+        break;
+
+      default:
+        // Fallback for unknown shapes - simple cube
+        for (const x of [-0.5, 0.5]) {
+          for (const y of [-0.5, 0.5]) {
+            for (const z of [-0.5, 0.5]) {
+              points.push({ x, y, z });
+            }
+          }
+        }
+        break;
+    }
+
+    return points;
+  }
+
+  private getShapeSpatialExtents(shape: ShapeState): {
+    minY: number;
+    maxY: number;
+  } {
+    const pos = shape.position;
+
+    // Create rotation matrix from euler angles
+    const rotationMatrix = new THREE.Matrix4().makeRotationFromEuler(
+      new THREE.Euler(shape.rotation.x, shape.rotation.y, shape.rotation.z)
+    );
+
+    // Get the key vertices/extents for each shape type in local coordinates
+    const localExtents = this.getShapeLocalExtents(
+      shape.type,
+      shape.dimensions
+    );
+
+    // Transform all key points by rotation and find min/max Y
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    localExtents.forEach((point) => {
+      // Apply rotation to the local point
+      const rotatedPoint = new THREE.Vector3(
+        point.x,
+        point.y,
+        point.z
+      ).applyMatrix4(rotationMatrix);
+
+      // Add the shape's world position
+      const worldY = pos.y + rotatedPoint.y;
+
+      minY = Math.min(minY, worldY);
+      maxY = Math.max(maxY, worldY);
+    });
+
+    return { minY, maxY };
+  }
+
+  private calculateSpatialBounds(shapes: ShapeState[]): {
+    bottomY: number;
+    middleY: number;
+    topY: number;
+    sculptureHeight: number;
+  } {
+    if (shapes.length === 0) {
+      return { bottomY: 0, middleY: 0, topY: 0, sculptureHeight: 0 };
+    }
+
+    let overallMinY = Infinity;
+    let overallMaxY = -Infinity;
+
+    // Calculate the actual spatial extents of each shape
+    shapes.forEach((shape) => {
+      const extents = this.getShapeSpatialExtents(shape);
+      overallMinY = Math.min(overallMinY, extents.minY);
+      overallMaxY = Math.max(overallMaxY, extents.maxY);
+    });
+
+    const middleY = (overallMinY + overallMaxY) / 2;
+    const sculptureHeight = overallMaxY - overallMinY;
+
+    return {
+      bottomY: overallMinY,
+      middleY: middleY,
+      topY: overallMaxY,
+      sculptureHeight: sculptureHeight,
+    };
   }
 
   /**
@@ -1599,6 +1951,7 @@ export class PhysicsSimulator {
 
     // Check for completion
     let isComplete = false;
+    let spatialBounds = null;
     let completionReason: SimulationResult["completionReason"];
 
     if (this.rigidBodies.length > 1) {
@@ -1619,6 +1972,8 @@ export class PhysicsSimulator {
       }
 
       if (isComplete) {
+        spatialBounds = this.calculateSpatialBounds(shapes);
+
         this.isRunning = false;
       }
     } else {
@@ -1645,6 +2000,13 @@ export class PhysicsSimulator {
         this.resolutionState === "settling"
           ? this.getConnectivityInfo()
           : undefined,
+
+      ...(spatialBounds && {
+        bottomY: spatialBounds.bottomY,
+        middleY: spatialBounds.middleY,
+        topY: spatialBounds.topY,
+        sculptureHeight: spatialBounds.sculptureHeight,
+      }),
     };
   }
 

@@ -199,10 +199,6 @@ export default function PageBase({
         "top-[100dvh]": !overrideContentTop,
       })
     );
-    const loading = document.getElementById("loading");
-    if (loading) {
-      loading.style.opacity = "0";
-    }
   }, [active, overrideHeight, overridePaddingBottom, overrideContentTop]);
 
   return (

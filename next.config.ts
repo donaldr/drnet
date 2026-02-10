@@ -1,13 +1,18 @@
 import type { NextConfig } from "next";
-//import CopyWebpackPlugin from 'copy-webpack-plugin';
-import path from "path";
 
 const nextConfig: NextConfig = {
   devIndicators: {
     appIsrStatus: false,
   },
   images: {
-    domains: ["til8tmqclrhrb7ie.public.blob.vercel-storage.com"],
+    unoptimized: process.env.NODE_ENV === "development",
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "til8tmqclrhrb7ie.public.blob.vercel-storage.com",
+      },
+    ],
+    formats: ["image/avif", "image/webp"],
   },
   async rewrites() {
     return [
@@ -41,19 +46,6 @@ const nextConfig: NextConfig = {
     // Set proper target for async/await support
     if (!options.isServer) {
       config.target = ["web", "es2020"];
-    
-      /*
-      config.plugins.push(
-        new CopyWebpackPlugin({
-          patterns: [
-            {
-              from: path.resolve(__dirname, 'node_modules/@dimforge/rapier3d/rapier_wasm3d_bg.wasm'),
-              to: path.resolve(__dirname, 'public/rapier_wasm3d_bg.wasm'),
-            },
-          ],
-        })
-      )
-      */
     }
 
     // Handle WASM files properly

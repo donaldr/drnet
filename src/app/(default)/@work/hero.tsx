@@ -1,5 +1,5 @@
 "use client";
-import { WorkData } from "@/app/(default)/@work/workitems";
+import type { WorkData } from "@/app/(default)/@work/types";
 import { useEffect, useRef, useState } from "react";
 import { useLocomotiveScroll } from "@/lib/locomotive";
 import Image from "next/image";
@@ -52,21 +52,24 @@ export default function Hero({
             src={work.hero}
             muted
             loop
-            preload="none"
+            preload="metadata"
+            poster={work.thumb}
           />
         </div>
       ) : (
         <div className="h-[100dvh] w-screen absolute top-0">
           <Image
-            className="object-cover w-full h-full"
-            alt="_"
-            width={0}
-            height={0}
+            className="object-cover"
+            alt={work.project}
+            fill
             sizes="100dvw"
             loading="lazy"
             src={work.hero!}
             priority={false}
-            unoptimized
+            {...(work.heroBlurDataURL && {
+              placeholder: "blur",
+              blurDataURL: work.heroBlurDataURL,
+            })}
           />
         </div>
       )}

@@ -1,5 +1,5 @@
 "use client";
-import { WorkData } from "@/app/(default)/@work/workitems";
+import type { WorkData } from "@/app/(default)/@work/types";
 import { RefObject, useEffect, useState } from "react";
 import { useLocomotiveScroll } from "@/lib/locomotive";
 import { useThrottle } from "@/lib/customhooks";
@@ -79,6 +79,7 @@ export default function Video({
           muted
           preload="none"
           crossOrigin="anonymous"
+          poster={work.thumb}
           style={{
             opacity: 1 - offset * 2,
           }}

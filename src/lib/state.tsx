@@ -8,6 +8,7 @@ const initialState: {
   fonts: Record<string, opentype.Font>;
   navigating: boolean;
   doneLoading: boolean;
+  loadProgress: number;
 } = {
   active: "",
   activeList: [],
@@ -15,6 +16,7 @@ const initialState: {
   inView: [],
   fonts: {},
   doneLoading: false,
+  loadProgress: 0,
 };
 export const { useGlobalState } = createGlobalState(initialState);
 

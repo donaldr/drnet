@@ -2,7 +2,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SplitText } from "@rigo-m/react-split-text";
 import { useLocomotiveScroll } from "@/lib/locomotive";
-import { WorkData } from "@/app/(default)/@work/workitems";
+import type { WorkData } from "@/app/(default)/@work/types";
 import { useDebounce } from "@/lib/customhooks";
 import {
   decrementEventHandlerCount,

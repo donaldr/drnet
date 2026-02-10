@@ -8,7 +8,7 @@ import {
   Profiler,
 } from "react";
 import clsx from "clsx";
-import { WorkData } from "@/app/(default)/@work/workitems";
+import type { WorkData } from "@/app/(default)/@work/types";
 import Title from "./title";
 import Hero from "./hero";
 import HeaderTitle from "../headertitle";

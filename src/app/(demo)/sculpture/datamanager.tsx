@@ -717,12 +717,24 @@ export class DataManager {
           this.shapes.forEach((shape, index) => {
             shape.pos = result.shapes[index].position;
             shape.rot = result.shapes[index].rotation;
+            if (result.completionReason) {
+              shape.pos = {
+                x: shape.pos.x,
+                y: shape.pos.y - result.bottomY! + 0.02,
+                z: shape.pos.z,
+              };
+            }
           });
           this.setShapesUpdated!((prev) => prev + 1);
           this.updateShader();
           if (rafId == this.raf.id && !result.completionReason) {
             requestAnimationFrame(step);
           } else {
+            this.globals.camTgt = {
+              x: 0.0,
+              y: result.middleY! - result.bottomY! + 0.02,
+              z: 0.0,
+            };
             this.generating.state = "idle";
             resolve();
           }
@@ -798,12 +810,24 @@ export class DataManager {
         this.shapes.forEach((shape, index) => {
           shape.pos = result.shapes[index].position;
           shape.rot = result.shapes[index].rotation;
+          if (result.completionReason) {
+            shape.pos = {
+              x: shape.pos.x,
+              y: shape.pos.y - result.bottomY! + 0.02,
+              z: shape.pos.z,
+            };
+          }
         });
         this.updateShader();
         if (rafId == this.raf.id && !result.completionReason) {
           requestAnimationFrame(step);
           this.setShapesUpdated!((prev) => prev + 1);
         } else {
+          this.globals.camTgt = {
+            x: 0.0,
+            y: result.middleY! - result.bottomY! + 0.02,
+            z: 0.0,
+          };
           this.generating.state = "idle";
           resolve();
         }
@@ -1035,6 +1059,7 @@ export class DataManager {
 
       if (material.transparency > 0) {
         material.ior = chooseInRangeNumber(foundMaterialRule.ior);
+        console.log(foundMaterialRule);
         material.intRef = foundMaterialRule.intRef > rand.next();
         material.refractRoughness = chooseInRangeNumber(
           foundMaterialRule.refractRoughness

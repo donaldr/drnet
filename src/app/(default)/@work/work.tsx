@@ -1,6 +1,6 @@
 "use client";
 import { useCallback } from "react";
-import { WorkData } from "@/app/(default)/@work/workitems";
+import type { WorkData } from "@/app/(default)/@work/types";
 import PageBase from "../pagebase";
 import WorkRenderPage from "./workrenderpage";
 
