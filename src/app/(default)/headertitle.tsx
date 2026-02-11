@@ -37,9 +37,9 @@ export default function HeaderTitle({
 }>) {
   const { scroll } = useLocomotiveScroll();
   const [show, setShow] = useState(false);
-  const [titlePosition, setTitlePosition] = useState(0);
   const [imageSrc, setImageSrc] = useState<string>();
   const screenHeightRef = useRef(0);
+  const titleTextRef = useRef<HTMLDivElement>(null);
   const debouncer = useDebounce();
 
   const resize = useCallback(() => {
@@ -82,7 +82,10 @@ export default function HeaderTitle({
                   screenHeightRef.current
               )
             );
-            setTitlePosition(position);
+            // Update marginTop directly via DOM (no re-render)
+            if (titleTextRef.current) {
+              titleTextRef.current.style.marginTop = `${88 - position}px`;
+            }
           }
         }
       });
@@ -140,9 +143,10 @@ export default function HeaderTitle({
           className={`h-header w-full flex flex-col items-start justify-center`}
         >
           <div
+            ref={titleTextRef}
             className="relative z-50 leading-tight hidden md:block"
             style={{
-              marginTop: `${88 - titlePosition}px`,
+              marginTop: "88px",
             }}
           >
             {children}

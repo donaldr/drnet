@@ -28,53 +28,52 @@ function DetailRoles({
     if (scroll) {
       incrementEventHandlerCount("scroll-detailroles");
       scroll.on("scroll", (obj: any) => {
-        const els = Object.entries(obj.currentElements)
-          .filter((kvp) => kvp[0].startsWith("work-detail-line"))
-          .map((kvp) => kvp[1]);
-        els.forEach((el: any) => {
-          const foundEl = document.getElementById(el.id)!;
-          if (foundEl) {
-            const rect = document
-              .getElementById(el.id)!
-              .parentElement!.getBoundingClientRect();
+        const entries = Object.entries(obj.currentElements);
+        for (let e = 0; e < entries.length; e++) {
+          if (!entries[e][0].startsWith("work-detail-line")) continue;
+          const el = entries[e][1] as any;
 
-            const progress = rect.top / document.documentElement.clientHeight;
+          // Use el.el (the data-scroll element) and its first child directly
+          // instead of document.getElementById + getBoundingClientRect
+          const foundEl = el.el.firstElementChild as HTMLElement;
+          if (!foundEl) continue;
 
-            const opacity = Math.min(
-              1,
-              Math.pow(Math.max(0, 1 - 2.5 * Math.abs(progress - 0.5)), 0.5) +
-                0.375
-            ).toFixed(3);
+          // Use Locomotive's progress instead of forced reflow via getBoundingClientRect
+          // progress: 0 = entering bottom, 1 = leaving top → maps to ~(1-progress) for screen position
+          const progress = 1 - el.progress;
 
-            if (opacity != previousOpacityRef.current) {
-              document.getElementById(el.id)!.style.opacity = opacity;
-            }
+          const opacity = Math.min(
+            1,
+            Math.pow(Math.max(0, 1 - 2.5 * Math.abs(progress - 0.5)), 0.5) +
+              0.375
+          ).toFixed(3);
+
+          if (opacity !== previousOpacityRef.current) {
+            foundEl.style.opacity = opacity;
             previousOpacityRef.current = opacity;
+          }
 
-            const scale = `scale(${Math.min(
-              1,
-              Math.max(0, 1 - Math.pow(Math.abs(progress - 0.5) * 2, 15) / 2)
-            ).toFixed(3)})`;
+          const scale = `scale(${Math.min(
+            1,
+            Math.max(0, 1 - Math.pow(Math.abs(progress - 0.5) * 2, 15) / 2)
+          ).toFixed(3)})`;
 
-            if (scale != previousOpacityRef.current) {
-              document.getElementById(el.id)!.style.transform = scale;
-            }
-
+          if (scale !== previousScaleRef.current) {
+            foundEl.style.transform = scale;
             previousScaleRef.current = scale;
+          }
 
-            const top = `${(
-              Math.pow(Math.abs(progress - 0.5), 2) *
-              20 *
-              ((progress - 0.5) / Math.abs(progress - 0.5))
-            ).toFixed(2)}dvh`;
+          const top = `${(
+            Math.pow(Math.abs(progress - 0.5), 2) *
+            20 *
+            ((progress - 0.5) / Math.abs(progress - 0.5))
+          ).toFixed(2)}dvh`;
 
-            if (top != previousTopRef.current) {
-              document.getElementById(el.id)!.style.top = top;
-            }
-
+          if (top !== previousTopRef.current) {
+            foundEl.style.top = top;
             previousTopRef.current = top;
           }
-        });
+        }
       });
     }
   }, [scroll]);

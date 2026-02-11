@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGlobalState } from "@/lib/state";
 
 export default function Loading() {
   const [loadProgress] = useGlobalState("loadProgress");
   const [doneLoading] = useGlobalState("doneLoading");
+  const [removed, setRemoved] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -59,6 +60,8 @@ export default function Loading() {
         if (containerRef.current) {
           containerRef.current.style.opacity = "0";
           containerRef.current.style.pointerEvents = "none";
+          // Remove from DOM after CSS transition completes
+          setTimeout(() => setRemoved(true), 1100);
         }
         return;
       }
@@ -72,6 +75,8 @@ export default function Loading() {
       running = false;
     };
   }, []);
+
+  if (removed) return null;
 
   return (
     <div
