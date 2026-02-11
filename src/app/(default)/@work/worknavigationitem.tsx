@@ -4,7 +4,6 @@ import type { WorkData } from "./types";
 import clsx from "clsx";
 import { incrementEventHandlerCount, useGlobalState } from "@/lib/state";
 import { useLocomotiveScroll } from "@/lib/locomotive";
-import { useThrottle } from "@/lib/customhooks";
 
 export default function WorkNavigationItem({
   work,
@@ -25,8 +24,8 @@ export default function WorkNavigationItem({
 
   const [activeName] = useGlobalState("active");
   const [active, setActive] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const throttle = useThrottle();
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const prevProgressRef = useRef(-1);
 
   useEffect(() => {
     setActive(activeName == `work-${index}`);
@@ -37,17 +36,18 @@ export default function WorkNavigationItem({
       incrementEventHandlerCount("scroll-worknavitem");
       scroll.on("scroll", (obj: any) => {
         if (`work-${index}-content` in obj.currentElements) {
-          throttle(
-            () =>
-              setProgress(
-                obj.currentElements[`work-${index}-content`].progress
-              ),
-            10
-          );
+          const newProgress =
+            obj.currentElements[`work-${index}-content`].progress;
+          const quantized = Math.round(newProgress * 100);
+          if (quantized === Math.round(prevProgressRef.current * 100)) return;
+          prevProgressRef.current = newProgress;
+          if (progressBarRef.current) {
+            progressBarRef.current.style.height = `${newProgress * 3.2}rem`;
+          }
         }
       });
     }
-  }, [scroll, index, setProgress, throttle]);
+  }, [scroll, index]);
 
   useEffect(() => {
     hoverRef.current = hover;
@@ -121,6 +121,7 @@ export default function WorkNavigationItem({
       className="relative w-auto flex flex-col items-end justify-start group drop-shadow-workNavigation"
     >
       <div
+        ref={progressBarRef}
         className={`absolute top-[-0.1rem] right-[-0.1rem] h-[3.2rem] w-screen overflow-hidden z-50 duration-250 transition-[opacity,width,max-width] ${clsx(
           {
             "opacity-100": active && !hover,
@@ -130,7 +131,7 @@ export default function WorkNavigationItem({
           }
         )}`}
         style={{
-          height: `${progress * 3.2}rem`,
+          height: "0rem",
         }}
       >
         <div

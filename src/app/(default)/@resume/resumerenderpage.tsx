@@ -47,16 +47,8 @@ export default function ResumeRenderPage() {
   const [height, setHeight] = useState(0);
   const debouncer = useDebounce();
 
-  const [offset0, setOffset0] = useState(0);
-  const [offset1, setOffset1] = useState(0);
-  const [offset2, setOffset2] = useState(0);
-  const [offset3, setOffset3] = useState(0);
-  const [offset4, setOffset4] = useState(0);
-  const [offset5, setOffset5] = useState(0);
-  const [offset6, setOffset6] = useState(0);
-  const [offset7, setOffset7] = useState(0);
-  const [offset8, setOffset8] = useState(0);
-  const [offsetText, setOffsetText] = useState(0);
+  const [scrollDiff, setScrollDiff] = useState(0);
+  const prevDiffRef = useRef(-1);
   const { scroll } = useLocomotiveScroll();
 
   useEffect(() => {
@@ -104,6 +96,18 @@ export default function ResumeRenderPage() {
     );
   }, [inView, active]);
 
+  // Derive all offsets from a single diff value
+  const offset0 = Math.max(0, Math.min(1, scrollDiff * 5));
+  const offset1 = Math.max(0, Math.min(1, scrollDiff * 5 - 0.5));
+  const offset2 = Math.max(0, Math.min(1, scrollDiff * 5 - 1));
+  const offset3 = Math.max(0, Math.min(1, scrollDiff * 5 - 1.5));
+  const offset4 = Math.max(0, Math.min(1, scrollDiff * 5 - 2));
+  const offset5 = Math.max(0, Math.min(1, scrollDiff * 5 - 2.5));
+  const offset6 = Math.max(0, Math.min(1, scrollDiff * 5 - 3));
+  const offset7 = Math.max(0, Math.min(1, scrollDiff * 5 - 4.5));
+  const offset8 = Math.max(0, Math.min(1, scrollDiff * 5 - 5));
+  const offsetText = Math.max(0, Math.min(1, scrollDiff));
+
   useEffect(() => {
     if (scroll) {
       incrementEventHandlerCount("scroll-resumerender");
@@ -113,16 +117,10 @@ export default function ResumeRenderPage() {
           const diff =
             (2 * (obj.scroll.y - obj.currentElements[key].top)) /
             document.documentElement.clientHeight;
-          setOffset0(Math.max(0, Math.min(1, diff * 5)));
-          setOffset1(Math.max(0, Math.min(1, diff * 5 - 0.5)));
-          setOffset2(Math.max(0, Math.min(1, diff * 5 - 1)));
-          setOffset3(Math.max(0, Math.min(1, diff * 5 - 1.5)));
-          setOffset4(Math.max(0, Math.min(1, diff * 5 - 2)));
-          setOffset5(Math.max(0, Math.min(1, diff * 5 - 2.5)));
-          setOffset6(Math.max(0, Math.min(1, diff * 5 - 3)));
-          setOffset7(Math.max(0, Math.min(1, diff * 5 - 4.5)));
-          setOffset8(Math.max(0, Math.min(1, diff * 5 - 5)));
-          setOffsetText(Math.max(0, Math.min(1, diff)));
+          const quantized = Math.round(diff * 200);
+          if (quantized === Math.round(prevDiffRef.current * 200)) return;
+          prevDiffRef.current = diff;
+          setScrollDiff(diff);
         }
       });
     }

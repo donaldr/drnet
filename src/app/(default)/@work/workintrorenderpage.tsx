@@ -18,7 +18,9 @@ export default function WorkIntroComponent() {
   const [refsAllSet, setRefsAllSet] = useState(false);
   const [size, setSize] = useState<[number, number] | undefined>();
 
-  const [length, setLength] = useState(1);
+  const [strokeLength, setStrokeLength] = useState(1);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const prevNormalizedRef = useRef(-1);
   const [textContainerClasses, setTextContainerClasses] = useState("opacity-0");
 
   const workIntroText = useLineText(
@@ -58,7 +60,6 @@ export default function WorkIntroComponent() {
     );
   }, [workIntroText, pathRefs, lineRefs]);
 
-  const [offset, setOffset] = useState(0);
   const { scroll } = useLocomotiveScroll();
 
   const [activeList] = useGlobalState("activeList");
@@ -78,7 +79,7 @@ export default function WorkIntroComponent() {
         "light-grain": true,
       })
     );
-  }, [active, refsAllSet, length]);
+  }, [active, refsAllSet]);
 
   useEffect(() => {
     if (scroll) {
@@ -87,24 +88,20 @@ export default function WorkIntroComponent() {
         const key = `work-intro-container`;
         if (key in obj.currentElements) {
           const diff = obj.scroll.y - obj.currentElements[key].top;
-          setLength(
-            Math.min(
-              Math.max(
-                0,
-                1 - (diff * 2 - 1) / document.documentElement.clientHeight
-              ),
-              1
-            )
-          );
-          setOffset(
-            Math.min(
-              Math.max(
-                0,
-                (diff * 2 - 1) / document.documentElement.clientHeight
-              ),
-              1
-            )
-          );
+          const normalized =
+            (diff * 2 - 1) / document.documentElement.clientHeight;
+          const offset = Math.max(0, Math.min(1, normalized));
+
+          // Direct DOM for smooth transform (every frame)
+          if (svgRef.current) {
+            svgRef.current.style.transform = `translateY(${-50 * offset}dvh)`;
+          }
+
+          // Quantized state for SVGStroke strokeLength (skip when unchanged)
+          const quantized = Math.round(normalized * 200);
+          if (quantized === Math.round(prevNormalizedRef.current * 200)) return;
+          prevNormalizedRef.current = normalized;
+          setStrokeLength(Math.max(0, Math.min(1, 1 - normalized)));
         }
       });
     }
@@ -119,6 +116,7 @@ export default function WorkIntroComponent() {
         data-scroll-id="work-intro-container"
       >
         <svg
+          ref={svgRef}
           xmlns="http://www.w3.org/2000/svg"
           xmlSpace="preserve"
           width={workIntroText.width}
@@ -127,7 +125,7 @@ export default function WorkIntroComponent() {
           }
           className="mb-1"
           style={{
-            transform: `translateY(${-50 * offset!}dvh)`,
+            transform: "translateY(0dvh)",
           }}
         >
           {workIntroText &&
@@ -139,7 +137,7 @@ export default function WorkIntroComponent() {
                 stroke="#999999"
                 strokeWidth={1}
                 startStroke={0}
-                strokeLength={length}
+                strokeLength={strokeLength}
                 svgPath={pathRefs.current[index]}
                 renderSVGPath={(pathCSS: React.CSSProperties) => {
                   return (
@@ -162,7 +160,7 @@ export default function WorkIntroComponent() {
                 stroke="#999999"
                 strokeWidth={1}
                 startStroke={0}
-                strokeLength={length}
+                strokeLength={strokeLength}
                 svgPath={lineRefs.current[0]}
                 renderSVGPath={(pathCSS: React.CSSProperties) => {
                   return (
@@ -190,7 +188,7 @@ export default function WorkIntroComponent() {
                 stroke="#999999"
                 strokeWidth={1}
                 startStroke={0}
-                strokeLength={length}
+                strokeLength={strokeLength}
                 svgPath={lineRefs.current[1]}
                 renderSVGPath={(pathCSS: React.CSSProperties) => {
                   return (

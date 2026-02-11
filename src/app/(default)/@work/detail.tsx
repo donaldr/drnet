@@ -34,11 +34,7 @@ function Detail({
   videoInView: boolean;
 }>) {
   const [reveal, setReveal] = useState(true);
-  const [clientReveal, setClientReveal] = useState(false);
-  const [projectReveal, setProjectReveal] = useState(false);
-  const [dateReveal, setDateReveal] = useState(false);
-  const [positionReveal, setPositionReveal] = useState(false);
-  const [employerReveal, setEmployerReveal] = useState(false);
+  const [detailsRevealed, setDetailsRevealed] = useState(false);
   const [size, setSize] = useState<[number, number] | undefined>();
   const sizeRef = useRef(size);
   const debouncer = useDebounce();
@@ -66,17 +62,9 @@ function Detail({
           if (key in obj.currentElements) {
             const el = obj.currentElements[key];
             if (el.progress > 0.25 && el.progress < 0.75) {
-              setClientReveal(true);
-              setDateReveal(true);
-              setPositionReveal(true);
-              setProjectReveal(true);
-              setEmployerReveal(true);
+              setDetailsRevealed(true);
             } else {
-              setClientReveal(false);
-              setDateReveal(false);
-              setPositionReveal(false);
-              setProjectReveal(false);
-              setEmployerReveal(false);
+              setDetailsRevealed(false);
             }
           }
         } else {
@@ -99,20 +87,12 @@ function Detail({
               (progress > 0.281 && progress < 0.599 && direction == "down") ||
               (progress > 0.401 && progress < 0.699 && direction == "up")
             ) {
-              setClientReveal(true);
-              setDateReveal(true);
-              setPositionReveal(true);
-              setProjectReveal(true);
-              setEmployerReveal(true);
+              setDetailsRevealed(true);
             } else if (
               (progress < 0.401 && direction == "up") ||
               (progress > 0.599 && direction == "down")
             ) {
-              setClientReveal(false);
-              setDateReveal(false);
-              setPositionReveal(false);
-              setProjectReveal(false);
-              setEmployerReveal(false);
+              setDetailsRevealed(false);
             }
           }
         }
@@ -214,11 +194,11 @@ function Detail({
           "pointer-events-none": videoInView,
           "md:opacity-100": reveal,
           "md:opacity-0": !reveal,
-          "client-reveal": clientReveal,
-          "project-reveal": projectReveal,
-          "date-reveal": dateReveal,
-          "position-reveal": positionReveal,
-          "employer-reveal": employerReveal,
+          "client-reveal": detailsRevealed,
+          "project-reveal": detailsRevealed,
+          "date-reveal": detailsRevealed,
+          "position-reveal": detailsRevealed,
+          "employer-reveal": detailsRevealed,
           active: reveal,
           "not-active": !reveal,
         })}
@@ -241,11 +221,11 @@ function Detail({
           "group absolute px-[5dvw] text-xl h-[150dvh] w-full md:w-[50dvw] z-50 box-border md:left-[min(50dvw,64rem)] will-change-transform max-w-[64rem] flex flex-col items-center justify-center":
             true,
           "pointer-events-none": videoInView,
-          "client-reveal": clientReveal,
-          "project-reveal": projectReveal,
-          "date-reveal": dateReveal,
-          "position-reveal": positionReveal,
-          "employer-reveal": employerReveal,
+          "client-reveal": detailsRevealed,
+          "project-reveal": detailsRevealed,
+          "date-reveal": detailsRevealed,
+          "position-reveal": detailsRevealed,
+          "employer-reveal": detailsRevealed,
         })}
         data-scroll
         data-scroll-repeat
