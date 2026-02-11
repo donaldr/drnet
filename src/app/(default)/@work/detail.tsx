@@ -2,7 +2,6 @@
 import type { WorkData } from "@/app/(default)/@work/types";
 import {
   memo,
-  Profiler,
   useCallback,
   useEffect,
   useMemo,
@@ -12,7 +11,6 @@ import {
 import clsx from "clsx";
 import {
   useDebounce,
-  useProfilerRender,
   useTemplateFunction,
 } from "@/lib/customhooks";
 import interpolateComponents from "@automattic/interpolate-components";
@@ -44,7 +42,6 @@ function Detail({
   const [size, setSize] = useState<[number, number] | undefined>();
   const sizeRef = useRef(size);
   const debouncer = useDebounce();
-  const profilerRender = useProfilerRender({ minDuration: 10 });
   const previousScrollYRef = useRef<number | null>(null);
 
   const { scroll } = useLocomotiveScroll();
@@ -263,13 +260,9 @@ function Detail({
           data-scroll-id={`work-${index}-detail-main-small`}
           className="leading-[1.75] md:hidden"
         >
-          <Profiler id="detail-item" onRender={profilerRender}>
-            {detailItem}
-          </Profiler>
+          {detailItem}
         </div>
-        <Profiler id="detail-roles" onRender={profilerRender}>
-          <DetailRoles work={work} index={index} />
-        </Profiler>
+        <DetailRoles work={work} index={index} />
       </div>
     </>
   );

@@ -5,7 +5,6 @@ import {
   useMemo,
   useRef,
   useState,
-  Profiler,
 } from "react";
 import clsx from "clsx";
 import type { WorkData } from "@/app/(default)/@work/types";
@@ -27,7 +26,6 @@ import {
 import WorkOutro from "./workoutro";
 import Squares from "../squares";
 import NoSSR from "react-no-ssr";
-import { useProfilerRender } from "@/lib/customhooks";
 
 export default function WorkComponent({
   work,
@@ -66,7 +64,6 @@ export default function WorkComponent({
   const videoRef = useRef<HTMLVideoElement>(null);
   //const { stop, wait } = useWaitWheel();
   const [size, setSize] = useState<[number, number] | undefined>();
-  const profilerRender = useProfilerRender({ minDuration: 10 });
 
   useLayoutEffect(() => {
     function updateSize() {
@@ -91,7 +88,7 @@ export default function WorkComponent({
   useEffect(() => {
     setWorkClasses(
       clsx({
-        "h-full w-screen transition-[opacity] duration-1000 will-change-[opacity] pt-[50dvh] bg-[var(--dark)]":
+        "h-full w-screen transition-[opacity] duration-1000 pt-[50dvh] bg-[var(--dark)]":
           true,
       })
     );
@@ -239,7 +236,6 @@ export default function WorkComponent({
 
   return (
     <>
-      <Profiler id={`work-${index}`} onRender={profilerRender}>
         <div
           id={`work-${index}-title-target`}
           className="absolute top-[50dvh] h-[200dvh] mt-[-100dvh]"
@@ -371,9 +367,7 @@ export default function WorkComponent({
             data-scroll-id={`work-${index}-hero-container`}
             data-scroll-speed={10}
           >
-            <Profiler id={`hero-${index}`} onRender={profilerRender}>
-              <Hero work={work} index={index!} />
-            </Profiler>
+            <Hero work={work} index={index!} />
           </div>
           <div
             data-scroll
@@ -384,17 +378,15 @@ export default function WorkComponent({
             data-scroll-id={`work-${index}-title-container`}
           >
             <div className={titleClasses}>
-              <Profiler id={`title-${index}`} onRender={profilerRender}>
-                <NoSSR>
-                  <Title
-                    theme={work.theme || "dark"}
-                    titleOutline={!!work.titleOutline}
-                    color={work.primaryColor}
-                  >
-                    {work.project}
-                  </Title>
-                </NoSSR>
-              </Profiler>
+              <NoSSR>
+                <Title
+                  theme={work.theme || "dark"}
+                  titleOutline={!!work.titleOutline}
+                  color={work.primaryColor}
+                >
+                  {work.project}
+                </Title>
+              </NoSSR>
             </div>
           </div>
           <div
@@ -404,17 +396,15 @@ export default function WorkComponent({
               height: `${100 + 100 * desc.length}dvh`,
             }}
           >
-            <Profiler id={`header-title-${index}`} onRender={profilerRender}>
-              <HeaderTitle
-                id={`work-${index!.toString()}-1`}
-                color={work.primaryColor}
-                theme={work.theme || "dark"}
-                activeRef={activeRef}
-                work={work}
-              >
-                {work.project}
-              </HeaderTitle>
-            </Profiler>
+            <HeaderTitle
+              id={`work-${index!.toString()}-1`}
+              color={work.primaryColor}
+              theme={work.theme || "dark"}
+              activeRef={activeRef}
+              work={work}
+            >
+              {work.project}
+            </HeaderTitle>
             <div
               id={`work-${index}-reveal-title`}
               className="absolute top-[-100dvh] z-[45] w-full h-[100dvh] will-change-transform"
@@ -441,22 +431,20 @@ export default function WorkComponent({
                 height: `calc(${100 + desc.length * 100}dvh - 7rem)`,
               }}
             >
-              <Profiler id={`squares-${index}`} onRender={profilerRender}>
-                <NoSSR>
-                  <Squares
-                    count={20}
-                    theme={work.theme}
-                    index={`work-${index}`}
-                    color={work.primaryColor}
-                    minWidth={5}
-                    maxWidth={15}
-                    minSpeed={0}
-                    maxSpeed={20}
-                    height={100 * desc.length}
-                    top={0}
-                  />
-                </NoSSR>
-              </Profiler>
+              <NoSSR>
+                <Squares
+                  count={20}
+                  theme={work.theme}
+                  index={`work-${index}`}
+                  color={work.primaryColor}
+                  minWidth={5}
+                  maxWidth={15}
+                  minSpeed={0}
+                  maxSpeed={20}
+                  height={100 * desc.length}
+                  top={0}
+                />
+              </NoSSR>
               <NoSSR>
                 {desc.map((d, i) => (
                   <div
@@ -479,14 +467,9 @@ export default function WorkComponent({
                       data-scroll-id={`work-${index}-description-${i}-container`}
                     >
                       <div className={`group/action ${descriptionState[i]}`}>
-                        <Profiler
-                          id={`description-${index}`}
-                          onRender={profilerRender}
-                        >
-                          <Description theme={work.theme || "dark"}>
-                            {d}
-                          </Description>
-                        </Profiler>
+                        <Description theme={work.theme || "dark"}>
+                          {d}
+                        </Description>
                       </div>
                     </div>
                   </div>
@@ -505,9 +488,7 @@ export default function WorkComponent({
                 top: `${50 + desc.length * 100}dvh`,
               }}
             >
-              <Profiler id={`video-${index}`} onRender={profilerRender}>
-                <Video work={work} index={index!} videoRef={videoRef} />
-              </Profiler>
+              <Video work={work} index={index!} videoRef={videoRef} />
             </div>
           )}
           {
@@ -523,9 +504,7 @@ export default function WorkComponent({
                   top: `${50 + desc.length * 100}dvh`,
                 }}
               >
-                <Profiler id={`video-pull-${index}`} onRender={profilerRender}>
-                  <VideoPull work={work} index={index!} videoRef={videoRef} />
-                </Profiler>
+                <VideoPull work={work} index={index!} videoRef={videoRef} />
               </div>
             )
           }
@@ -536,53 +515,47 @@ export default function WorkComponent({
               top: `${150 + desc.length * 100 + 195}dvh`,
             }}
           >
-            <Profiler id={`header-title-2-${index}`} onRender={profilerRender}>
-              <HeaderTitle
-                id={`work-${index!.toString()}-2`}
-                color="transparent"
-                theme={work.theme || "dark"}
-                setImageSrcCallbackRef={setImageSrcCallbackRef}
-                showBackground={title2ShowBackground}
-                activeRef={activeRef}
-                work={work}
-              >
-                {work.project}
-              </HeaderTitle>
-            </Profiler>
+            <HeaderTitle
+              id={`work-${index!.toString()}-2`}
+              color="transparent"
+              theme={work.theme || "dark"}
+              setImageSrcCallbackRef={setImageSrcCallbackRef}
+              showBackground={title2ShowBackground}
+              activeRef={activeRef}
+              work={work}
+            >
+              {work.project}
+            </HeaderTitle>
           </div>
-          <Profiler id={`detail-and-slides-${index}`} onRender={profilerRender}>
+          <NoSSR>
+            <Detail
+              work={work}
+              index={index!}
+              top={`${150 + desc.length * 100 + 200}dvh`}
+              videoInView={videoInView}
+            />
+          </NoSSR>
+          <div
+            data-scroll
+            data-scroll-sticky
+            data-scroll-target={`#work-${index}-slides-target`}
+            className={clsx({
+              "absolute h-[100dvh] w-screen bg-[var(--dark)] will-change-transform z-30":
+                true,
+              "pointer-events-none": videoInView,
+            })}
+            style={{
+              top: `${150 + desc.length * 100 + 100}dvh`,
+            }}
+          >
             <NoSSR>
-              <Detail
+              <Slides
                 work={work}
                 index={index!}
-                top={`${150 + desc.length * 100 + 200}dvh`}
-                videoInView={videoInView}
+                setImageSrcCallbackRef={setImageSrcCallbackRef}
               />
             </NoSSR>
-            <div
-              data-scroll
-              data-scroll-sticky
-              data-scroll-target={`#work-${index}-slides-target`}
-              className={clsx({
-                "absolute h-[100dvh] w-screen bg-[var(--dark)] will-change-transform z-30":
-                  true,
-                "pointer-events-none": videoInView,
-              })}
-              style={{
-                top: `${150 + desc.length * 100 + 100}dvh`,
-              }}
-            >
-              <Profiler id={`slides-${index}`} onRender={profilerRender}>
-                <NoSSR>
-                  <Slides
-                    work={work}
-                    index={index!}
-                    setImageSrcCallbackRef={setImageSrcCallbackRef}
-                  />
-                </NoSSR>
-              </Profiler>
-            </div>
-          </Profiler>
+          </div>
           <div
             data-scroll
             data-scroll-sticky
@@ -596,12 +569,9 @@ export default function WorkComponent({
               top: `${150 + desc.length * 100 + 100}dvh`,
             }}
           >
-            <Profiler id={`outro-${index}`} onRender={profilerRender}>
-              <WorkOutro index={index} />
-            </Profiler>
+            <WorkOutro index={index} />
           </div>
         </div>
-      </Profiler>
     </>
   );
 }

@@ -7,7 +7,6 @@ import {
   useLayoutEffect,
   useMemo,
   useCallback,
-  Profiler,
 } from "react";
 import clsx from "clsx";
 import FitVariable from "@/app/(default)/@home/fit";
@@ -22,7 +21,6 @@ import {
   decrementEventHandlerCount,
 } from "@/lib/state";
 import {
-  useProfilerRender,
   useDebounce,
   useWaitWheel,
 } from "@/lib/customhooks";
@@ -104,7 +102,6 @@ export default function HomeRenderPage() {
   const homeExitRef = useRef(false);
   const [size, setSize] = useState<[number, number] | undefined>();
   const debouncer = useDebounce();
-  const profilerRender = useProfilerRender({ minDuration: 10 });
   const previousScrollYRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
@@ -391,8 +388,7 @@ export default function HomeRenderPage() {
 
   return (
     <NoSSR>
-      <Profiler id="home" onRender={profilerRender}>
-        <div
+      <div
           className={homeClasses}
           data-scroll
           data-scroll-repeat
@@ -420,7 +416,6 @@ export default function HomeRenderPage() {
             elapsedPlayDuration={elapsedPlayDuration}
           />
         </div>
-      </Profiler>
     </NoSSR>
   );
 }

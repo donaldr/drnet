@@ -5,7 +5,6 @@ import {
   useMemo,
   useRef,
   useState,
-  Profiler,
 } from "react";
 import clsx from "clsx";
 import {
@@ -20,7 +19,6 @@ import { useLineText } from "@/lib/linetext";
 import Squares from "../squares";
 import NoSSR from "react-no-ssr";
 import { useDebounce } from "@/lib/customhooks";
-import { useProfilerRender } from "@/lib/customhooks";
 
 enum HoverState {
   INIT = "init",
@@ -60,8 +58,6 @@ export default function ResumeRenderPage() {
   const [offset8, setOffset8] = useState(0);
   const [offsetText, setOffsetText] = useState(0);
   const { scroll } = useLocomotiveScroll();
-
-  const profilerRender = useProfilerRender({ minDuration: 10 });
 
   useEffect(() => {
     inViewRef.current = inView;
@@ -134,8 +130,7 @@ export default function ResumeRenderPage() {
 
   return (
     <>
-      <Profiler id="resume" onRender={profilerRender}>
-        <div
+      <div
           id="resume-target"
           className="absolute top-[-100dvh] h-[300dvh] w-full"
           data-scroll
@@ -460,7 +455,6 @@ export default function ResumeRenderPage() {
             )}
           </div>
         </div>
-      </Profiler>
     </>
   );
 }

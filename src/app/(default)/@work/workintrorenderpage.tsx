@@ -1,7 +1,7 @@
 "use client";
 
 import { useLineText } from "@/lib/linetext";
-import { Profiler, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SVGStroke from "@/lib/svgstroke";
 import { useLocomotiveScroll } from "@/lib/locomotive";
 import {
@@ -10,7 +10,7 @@ import {
   useGlobalState,
 } from "@/lib/state";
 import clsx from "clsx";
-import { useProfilerRender, useDebounce } from "@/lib/customhooks";
+import { useDebounce } from "@/lib/customhooks";
 
 export default function WorkIntroComponent() {
   const pathRefs = useRef<Array<SVGPathElement | null>>([]);
@@ -64,8 +64,6 @@ export default function WorkIntroComponent() {
   const [activeList] = useGlobalState("activeList");
   const [active, setActive] = useState(false);
 
-  const profilerRender = useProfilerRender({ minDuration: 10 });
-
   useEffect(() => {
     setActive(activeList[activeList.length - 1] == "work-intro");
   }, [activeList]);
@@ -113,8 +111,7 @@ export default function WorkIntroComponent() {
   }, [scroll]);
 
   return (
-    <Profiler id="work-intro" onRender={profilerRender}>
-      <div
+    <div
         className={textContainerClasses}
         data-scroll="true"
         data-scroll-sticky="true"
@@ -219,7 +216,6 @@ export default function WorkIntroComponent() {
             </>
           )}
         </svg>
-      </div>
-    </Profiler>
+    </div>
   );
 }

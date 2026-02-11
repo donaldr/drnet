@@ -326,7 +326,7 @@ export default function WorkOutro({
     <div
       id={`work-${index}-outro-container`}
       ref={ref}
-      className="h-[100dvh] w-screen transition-[opacity] duration-1000 will-change-[opacity,transform] bg-[var(--dark)] absolute top-0 flex items-center justify-center animate-glowpulse"
+      className="h-[100dvh] w-screen transition-[opacity] duration-1000 bg-[var(--dark)] absolute top-0 flex items-center justify-center"
       data-scroll
       data-scroll-repeat
       data-scroll-id={`work-${index}-outro-container`}

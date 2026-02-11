@@ -1,10 +1,9 @@
 "use client";
-import { Profiler, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { useGlobalState } from "@/lib/state";
 import HeaderTitle from "../headertitle";
 import RotatingBackground from "./rotatingbackground";
-import { useProfilerRender } from "@/lib/customhooks";
 
 export default function ContactRenderPage() {
   const [contactClasses, setContactClasses] = useState("opacity-0");
@@ -17,7 +16,6 @@ export default function ContactRenderPage() {
     return inViews.includes("contact");
   }, [inViews]);
   const inViewRef = useRef(inView);
-  const profilerRender = useProfilerRender({ minDuration: 10 });
 
   useEffect(() => {
     setContactClasses(
@@ -36,8 +34,7 @@ export default function ContactRenderPage() {
 
   return (
     <>
-      <Profiler id="home" onRender={profilerRender}>
-        <div className="h-[100dvh]"></div>
+      <div className="h-[100dvh]"></div>
         <div
           id="contact-target"
           className="absolute top-[-200dvh] h-[300dvh] w-full"
@@ -63,7 +60,6 @@ export default function ContactRenderPage() {
         >
           <RotatingBackground active={active} />
         </div>
-      </Profiler>
     </>
   );
 }

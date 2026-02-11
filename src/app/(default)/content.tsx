@@ -31,7 +31,7 @@ export default function Content({
         repeat: true,
         smooth: true,
         //@ts-expect-error lerp isn't defined in ts but it's used
-        lerp: 0.1,
+        lerp: 0.075,
         getDirection: true,
         multiplier: 0.5,
         scrollFromAnywhere: true,
