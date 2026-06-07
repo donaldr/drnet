@@ -8,6 +8,7 @@ import {
   decrementEventHandlerCount,
   incrementEventHandlerCount,
 } from "@/lib/state";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 
 function DetailRoles({
   work,
@@ -28,6 +29,7 @@ function DetailRoles({
     if (scroll) {
       incrementEventHandlerCount("scroll-detailroles");
       scroll.on("scroll", (obj: any) => {
+        markHandlerStart("detailroles");
         const entries = Object.entries(obj.currentElements);
         for (let e = 0; e < entries.length; e++) {
           if (!entries[e][0].startsWith("work-detail-line")) continue;
@@ -74,6 +76,7 @@ function DetailRoles({
             previousTopRef.current = top;
           }
         }
+        markHandlerEnd("detailroles");
       });
     }
   }, [scroll]);

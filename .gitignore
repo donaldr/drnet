@@ -40,7 +40,13 @@ yarn-error.log*
 next-env.d.ts
 
 public/work
+# Generated video artifacts (uploaded to Vercel Blob, not committed)
+public/work-compressed
+public/work-posters
+public/work-hls
 .yarn
 .yarnrc.yml
 
 .vercel
+
+.env*.local

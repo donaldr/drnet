@@ -19,6 +19,7 @@ import { useLineText } from "@/lib/linetext";
 import Squares from "../squares";
 import NoSSR from "react-no-ssr";
 import { useDebounce } from "@/lib/customhooks";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 
 enum HoverState {
   INIT = "init",
@@ -112,6 +113,7 @@ export default function ResumeRenderPage() {
     if (scroll) {
       incrementEventHandlerCount("scroll-resumerender");
       scroll.on("scroll", (obj: any) => {
+        markHandlerStart("resume");
         const key = `resume-target`;
         if (key in obj.currentElements) {
           const diff =
@@ -122,6 +124,7 @@ export default function ResumeRenderPage() {
           prevDiffRef.current = diff;
           setScrollDiff(diff);
         }
+        markHandlerEnd("resume");
       });
     }
   }, [scroll]);

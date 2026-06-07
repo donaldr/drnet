@@ -23,6 +23,7 @@ import {
   incrementEventHandlerCount,
   useGlobalState,
 } from "@/lib/state";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 import WorkOutro from "./workoutro";
 import Squares from "../squares";
 import NoSSR from "react-no-ssr";
@@ -42,10 +43,7 @@ export default function WorkComponent({
       ? work.description
       : [work.description];
   }, [work]);
-  const [descriptionState, setDescriptionState] = useState<Array<string>>(
-    Array(desc.length).fill("exit")
-  );
-  const descriptionStateRef = useRef(descriptionState);
+  const descriptionStateRef = useRef<string[]>(Array(desc.length).fill("exit"));
   const [showTitle, setShowTitle] = useState(false);
   const { scroll } = useLocomotiveScroll();
   const [title2ShowBackground, setTitle2ShowBackground] = useState(false);
@@ -59,7 +57,8 @@ export default function WorkComponent({
     return inViews.includes(`work-${index}`);
   }, [inViews, index]);
   const activeRef = useRef(false);
-  const [inColor, setInColor] = useState(false);
+  const inColorRef = useRef(false);
+  const title2ShowBgRef = useRef(false);
   const setImageSrcCallbackRef = useRef(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   //const { stop, wait } = useWaitWheel();
@@ -118,18 +117,29 @@ export default function WorkComponent({
       });
       incrementEventHandlerCount("scroll-workrender");
       scroll.on("scroll", (obj: any) => {
+        markHandlerStart(`workrender-${index}`);
         if (activeRef.current) {
           const videoContainerKey = `work-${index}-video-container`;
           const videoPullContainerKey = `work-${index}-video-pull-container`;
           const workThemeChangeTargetKey = `work-${index}-theme-change-target`;
-          if (
+
+          // Direct DOM for foreground color (no re-render)
+          const newInColor =
             workThemeChangeTargetKey in obj.currentElements &&
-            work.theme == "light"
-          ) {
-            setInColor(true);
-          } else {
-            setInColor(false);
+            work.theme == "light";
+          if (newInColor !== inColorRef.current) {
+            inColorRef.current = newInColor;
+            // Scope the foreground inversion to the header (the logo is the only
+            // persistent overlay that needs it) instead of :root, which would
+            // force a whole-document style recalc on every boundary.
+            document
+              .getElementById("site-header")
+              ?.style.setProperty(
+                "--foreground",
+                newInColor ? "var(--dark)" : "var(--light)"
+              );
           }
+
           if (videoContainerKey in obj.currentElements) {
             if (obj.currentElements[videoContainerKey].progress > 0.5) {
               obj.currentElements[videoContainerKey].speed = -1;
@@ -143,9 +153,16 @@ export default function WorkComponent({
               }
             }
           }
-          const title2Key = `work-${index}-title-target-2`;
-          setTitle2ShowBackground(title2Key in obj.currentElements);
 
+          // Only setState when value actually changes
+          const title2Key = `work-${index}-title-target-2`;
+          const newShowBg = title2Key in obj.currentElements;
+          if (newShowBg !== title2ShowBgRef.current) {
+            title2ShowBgRef.current = newShowBg;
+            setTitle2ShowBackground(newShowBg);
+          }
+
+          // Direct DOM for description enter/exit classes (no re-render)
           const descriptionElKeys = Object.keys(obj.currentElements).filter(
             (el: string) => el.match(/^work-\d+-description-(\d)$/)
           );
@@ -156,69 +173,61 @@ export default function WorkComponent({
             const progress = el.progress * descriptionElKeys.length - i;
             if (progress > 0.1 && progress < 0.9) {
               if (descriptionStateRef.current[i] == "exit") {
-                /*
-                stop();
-                //scroll.scrollTo(el.el);
-                setTimeout(() => {
-                  wait();
-                }, 500);
-                */
-                setDescriptionState((old) => {
-                  const newDesc = [...old];
-                  newDesc[i] = "enter";
-                  return newDesc;
-                });
+                descriptionStateRef.current[i] = "enter";
+                const container = document.getElementById(
+                  `work-${index}-description-${i}-container`
+                );
+                if (container) {
+                  const actionDiv = container.firstElementChild as HTMLElement;
+                  if (actionDiv) actionDiv.className = "group/action enter";
+                }
               }
             } else if (descriptionStateRef.current[i] == "enter") {
-              setDescriptionState((old) => {
-                const newDesc = [...old];
-                newDesc[i] = "exit";
-                return newDesc;
-              });
+              descriptionStateRef.current[i] = "exit";
+              const container = document.getElementById(
+                `work-${index}-description-${i}-container`
+              );
+              if (container) {
+                const actionDiv = container.firstElementChild as HTMLElement;
+                if (actionDiv) actionDiv.className = "group/action exit";
+              }
             }
           });
 
-          descriptionStateRef.current
-            .map((el, index) => [index, el])
-            .filter((el) => el[1] == "enter")
-            .forEach((entered) => {
-              const i = entered[0] as number;
+          // Cleanup: reset descriptions that scrolled out of currentElements
+          descriptionStateRef.current.forEach((state, i) => {
+            if (state == "enter") {
               const elName = `work-${index}-description-${i}`;
               if (!(elName in obj.currentElements)) {
-                setDescriptionState((old) => {
-                  const newDesc = [...old];
-                  newDesc[i] = "exit";
-                  return newDesc;
-                });
+                descriptionStateRef.current[i] = "exit";
+                const container = document.getElementById(
+                  `work-${index}-description-${i}-container`
+                );
+                if (container) {
+                  const actionDiv = container.firstElementChild as HTMLElement;
+                  if (actionDiv) actionDiv.className = "group/action exit";
+                }
               }
-            });
+            }
+          });
         }
+        markHandlerEnd(`workrender-${index}`);
       });
     }
   }, [scroll, index, work]);
 
   useEffect(() => {
-    descriptionStateRef.current = descriptionState;
-  }, [descriptionState]);
-
-  useEffect(() => {
     setTitleClasses(
       clsx({
         "group pt-header px-[5dvw] fixed left-0 top-0": true,
-        hidden: !showTitle,
+        // composited hide (visibility) instead of `hidden` (display:none) so
+        // toggling at a boundary doesn't force a layout+paint of the split title
+        invisible: !showTitle,
         active: inView,
         "not-active": !inView,
       })
     );
   }, [showTitle, inView]);
-
-  useLayoutEffect(() => {
-    if (inColor) {
-      document.documentElement.style.setProperty("--foreground", "var(--dark");
-    } else {
-      document.documentElement.style.setProperty("--foreground", "var(--light");
-    }
-  }, [inColor]);
 
   const revealTitle = useMemo(
     () => (
@@ -234,8 +243,12 @@ export default function WorkComponent({
     [work]
   );
 
-  return (
-    <>
+  // Memoize the body so a boundary-crossing re-render storm (every WorkComponent
+  // re-renders when global active/inView changes) only reconciles the works
+  // whose own state actually changed — the rest return the cached tree and bail.
+  const body = useMemo(
+    () => (
+      <>
         <div
           id={`work-${index}-title-target`}
           className="absolute top-[50dvh] h-[200dvh] mt-[-100dvh]"
@@ -466,7 +479,7 @@ export default function WorkComponent({
                       //data-scroll-call={`work${index}DescriptionInView`}
                       data-scroll-id={`work-${index}-description-${i}-container`}
                     >
-                      <div className={`group/action ${descriptionState[i]}`}>
+                      <div className="group/action exit">
                         <Description theme={work.theme || "dark"}>
                           {d}
                         </Description>
@@ -572,6 +585,21 @@ export default function WorkComponent({
             <WorkOutro index={index} />
           </div>
         </div>
-    </>
+      </>
+    ),
+    [
+      work,
+      index,
+      desc,
+      workClasses,
+      heroClasses,
+      titleClasses,
+      title2ShowBackground,
+      videoInView,
+      size,
+      revealTitle,
+    ]
   );
+
+  return body;
 }

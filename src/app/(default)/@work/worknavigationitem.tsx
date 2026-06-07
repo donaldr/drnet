@@ -4,6 +4,7 @@ import type { WorkData } from "./types";
 import clsx from "clsx";
 import { incrementEventHandlerCount, useGlobalState } from "@/lib/state";
 import { useLocomotiveScroll } from "@/lib/locomotive";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 
 export default function WorkNavigationItem({
   work,
@@ -35,6 +36,7 @@ export default function WorkNavigationItem({
     if (scroll) {
       incrementEventHandlerCount("scroll-worknavitem");
       scroll.on("scroll", (obj: any) => {
+        markHandlerStart(`worknavitem-${index}`);
         if (`work-${index}-content` in obj.currentElements) {
           const newProgress =
             obj.currentElements[`work-${index}-content`].progress;
@@ -45,6 +47,7 @@ export default function WorkNavigationItem({
             progressBarRef.current.style.height = `${newProgress * 3.2}rem`;
           }
         }
+        markHandlerEnd(`worknavitem-${index}`);
       });
     }
   }, [scroll, index]);

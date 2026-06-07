@@ -4,6 +4,8 @@ import { RefObject, useEffect, useRef, useState } from "react";
 import { useLocomotiveScroll } from "@/lib/locomotive";
 import clsx from "clsx";
 import { incrementEventHandlerCount } from "@/lib/state";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
+import { attachHls, type HlsHandle } from "@/lib/attachhls";
 
 export default function Video({
   index,
@@ -18,11 +20,39 @@ export default function Video({
   const [isPast, setIsPast] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const isPastRef = useRef(false);
+  // Predictive preload: the video ships with preload="none". We warm the buffer
+  // ~1 screen before playback, keyed off the video CONTAINER (which sits one
+  // screen above the play point) so load() never races the play() below.
+  const preloadStartedRef = useRef(false);
+  const hlsRef = useRef<HlsHandle | null>(null);
+
+  // Tear down hls.js (if attached) on unmount.
+  useEffect(() => () => hlsRef.current?.destroy(), []);
 
   useEffect(() => {
     if (scroll) {
       incrementEventHandlerCount("scroll-video");
       scroll.on("scroll", (obj: any) => {
+        markHandlerStart(`video-${index}`);
+        // Warm the buffer ~1 screen early off the video container (above the
+        // play point), so this never resets the element as play() fires.
+        const containerKey = `work-${index}-video-container`;
+        if (
+          !preloadStartedRef.current &&
+          containerKey in obj.currentElements &&
+          videoRef.current
+        ) {
+          preloadStartedRef.current = true;
+          if (work.videoHls) {
+            // Adaptive streaming: hls.js/native takes over from the mp4 src.
+            attachHls(videoRef.current, work.videoHls).then((h) => {
+              hlsRef.current = h;
+            });
+          } else {
+            videoRef.current.preload = "auto";
+            videoRef.current.load();
+          }
+        }
         const key = `work-${index}-video-target`;
         if (key in obj.currentElements) {
           const offset =
@@ -43,6 +73,7 @@ export default function Video({
             setIsPast(nowPast);
           }
         }
+        markHandlerEnd(`video-${index}`);
       });
       scroll.on("call", (f: string, type: string) => {
         if (f == `work${index}VideoElementInView` && videoRef.current) {
@@ -78,7 +109,18 @@ export default function Video({
           muted
           preload="none"
           crossOrigin="anonymous"
-          poster={work.thumb}
+          poster={work.poster ?? work.thumb}
+          // Instant blurred preview behind the poster/video, painted from the
+          // inline base64 thumb so something shows with zero network wait.
+          style={
+            work.thumbBlurDataURL
+              ? {
+                  backgroundImage: `url(${work.thumbBlurDataURL})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : undefined
+          }
         />
       )}
     </div>

@@ -10,6 +10,7 @@ import {
 } from "@/lib/state";
 import clsx from "clsx";
 import { useLocomotiveScroll } from "@/lib/locomotive";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 
 export default function WorkNavigator({
   works,
@@ -90,6 +91,7 @@ export default function WorkNavigator({
     if (scroll) {
       incrementEventHandlerCount("scroll-worknav");
       scroll.on("scroll", () => {
+        markHandlerStart("worknav");
         if (!navigating.current) {
           if (!stoppingMoveRef.current) {
             if (moveRef.current) {
@@ -105,6 +107,7 @@ export default function WorkNavigator({
             }, 500);
           }
         }
+        markHandlerEnd("worknav");
       });
     }
   }, [scroll]);

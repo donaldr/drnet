@@ -27,4 +27,12 @@ export interface WorkData {
   heroBlurDataURL?: string;
   thumbBlurDataURL?: string;
   imageBlurDataURLs?: Array<string | undefined>;
+  // Lean poster frames extracted from the clips (see scripts/generate-posters.sh).
+  // Fall back to `thumb` when absent.
+  poster?: string;
+  heroPoster?: string;
+  // HLS master playlists (see scripts/generate-hls.sh). When present, the player
+  // streams adaptively; the mp4 `video`/`hero` stays as the no-HLS fallback.
+  videoHls?: string;
+  heroHls?: string;
 }

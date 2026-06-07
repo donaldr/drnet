@@ -77,7 +77,7 @@ export default function Header() {
 
   return (
     <>
-      <header className={headerClasses}>
+      <header id="site-header" className={headerClasses}>
         <div className="flex gap-8">
           <a
             href="/"

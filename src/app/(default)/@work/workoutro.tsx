@@ -15,6 +15,7 @@ import {
   decrementEventHandlerCount,
   incrementEventHandlerCount,
 } from "@/lib/state";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 
 type Point = {
   x: number;
@@ -104,6 +105,7 @@ export default function WorkOutro({
     if (scroll) {
       incrementEventHandlerCount("scroll-workoutro");
       scroll.on("scroll", (obj: any) => {
+        markHandlerStart(`workoutro-${index}`);
         if (!sizeRef.current) return;
         const key = `work-${index}-outro-animate`;
         if (!(key in obj.currentElements)) return;
@@ -182,6 +184,7 @@ export default function WorkOutro({
           path.setAttribute("stroke-dasharray", `${backLength} ${length}`);
           path.setAttribute("stroke-dashoffset", `-${dashOffset}`);
         }
+        markHandlerEnd(`workoutro-${index}`);
       });
     }
   }, [scroll, index]);

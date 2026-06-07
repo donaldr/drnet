@@ -11,6 +11,7 @@ import {
 } from "@/lib/state";
 import clsx from "clsx";
 import { useDebounce } from "@/lib/customhooks";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 
 export default function WorkIntroComponent() {
   const pathRefs = useRef<Array<SVGPathElement | null>>([]);
@@ -18,9 +19,10 @@ export default function WorkIntroComponent() {
   const [refsAllSet, setRefsAllSet] = useState(false);
   const [size, setSize] = useState<[number, number] | undefined>();
 
-  const [strokeLength, setStrokeLength] = useState(1);
   const svgRef = useRef<SVGSVGElement>(null);
   const prevNormalizedRef = useRef(-1);
+  const pathLengthsRef = useRef<number[]>([]);
+  const lineLengthsRef = useRef<number[]>([]);
   const [textContainerClasses, setTextContainerClasses] = useState("opacity-0");
 
   const workIntroText = useLineText(
@@ -50,14 +52,31 @@ export default function WorkIntroComponent() {
   }, [resize]);
 
   const checkAllRefs = useCallback(() => {
-    setRefsAllSet(
+    const allSet =
       !!workIntroText &&
-        !!workIntroText.paths &&
-        pathRefs.current.length == workIntroText.paths.length &&
-        pathRefs.current.every((el) => el) &&
-        lineRefs.current.length == 2 &&
-        lineRefs.current.every((el) => el)
-    );
+      !!workIntroText.paths &&
+      pathRefs.current.length == workIntroText.paths.length &&
+      pathRefs.current.every((el) => el) &&
+      lineRefs.current.length == 2 &&
+      lineRefs.current.every((el) => el);
+
+    if (allSet) {
+      // Pre-compute path lengths so the scroll handler never calls getTotalLength()
+      for (let i = 0; i < pathRefs.current.length; i++) {
+        const path = pathRefs.current[i];
+        if (path && !pathLengthsRef.current[i]) {
+          pathLengthsRef.current[i] = path.getTotalLength();
+        }
+      }
+      for (let i = 0; i < lineRefs.current.length; i++) {
+        const path = lineRefs.current[i];
+        if (path && !lineLengthsRef.current[i]) {
+          lineLengthsRef.current[i] = path.getTotalLength();
+        }
+      }
+    }
+
+    setRefsAllSet(allSet);
   }, [workIntroText, pathRefs, lineRefs]);
 
   const { scroll } = useLocomotiveScroll();
@@ -85,6 +104,7 @@ export default function WorkIntroComponent() {
     if (scroll) {
       incrementEventHandlerCount("scroll-workintrorender");
       scroll.on("scroll", (obj: any) => {
+        markHandlerStart("workintro");
         const key = `work-intro-container`;
         if (key in obj.currentElements) {
           const diff = obj.scroll.y - obj.currentElements[key].top;
@@ -97,12 +117,37 @@ export default function WorkIntroComponent() {
             svgRef.current.style.transform = `translateY(${-50 * offset}dvh)`;
           }
 
-          // Quantized state for SVGStroke strokeLength (skip when unchanged)
+          // Direct DOM for stroke dasharray (quantized, skip when unchanged)
           const quantized = Math.round(normalized * 200);
-          if (quantized === Math.round(prevNormalizedRef.current * 200)) return;
-          prevNormalizedRef.current = normalized;
-          setStrokeLength(Math.max(0, Math.min(1, 1 - normalized)));
+          if (quantized !== Math.round(prevNormalizedRef.current * 200)) {
+            prevNormalizedRef.current = normalized;
+            const sl = Math.max(0, Math.min(1, 1 - normalized));
+
+            for (let i = 0; i < pathRefs.current.length; i++) {
+              const path = pathRefs.current[i];
+              const len = pathLengthsRef.current[i];
+              if (!path || !len) continue;
+              if (sl === 0) {
+                path.style.visibility = "hidden";
+              } else {
+                path.style.visibility = "";
+                path.style.strokeDasharray = `${len * sl} ${len * (1 - sl)}`;
+              }
+            }
+            for (let i = 0; i < lineRefs.current.length; i++) {
+              const path = lineRefs.current[i];
+              const len = lineLengthsRef.current[i];
+              if (!path || !len) continue;
+              if (sl === 0) {
+                path.style.visibility = "hidden";
+              } else {
+                path.style.visibility = "";
+                path.style.strokeDasharray = `${len * sl} ${len * (1 - sl)}`;
+              }
+            }
+          }
         }
+        markHandlerEnd("workintro");
       });
     }
   }, [scroll]);
@@ -137,7 +182,7 @@ export default function WorkIntroComponent() {
                 stroke="#999999"
                 strokeWidth={1}
                 startStroke={0}
-                strokeLength={strokeLength}
+                strokeLength={1}
                 svgPath={pathRefs.current[index]}
                 renderSVGPath={(pathCSS: React.CSSProperties) => {
                   return (
@@ -160,7 +205,7 @@ export default function WorkIntroComponent() {
                 stroke="#999999"
                 strokeWidth={1}
                 startStroke={0}
-                strokeLength={strokeLength}
+                strokeLength={1}
                 svgPath={lineRefs.current[0]}
                 renderSVGPath={(pathCSS: React.CSSProperties) => {
                   return (
@@ -188,7 +233,7 @@ export default function WorkIntroComponent() {
                 stroke="#999999"
                 strokeWidth={1}
                 startStroke={0}
-                strokeLength={strokeLength}
+                strokeLength={1}
                 svgPath={lineRefs.current[1]}
                 renderSVGPath={(pathCSS: React.CSSProperties) => {
                   return (

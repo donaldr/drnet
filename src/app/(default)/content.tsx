@@ -9,6 +9,7 @@ import React, {
 import { LocomotiveScrollProvider } from "@/lib/locomotive";
 import { WaitWheelProvider } from "@/lib/customhooks";
 import ScrollDown from "./scrolldown";
+import { installScrollPerf } from "@/lib/scrollperf";
 
 export const ScrollContext =
   createContext<RefObject<HTMLDivElement | null> | null>(null);
@@ -23,6 +24,7 @@ export default function Content({
 
   useLayoutEffect(() => {
     setStart(true);
+    installScrollPerf();
   }, []);
 
   return (

@@ -6,6 +6,11 @@ import Header from "./header";
 import Loading from "./loading";
 import PreloadManager from "./preloadmanager";
 
+// Vercel Blob CDN that serves work assets in production (see data.prod.json /
+// next.config.ts remotePatterns). Warming the connection early shaves TTFB off
+// the first video/image fetch.
+const BLOB_ORIGIN = "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com";
+
 export const metadata: Metadata = {
   title: "Donald Richardson",
   description: "Donald Richardson's Portfolio Website",
@@ -61,6 +66,14 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        {/* Warm the Blob CDN connection. Two preconnects cover both the CORS
+            video fetch (video.tsx uses crossOrigin="anonymous") and the
+            non-CORS image/hero fetches. */}
+        <link rel="preconnect" href={BLOB_ORIGIN} crossOrigin="anonymous" />
+        <link rel="preconnect" href={BLOB_ORIGIN} />
+        <link rel="dns-prefetch" href={BLOB_ORIGIN} />
+      </head>
       <body className="antialiased">
         <Header />
 

@@ -24,6 +24,7 @@ import {
   useDebounce,
   useWaitWheel,
 } from "@/lib/customhooks";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 import NoSSR from "react-no-ssr";
 
 export type Effect = ({
@@ -292,6 +293,7 @@ export default function HomeRenderPage() {
     if (scroll) {
       incrementEventHandlerCount("scroll-homerender");
       scroll.on("scroll", (obj: any) => {
+        markHandlerStart("homerender");
         if (
           activeRef.current &&
           !navigating.current &&
@@ -351,6 +353,7 @@ export default function HomeRenderPage() {
           }
         }
         previousScrollYRef.current = obj.scroll.y;
+        markHandlerEnd("homerender");
       });
     }
   }, [scroll, readyRef, wait, stop]);

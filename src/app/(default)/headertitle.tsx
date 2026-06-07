@@ -15,6 +15,7 @@ import {
   incrementEventHandlerCount,
 } from "@/lib/state";
 import { useDebounce } from "@/lib/customhooks";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 
 export default function HeaderTitle({
   children,
@@ -36,7 +37,7 @@ export default function HeaderTitle({
   work?: WorkData;
 }>) {
   const { scroll } = useLocomotiveScroll();
-  const [show, setShow] = useState(false);
+  const titleBgRef = useRef<HTMLDivElement>(null);
   const [imageSrc, setImageSrc] = useState<string>();
   const screenHeightRef = useRef(0);
   const titleTextRef = useRef<HTMLDivElement>(null);
@@ -68,6 +69,7 @@ export default function HeaderTitle({
     if (scroll) {
       incrementEventHandlerCount("scroll-headertitle");
       scroll.on("scroll", (scroll: any) => {
+        markHandlerStart(`headertitle-${id}`);
         if (activeRef.current) {
           const el: any = Object.values(scroll.currentElements).filter(
             (el: any) => el.el.id == `${id}-title-background-target`
@@ -88,14 +90,14 @@ export default function HeaderTitle({
             }
           }
         }
+        markHandlerEnd(`headertitle-${id}`);
       });
       incrementEventHandlerCount("scroll-call-headertitle");
       scroll.on("call", (f: string, type: string) => {
         if (f == `showTitleBackground${id}`) {
-          if (type == "enter") {
-            setShow(true);
-          } else {
-            setShow(false);
+          // Direct DOM for opacity (no re-render)
+          if (titleBgRef.current) {
+            titleBgRef.current.style.opacity = type == "enter" ? "1" : "0";
           }
         }
       });
@@ -120,6 +122,7 @@ export default function HeaderTitle({
         ></div>
       </div>
       <div
+        ref={titleBgRef}
         id={`${id}-title-background`}
         data-scroll
         data-scroll-sticky
@@ -136,7 +139,7 @@ export default function HeaderTitle({
             backgroundColor:
               imageSrc && (!work || !work.needsPadding) ? "var(--dark)" : color,
           }),
-          opacity: show ? "1" : "0",
+          opacity: "0",
         }}
       >
         <div

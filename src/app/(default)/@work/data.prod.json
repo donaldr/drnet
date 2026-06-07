@@ -2,8 +2,8 @@
   "work": [
     {
       "slug": "verizon-innovation-center-boston",
-      "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/intro-Wiib1k4Aa8qnMvn3TXgeZZLyuAi7jg.mp4",
-      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/detail-9G84PPXNF2dZqNO9VJIB5xQqwUVeVR.mp4",
+      "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/intro.mp4",
+      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/detail.mp4",
       "thumb": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/thumbs/verizon-2GVkWq7TBsSlpwlKQmHmeIcw5m09Hf.jpg",
       "images": [
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/smart-ecosystems-z2MNAxpGFWiWvSto30mnwqy5G1Y79d.jpg",
@@ -18,24 +18,27 @@
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/workspace-ffJDEig6kWZjABPRaTWNmuxCJimA5g.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/ambient-V4UxF3NLf8stG3eIVgpLfKYiicJOun.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/verizon/atmosphere-0fQIWORhWRZGcLfQrnCn3d5aWUfSF7.jpg"
-      ]
+      ],
+      "poster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/verizon/detail.webp",
+      "heroPoster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/verizon/intro.webp"
     },
     {
       "slug": "consulting-workspace-experiences",
       "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc_hero-ESMTNIWj5BQKVx9hcLHMoufPv1jpc9.jpg",
-      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc-cS4VRUuww3tYubuthXZ5O9ISHR51OQ.mp4",
+      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc.mp4",
       "thumb": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/thumbs/ccc-bUyXtpgSK1UjpDb8rEfpRN8LA6TOdD.jpg",
       "images": [
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc1-BKp7hAjV74Yk1YYK3KHhwBvVjtwsq4.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc2-K3zH7aS7ZFL7ChmBrfTdi79l4nkuPx.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc3-OEDrYAzXGoqMbcvHQkt1lBy5lzMUEz.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/ccc/ccc4-TffY5vAgWfvDrOtmIYlSWMLrLxdMKp.jpg"
-      ]
+      ],
+      "poster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/ccc/ccc.webp"
     },
     {
       "slug": "confidential-financial-services-lobby-digital-elements",
       "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cfsc/hero-jSFMQu5gJx5nvjCaVdId8QyKwUNyUt.jpg",
-      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cfsc/skylobby-t1ACfK9mxm7pZnN7HLud5XgapHKR0X.mp4",
+      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cfsc/skylobby.mp4",
       "thumb": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/thumbs/cfsc-NjXmYYiD0R37QPMLQvoWWNVZQs7fG4.jpg",
       "images": [
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cfsc/front-desk-erIKdOOXFHiVuX1kjJBsosrjasLP9A.jpg",
@@ -45,23 +48,26 @@
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cfsc/prototype-NanMMxuJ3UVGTqX8qLKnGplQhH6JYc.png",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cfsc/template-TVIroaOhDQ953S0MZi54QNj6YgWUZ9.png",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cfsc/wayfinding-bZqbgSmzIsGyZNxgcQOJQ2cpOoM8wz.jpg"
-      ]
+      ],
+      "poster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/cfsc/skylobby.webp"
     },
     {
       "slug": "confidential-architectural-client-wall-system-prototype",
-      "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cac/hero-KDYAnoQbMAg65ugoINq1ip3M8TkDkG.mp4",
-      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cac/pips-video-PDhrxGqzSjGixnijTVO4bSA3zTFxRq.mp4",
+      "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cac/hero.mp4",
+      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cac/pips-video.mp4",
       "thumb": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/thumbs/cac-j5nPkkcj2kQx5AYsJOy4lnmu68mPDr.jpg",
       "images": [
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cac/pips1-o2tyOdRqB9mNR0h7rN8aooDNwPq7FR.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cac/pips2-Dp2XOCnLnudhOYXJzYCap86bUivA3W.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cac/pips3-6pcqXOlkmyTGVtSnkxCF6m9X8iTBMw.jpg"
-      ]
+      ],
+      "poster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/cac/pips-video.webp",
+      "heroPoster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/cac/hero.webp"
     },
     {
       "slug": "cibc-lobby-wall",
-      "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cibc/loop-HcgDPmd4PPxq5zQw7RujrKZbRDXOgr.mp4",
-      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cibc/video-aFRSJcSAa5Lyxc3T73sBXwAblBhUSg.mp4",
+      "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cibc/loop.mp4",
+      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cibc/video.mp4",
       "thumb": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/thumbs/cibc-vRF9ZmcLBdnDA1VLgYVQn0ds2seoUv.jpg",
       "images": [
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cibc/cibc1-NyKlzFsSLAgbaTu6H3ivtjHPHUGu9A.jpg",
@@ -73,12 +79,14 @@
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cibc/cibc7-QEtrVcjzG62EJDxJfBStnKBXcwAnAY.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cibc/cibc8-cKPycd3LW7U6SuOUuB5nB05l7u4Xkm.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/cibc/cibc9-NNrMVQIRNeXqSBBBN5r3Ri9DOS3WTU.jpg"
-      ]
+      ],
+      "poster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/cibc/video.webp",
+      "heroPoster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/cibc/loop.webp"
     },
     {
       "slug": "impact-of-the-bible",
       "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/motb/motb-KnCvS0GqEASgr22wyenkqPivKL58Xs.jpg",
-      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/motb/biblenow-VxK2pGa1sO6kKtQYhmvgAdjaeEMrlv.mp4",
+      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/motb/biblenow.mp4",
       "thumb": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/thumbs/motb-ikrTIaMCRbeSIBfeNydR5auZo0uYJF.jpg",
       "images": [
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/motb/motb-KnCvS0GqEASgr22wyenkqPivKL58Xs.jpg",
@@ -88,21 +96,23 @@
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/motb/motb5-6XIOL4C1VxpwrrSke07G9iWqJ4DOOf.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/motb/motb6-DiGG2BEIZVbXYNOJGtELkM5IFe0uLi.png",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/motb/motb7-EeQxIuw6uXomyVv6vVzzDSiXPp2jiR.png"
-      ]
+      ],
+      "poster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/motb/biblenow.webp"
     },
     {
       "slug": "aic-website-ecosystem-redesign",
       "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/aic/aic-hwXwuqaTI4fld9zEvUxzwLZtIcbLJS.jpg",
-      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/aic/video-6d8icSSBJEX3VOVodRtmQoBbzYh4AR.mp4",
+      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/aic/video.mp4",
       "thumb": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/thumbs/aic-ChwGq8rdAQK7fJwjZVYtJQr5OktZgd.jpg",
       "images": [
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/aic/technical-audit-ZDbJ559adEhGRKQkJji4fjn3BaYuaN.png"
-      ]
+      ],
+      "poster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/aic/video.webp"
     },
     {
       "slug": "sfmoma-photography-interpretive-center",
       "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/sfmoma/sfmoma2-gJ6Xa6MTX8zvEasmmpBaoa0FWcg8tK.jpg",
-      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/sfmoma/pic-XOX7G00N1PQfF1CQ1u5pJCDoPMXqj2.mp4",
+      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/sfmoma/pic.mp4",
       "thumb": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/thumbs/sfmoma-MvXl0VoWdGBLwmzmIm2w552IEqZzet.jpg",
       "images": [
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/sfmoma/sfmoma1-pF1jLyFUA7VewkGZqQoHKHLXF7n0jq.jpg",
@@ -115,12 +125,13 @@
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/sfmoma/sfmoma8-suiVhz0zTylSCpzvqVrVWO1rTLcMZh.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/sfmoma/sfmoma9-Wbryw0tPi4vlBGvuYWwljNV5flllXZ.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/sfmoma/sfmoma10-nsv9PRqlN1rpDMzyhEzDoKWMYGf7DD.jpg"
-      ]
+      ],
+      "poster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/sfmoma/pic.webp"
     },
     {
       "slug": "record-of-rights",
       "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/rights/rights-H44CzGv0JDktYaa3sgIPygMtAFGLqh.png",
-      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/rights/rights-2bH9MpjCzWrA5UUl5JZjt8wls6OIej.mp4",
+      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/rights/rights.mp4",
       "thumb": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/thumbs/rights-rzvKmQRhhg3V1v5634eifu9EKyRdBX.png",
       "images": [
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/rights/rights10-pWH4D3OISXaTP1wB3ovvvqqze4N6my.jpg",
@@ -134,12 +145,13 @@
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/rights/rights7-QAWLZJ2lrRgrbx6cKgvm3xQJFuy9G3.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/rights/rights8-m8yANveM2G9rbTMehcPNC5eBARoclj.jpg",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/rights/rights9-j9OfY38vhbmzKdrbYbj0iGEWxUJSKF.jpg"
-      ]
+      ],
+      "poster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/rights/rights.webp"
     },
     {
       "slug": "aiga-design-archives",
       "hero": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/aiga/aiga-uPzloIV73K7qtw6G6VpxQkEErjzIPn.png",
-      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/aiga/aiga-94tWqnIWRCUOvnjdMum9p12r9eGNIV.mp4",
+      "video": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/aiga/aiga.mp4",
       "thumb": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/thumbs/aiga-tEqR923aaYrqAgO58CrExiTYCUAd0s.png",
       "images": [
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/aiga/aiga1-bTARigT2pP5sUVIZgDJRy1gukMqzlb.png",
@@ -147,7 +159,8 @@
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/aiga/aiga3-mtCa6ukgWRJd82h1eohmXqq2KryVcU.png",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/aiga/aiga4-TVkkD88y5TH2lkKTgQsY5Sts5GgATA.png",
         "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work/aiga/aiga5-8kiAu3QHLeomHoPdfFXxCTqty5vyRM.png"
-      ]
+      ],
+      "poster": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-posters/aiga/aiga.webp"
     }
   ]
 }

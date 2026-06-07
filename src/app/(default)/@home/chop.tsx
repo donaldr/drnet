@@ -256,9 +256,17 @@ export default function Chop({
   }, [pathMap, show, reveal, animate, active]);
 
   useEffect(() => {
+    // Only run the matter.js physics loop while the home section is active.
+    // Previously the Runner was started once and never stopped, so Engine.update
+    // ran every frame for the whole session (even in the work section) — invisible
+    // to scrollPerf since it isn't a scroll handler.
+    if (!active) return;
     const runner = Runner.create();
     Runner.run(runner, engine);
-  }, [engine]);
+    return () => {
+      Runner.stop(runner);
+    };
+  }, [engine, active]);
 
   useEffect(() => {
     if (font && size) {
