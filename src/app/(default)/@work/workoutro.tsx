@@ -15,6 +15,7 @@ import {
   decrementEventHandlerCount,
   incrementEventHandlerCount,
 } from "@/lib/state";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 
 type Point = {
   x: number;
@@ -69,6 +70,13 @@ export default function WorkOutro({
   const [size, setSize] = useState<[number, number] | undefined>();
   const sizeRef = useRef(size);
 
+  // Cached DOM references — populated in the size effect, used in scroll handler
+  const frontPathsRef = useRef<(SVGPathElement | null)[]>([null, null, null, null]);
+  const backPathsRef = useRef<(SVGPathElement | null)[]>([null, null, null, null]);
+  const pathLengthsRef = useRef<number[]>([0, 0, 0, 0]);
+  const backPathLengthsRef = useRef<number[]>([0, 0, 0, 0]);
+  const prevDiffRef = useRef<number>(-1);
+
   const { scroll } = useLocomotiveScroll();
   const debouncer = useDebounce();
 
@@ -97,147 +105,86 @@ export default function WorkOutro({
     if (scroll) {
       incrementEventHandlerCount("scroll-workoutro");
       scroll.on("scroll", (obj: any) => {
-        if (sizeRef.current) {
-          const key = `work-${index}-outro-animate`;
-          const third = sizeRef.current[1] / 3;
-          if (key in obj.currentElements) {
-            const diff = Math.max(
-              0,
-              Math.min(
-                1,
-                (1.0 +
-                  (obj.scroll.y - obj.currentElements[key].top) /
-                    sizeRef.current[1]) *
-                  1.25
-              )
-            );
-            for (let i = 0; i < 4; i++) {
-              const path = document.getElementById(
-                `logo-path-for-work-${index}-path-${i}`
-              );
-              const length = parseFloat(
-                parseFloat(
-                  path?.getAttribute("pathLength")?.valueOf() || "0"
-                ).toFixed(2)
-              );
-              if (i == 0) {
-                const startOffset = (length - third - 0.01) * diff;
-                const endOffsetGrowthSection = startOffset * 1.5;
-                const endOffsetStop = length - third * 0.46;
-                path?.setAttributeNS(
-                  null,
-                  "stroke-dasharray",
-                  `${
-                    endOffsetGrowthSection < endOffsetStop
-                      ? endOffsetGrowthSection - startOffset
-                      : endOffsetStop - startOffset
-                  } ${length}`
-                );
-                path?.setAttributeNS(
-                  null,
-                  "stroke-dashoffset",
-                  `${-startOffset}`
-                );
-              }
-              if (i == 1) {
-                const startOffset = (length - third - 0.01) * diff;
-                const endOffsetGrowthSection = startOffset * 2;
-                const endOffsetStop = length;
-                path?.setAttributeNS(
-                  null,
-                  "stroke-dasharray",
-                  `${
-                    endOffsetGrowthSection < endOffsetStop
-                      ? endOffsetGrowthSection - startOffset
-                      : endOffsetStop - startOffset
-                  } ${length}`
-                );
-                path?.setAttributeNS(
-                  null,
-                  "stroke-dashoffset",
-                  `${-startOffset}`
-                );
-              } else if (i == 2) {
-                const startOffset = (length - third - 0.01) * diff;
-                const endOffsetGrowthSection = startOffset * 2;
-                const endOffsetStop = length - third * 0.3;
-                path?.setAttributeNS(
-                  null,
-                  "stroke-dasharray",
-                  `${
-                    endOffsetGrowthSection < endOffsetStop
-                      ? endOffsetGrowthSection - startOffset
-                      : endOffsetStop - startOffset
-                  } ${length}`
-                );
-                path?.setAttributeNS(
-                  null,
-                  "stroke-dashoffset",
-                  `${-startOffset}`
-                );
-              } else if (i == 3) {
-                const startOffset = (length - third * 0.55) * diff;
-                const endOffsetGrowthSection = startOffset * 1.5;
-                const endOffsetStop = length - third * 0.3;
-                path?.setAttributeNS(
-                  null,
-                  "stroke-dasharray",
-                  `${
-                    endOffsetGrowthSection < endOffsetStop
-                      ? endOffsetGrowthSection - startOffset
-                      : endOffsetStop - startOffset
-                  } ${length}`
-                );
-                path?.setAttributeNS(
-                  null,
-                  "stroke-dashoffset",
-                  `${-startOffset}`
-                );
-              }
-              path?.setAttributeNS(
-                null,
-                "filter",
-                `brightness(${0.5 + ((i / 4 + (1 - i / 4)) / 2) * diff})`
-              );
-              if (diff == 1) {
-                path?.setAttributeNS(null, "class", "animate-glowpulse");
-                path?.setAttributeNS(
-                  null,
-                  "style",
-                  `transition: stroke 0.5s ease-in-out; stroke: #AAAAAA;`
-                );
-              } else {
-                path?.setAttributeNS(null, "class", "");
-                path?.setAttributeNS(
-                  null,
-                  "style",
-                  `transition: stroke 0.5s ease-in-out; stroke: #AAAAAA;`
-                );
-              }
-            }
-            for (let i = 0; i < 4; i++) {
-              const path = document.getElementById(
-                `logo-path-for-work-${index}-path-${i}-background`
-              );
-              const length = parseFloat(
-                parseFloat(
-                  path?.getAttribute("pathLength")?.valueOf() || "0"
-                ).toFixed(2)
-              );
-              const backLength = Math.max(0, diff * length - (length - third));
-              path?.setAttributeNS(
-                null,
-                "stroke-dasharray",
-                `${backLength} ${length}`
-              );
-              path?.setAttributeNS(
-                null,
-                "stroke-dashoffset",
-                `-${Math.min(length - third, Math.max(0, length - third))}`
-              );
-            }
+        markHandlerStart(`workoutro-${index}`);
+        if (!sizeRef.current) return;
+        const key = `work-${index}-outro-animate`;
+        if (!(key in obj.currentElements)) return;
+
+        const third = sizeRef.current[1] / 3;
+        const diff = Math.max(
+          0,
+          Math.min(
+            1,
+            (1.0 +
+              (obj.scroll.y - obj.currentElements[key].top) /
+                sizeRef.current[1]) *
+              1.25
+          )
+        );
+
+        // Skip all DOM work if diff hasn't changed enough
+        const quantized = Math.round(diff * 1000);
+        if (quantized === Math.round(prevDiffRef.current * 1000)) return;
+        prevDiffRef.current = diff;
+
+        // Foreground paths — use cached refs & pathLengths
+        for (let i = 0; i < 4; i++) {
+          const path = frontPathsRef.current[i];
+          if (!path) continue;
+          const length = pathLengthsRef.current[i];
+
+          let startOffset: number;
+          let endOffsetGrowthSection: number;
+          let endOffsetStop: number;
+
+          if (i === 0) {
+            startOffset = (length - third - 0.01) * diff;
+            endOffsetGrowthSection = startOffset * 1.5;
+            endOffsetStop = length - third * 0.46;
+          } else if (i === 1) {
+            startOffset = (length - third - 0.01) * diff;
+            endOffsetGrowthSection = startOffset * 2;
+            endOffsetStop = length;
+          } else if (i === 2) {
+            startOffset = (length - third - 0.01) * diff;
+            endOffsetGrowthSection = startOffset * 2;
+            endOffsetStop = length - third * 0.3;
+          } else {
+            startOffset = (length - third * 0.55) * diff;
+            endOffsetGrowthSection = startOffset * 1.5;
+            endOffsetStop = length - third * 0.3;
+          }
+
+          const dashLen =
+            endOffsetGrowthSection < endOffsetStop
+              ? endOffsetGrowthSection - startOffset
+              : endOffsetStop - startOffset;
+
+          path.setAttribute("stroke-dasharray", `${dashLen} ${length}`);
+          path.setAttribute("stroke-dashoffset", `${-startOffset}`);
+          path.setAttribute(
+            "filter",
+            `brightness(${0.5 + ((i / 4 + (1 - i / 4)) / 2) * diff})`
+          );
+
+          if (diff === 1) {
+            path.setAttribute("class", "animate-glowpulse");
+          } else {
+            path.removeAttribute("class");
           }
         }
+
+        // Background paths — use cached refs & pathLengths
+        for (let i = 0; i < 4; i++) {
+          const path = backPathsRef.current[i];
+          if (!path) continue;
+          const length = backPathLengthsRef.current[i];
+          const backLength = Math.max(0, diff * length - (length - third));
+          const dashOffset = length - third;
+          path.setAttribute("stroke-dasharray", `${backLength} ${length}`);
+          path.setAttribute("stroke-dashoffset", `-${dashOffset}`);
+        }
+        markHandlerEnd(`workoutro-${index}`);
       });
     }
   }, [scroll, index]);
@@ -245,6 +192,9 @@ export default function WorkOutro({
   useEffect(() => {
     if (ref.current && size) {
       ref.current.innerHTML = "";
+      prevDiffRef.current = -1;
+      frontPathsRef.current = [null, null, null, null];
+      backPathsRef.current = [null, null, null, null];
       const a = [0, 1, 2, 3];
       a.sort(() => Math.random() - 0.5);
 
@@ -350,6 +300,10 @@ export default function WorkOutro({
             "id",
             `logo-path-for-work-${index}-path-${randomI}`
           );
+          path.style.transition = "stroke 0.5s ease-in-out";
+          path.style.stroke = "#AAAAAA";
+          frontPathsRef.current[randomI] = path;
+          pathLengthsRef.current[randomI] = bounds.length;
           frontSVGs.push(svg);
         } else {
           path.setAttributeNS(null, "stroke", "#202020");
@@ -358,6 +312,8 @@ export default function WorkOutro({
             "id",
             `logo-path-for-work-${index}-path-${randomI}-background`
           );
+          backPathsRef.current[randomI] = path;
+          backPathLengthsRef.current[randomI] = bounds.length;
           backSVGs.push(svg);
         }
 
@@ -373,7 +329,7 @@ export default function WorkOutro({
     <div
       id={`work-${index}-outro-container`}
       ref={ref}
-      className="h-[100dvh] w-screen transition-[opacity] duration-1000 will-change-[opacity,transform] bg-[var(--dark)] absolute top-0 flex items-center justify-center animate-glowpulse"
+      className="h-[100dvh] w-screen transition-[opacity] duration-1000 bg-[var(--dark)] absolute top-0 flex items-center justify-center"
       data-scroll
       data-scroll-repeat
       data-scroll-id={`work-${index}-outro-container`}

@@ -9,12 +9,13 @@ import React, {
 import { useLocomotiveScroll } from "@/lib/locomotive";
 import Image from "next/image";
 import clsx from "clsx";
-import { WorkData } from "./@work/workitems";
+import type { WorkData } from "./@work/types";
 import {
   decrementEventHandlerCount,
   incrementEventHandlerCount,
 } from "@/lib/state";
 import { useDebounce } from "@/lib/customhooks";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 
 export default function HeaderTitle({
   children,
@@ -36,10 +37,10 @@ export default function HeaderTitle({
   work?: WorkData;
 }>) {
   const { scroll } = useLocomotiveScroll();
-  const [show, setShow] = useState(false);
-  const [titlePosition, setTitlePosition] = useState(0);
+  const titleBgRef = useRef<HTMLDivElement>(null);
   const [imageSrc, setImageSrc] = useState<string>();
   const screenHeightRef = useRef(0);
+  const titleTextRef = useRef<HTMLDivElement>(null);
   const debouncer = useDebounce();
 
   const resize = useCallback(() => {
@@ -68,6 +69,7 @@ export default function HeaderTitle({
     if (scroll) {
       incrementEventHandlerCount("scroll-headertitle");
       scroll.on("scroll", (scroll: any) => {
+        markHandlerStart(`headertitle-${id}`);
         if (activeRef.current) {
           const el: any = Object.values(scroll.currentElements).filter(
             (el: any) => el.el.id == `${id}-title-background-target`
@@ -82,17 +84,20 @@ export default function HeaderTitle({
                   screenHeightRef.current
               )
             );
-            setTitlePosition(position);
+            // Update marginTop directly via DOM (no re-render)
+            if (titleTextRef.current) {
+              titleTextRef.current.style.marginTop = `${88 - position}px`;
+            }
           }
         }
+        markHandlerEnd(`headertitle-${id}`);
       });
       incrementEventHandlerCount("scroll-call-headertitle");
       scroll.on("call", (f: string, type: string) => {
         if (f == `showTitleBackground${id}`) {
-          if (type == "enter") {
-            setShow(true);
-          } else {
-            setShow(false);
+          // Direct DOM for opacity (no re-render)
+          if (titleBgRef.current) {
+            titleBgRef.current.style.opacity = type == "enter" ? "1" : "0";
           }
         }
       });
@@ -117,6 +122,7 @@ export default function HeaderTitle({
         ></div>
       </div>
       <div
+        ref={titleBgRef}
         id={`${id}-title-background`}
         data-scroll
         data-scroll-sticky
@@ -133,16 +139,17 @@ export default function HeaderTitle({
             backgroundColor:
               imageSrc && (!work || !work.needsPadding) ? "var(--dark)" : color,
           }),
-          opacity: show ? "1" : "0",
+          opacity: "0",
         }}
       >
         <div
           className={`h-header w-full flex flex-col items-start justify-center`}
         >
           <div
+            ref={titleTextRef}
             className="relative z-50 leading-tight hidden md:block"
             style={{
-              marginTop: `${88 - titlePosition}px`,
+              marginTop: "88px",
             }}
           >
             {children}
@@ -154,13 +161,12 @@ export default function HeaderTitle({
                   ? "opacity-100"
                   : "transition-opacity duration-1000 transition-none opacity-0"
               }`}
-              alt="boop"
-              width={0}
-              height={0}
+              alt={work?.project || ""}
+              width={1920}
+              height={1080}
               sizes="100dvw"
               src={imageSrc}
               priority={false}
-              unoptimized
             />
           )}
         </div>

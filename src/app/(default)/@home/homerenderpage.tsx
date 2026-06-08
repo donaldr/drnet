@@ -7,7 +7,6 @@ import {
   useLayoutEffect,
   useMemo,
   useCallback,
-  Profiler,
 } from "react";
 import clsx from "clsx";
 import FitVariable from "@/app/(default)/@home/fit";
@@ -22,10 +21,10 @@ import {
   decrementEventHandlerCount,
 } from "@/lib/state";
 import {
-  useProfilerRender,
   useDebounce,
   useWaitWheel,
 } from "@/lib/customhooks";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 import NoSSR from "react-no-ssr";
 
 export type Effect = ({
@@ -104,7 +103,6 @@ export default function HomeRenderPage() {
   const homeExitRef = useRef(false);
   const [size, setSize] = useState<[number, number] | undefined>();
   const debouncer = useDebounce();
-  const profilerRender = useProfilerRender({ minDuration: 10 });
   const previousScrollYRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
@@ -295,6 +293,7 @@ export default function HomeRenderPage() {
     if (scroll) {
       incrementEventHandlerCount("scroll-homerender");
       scroll.on("scroll", (obj: any) => {
+        markHandlerStart("homerender");
         if (
           activeRef.current &&
           !navigating.current &&
@@ -354,6 +353,7 @@ export default function HomeRenderPage() {
           }
         }
         previousScrollYRef.current = obj.scroll.y;
+        markHandlerEnd("homerender");
       });
     }
   }, [scroll, readyRef, wait, stop]);
@@ -391,8 +391,7 @@ export default function HomeRenderPage() {
 
   return (
     <NoSSR>
-      <Profiler id="home" onRender={profilerRender}>
-        <div
+      <div
           className={homeClasses}
           data-scroll
           data-scroll-repeat
@@ -420,7 +419,6 @@ export default function HomeRenderPage() {
             elapsedPlayDuration={elapsedPlayDuration}
           />
         </div>
-      </Profiler>
     </NoSSR>
   );
 }

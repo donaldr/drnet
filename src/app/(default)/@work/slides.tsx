@@ -1,5 +1,5 @@
 "use client";
-import { WorkData } from "@/app/(default)/@work/workitems";
+import type { WorkData } from "@/app/(default)/@work/types";
 import { useEffect, useState } from "react";
 import { useLocomotiveScroll } from "@/lib/locomotive";
 import clsx from "clsx";
@@ -118,26 +118,33 @@ export default function Slides({
           }}
         >
           {work.images &&
-            work.images.map((image: any, index: number) => (
-              <SwiperSlide key={`image-${index}`}>
-                <Image
-                  data-index={index}
+            work.images.map((image: any, imgIndex: number) => (
+              <SwiperSlide key={`image-${imgIndex}`}>
+                <div
+                  data-index={imgIndex}
                   className={clsx({
-                    "w-screen h-[100dvh]": !work.needsPadding,
-                    "w-[80dvw] h-[80dvh]": work.needsPadding,
-                    "object-contain": work.needsPadding,
-                    "object-cover": !work.needsPadding,
+                    "relative w-screen h-[100dvh]": !work.needsPadding,
+                    "relative w-[80dvw] h-[80dvh]": work.needsPadding,
                   })}
-                  alt="boop"
-                  width={0}
-                  height={0}
-                  sizes="100dvw"
-                  src={image}
-                  loading="lazy"
-                  fetchPriority="low"
-                  priority={false}
-                  unoptimized
-                />
+                >
+                  <Image
+                    className={clsx({
+                      "object-contain": work.needsPadding,
+                      "object-cover": !work.needsPadding,
+                    })}
+                    alt={work.project}
+                    fill
+                    sizes="100dvw"
+                    src={image}
+                    loading="lazy"
+                    fetchPriority="low"
+                    priority={false}
+                    {...(work.imageBlurDataURLs?.[imgIndex] && {
+                      placeholder: "blur",
+                      blurDataURL: work.imageBlurDataURLs[imgIndex],
+                    })}
+                  />
+                </div>
               </SwiperSlide>
             ))}
         </Swiper>

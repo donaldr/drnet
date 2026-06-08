@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(wc -l:*)",
+      "Bash(yarn add:*)",
+      "Bash(npx next build:*)",
+      "Bash(git stash pop:*)",
+      "Bash(yarn dev)",
+      "Bash(timeout:*)",
+      "Bash(node --version:*)",
+      "Bash(git stash drop stash@{0})",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nReduce scroll handler setState calls: consolidate states, direct DOM updates, quantize\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}

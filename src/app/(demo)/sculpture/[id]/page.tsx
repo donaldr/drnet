@@ -330,7 +330,6 @@ export default function ShaderCanvas() {
               z: Math.random(),
             };
             dataManager.updateShader();
-            console.log(dataManager.globals);
             setGenerationState(PageState.DATA_LOADED);
             requestAnimationFrame((time) => doDot(time));
           }

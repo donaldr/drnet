@@ -1,0 +1,45 @@
+[
+  {
+    "slug": "verizon-innovation-center-boston",
+    "videoHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/verizon/detail/master.m3u8",
+    "heroHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/verizon/intro/master.m3u8"
+  },
+  {
+    "slug": "consulting-workspace-experiences",
+    "videoHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/ccc/ccc/master.m3u8"
+  },
+  {
+    "slug": "confidential-financial-services-lobby-digital-elements",
+    "videoHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/cfsc/skylobby/master.m3u8"
+  },
+  {
+    "slug": "confidential-architectural-client-wall-system-prototype",
+    "videoHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/cac/pips-video/master.m3u8",
+    "heroHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/cac/hero/master.m3u8"
+  },
+  {
+    "slug": "cibc-lobby-wall",
+    "videoHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/cibc/video/master.m3u8",
+    "heroHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/cibc/loop/master.m3u8"
+  },
+  {
+    "slug": "impact-of-the-bible",
+    "videoHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/motb/biblenow/master.m3u8"
+  },
+  {
+    "slug": "aic-website-ecosystem-redesign",
+    "videoHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/aic/video/master.m3u8"
+  },
+  {
+    "slug": "sfmoma-photography-interpretive-center",
+    "videoHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/sfmoma/pic/master.m3u8"
+  },
+  {
+    "slug": "record-of-rights",
+    "videoHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/rights/rights/master.m3u8"
+  },
+  {
+    "slug": "aiga-design-archives",
+    "videoHls": "https://til8tmqclrhrb7ie.public.blob.vercel-storage.com/work-hls/aiga/aiga/master.m3u8"
+  }
+]

@@ -6,8 +6,16 @@ import {
   useState,
 } from "react";
 import opentype from "opentype.js";
-//import paper from "paper/dist/paper-full";
-import paper from "paper-jsdom-canvas";
+// NOTE: paper is loaded lazily on the client (see the dynamic import in the
+// effect below) rather than imported at the top. paper's module init calls
+// canvas.getContext("2d") immediately, which on the server (where Next
+// evaluates client-component modules for SSR) requires node-canvas. We used
+// to depend on paper-jsdom-canvas + node-canvas just to satisfy that
+// server-side import, but node-canvas has no prebuilt binary for current Node
+// and fails to compile on Vercel. Since all paper usage here is client-only,
+// importing it lazily in the browser removes the canvas dependency entirely.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PaperScope = any;
 import Matter from "matter-js";
 import "pathseg";
 import clsx from "clsx";
@@ -44,9 +52,7 @@ export default function Chop({
   const [font, setFont] = useState<ReturnType<typeof opentype.parse> | null>(
     null
   );
-  const [pathMap, setPathMap] = useState<
-    Array<[SVGPathElement, typeof paper.Path]>
-  >([]);
+  const [pathMap, setPathMap] = useState<Array<[SVGPathElement, any]>>([]);
   const [originalPositions, setOriginalPositions] = useState<
     Array<{ x: number; y: number }>
   >([]);
@@ -68,7 +74,19 @@ export default function Chop({
   const { scroll } = useLocomotiveScroll();
   const offsetRef = useRef(0);
   const [active, setActive] = useState(false);
+  const [paper, setPaper] = useState<PaperScope | null>(null);
   const debouncer = useDebounce();
+
+  // Load paper.js lazily on the client only (its module init touches canvas).
+  useEffect(() => {
+    let cancelled = false;
+    import("paper").then((mod) => {
+      if (!cancelled) setPaper(mod.default);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (scroll) {
@@ -256,12 +274,20 @@ export default function Chop({
   }, [pathMap, show, reveal, animate, active]);
 
   useEffect(() => {
+    // Only run the matter.js physics loop while the home section is active.
+    // Previously the Runner was started once and never stopped, so Engine.update
+    // ran every frame for the whole session (even in the work section) — invisible
+    // to scrollPerf since it isn't a scroll handler.
+    if (!active) return;
     const runner = Runner.create();
     Runner.run(runner, engine);
-  }, [engine]);
+    return () => {
+      Runner.stop(runner);
+    };
+  }, [engine, active]);
 
   useEffect(() => {
-    if (font && size) {
+    if (font && size && paper) {
       const page: SVGElement = document.getElementById(
         "chop"
       ) as unknown as SVGElement;
@@ -451,7 +477,7 @@ export default function Chop({
 
       // run the engine
     }
-  }, [children, font, engine, size]);
+  }, [children, font, engine, size, paper]);
 
   const updateSize = useCallback(() => {
     debouncer(() =>

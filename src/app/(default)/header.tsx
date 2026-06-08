@@ -16,7 +16,7 @@ export default function Header() {
     if (pathname.startsWith("/work")) {
       setWorkClasses(
         clsx({
-          "duration-1000 transition-[color,fill] will-change-[color,fill] mt-2":
+          "duration-1000 transition-[color,fill] mt-2":
             true,
           "animate-boldify": true,
         })
@@ -24,7 +24,7 @@ export default function Header() {
     } else if (previousPathName && previousPathName.startsWith("/work")) {
       setWorkClasses(
         clsx({
-          "duration-1000 transition-[color,fill] will-change-[color,fill] mt-2":
+          "duration-1000 transition-[color,fill] mt-2":
             true,
           "animate-unboldify": true,
         })
@@ -33,7 +33,7 @@ export default function Header() {
     if (pathname.startsWith("/resume")) {
       setResumeClasses(
         clsx({
-          "duration-1000 transition-[color,fill] will-change-[color,fill] mt-2":
+          "duration-1000 transition-[color,fill] mt-2":
             true,
           "animate-boldify": true,
         })
@@ -41,7 +41,7 @@ export default function Header() {
     } else if (previousPathName && previousPathName.startsWith("/resume")) {
       setResumeClasses(
         clsx({
-          "duration-1000 transition-[color,fill] will-change-[color,fill] mt-2":
+          "duration-1000 transition-[color,fill] mt-2":
             true,
           "animate-unboldify": true,
         })
@@ -50,7 +50,7 @@ export default function Header() {
     if (pathname.startsWith("/contact")) {
       setContactClasses(
         clsx({
-          "duration-1000 transition-[color,fill] will-change-[color,fill] mt-2":
+          "duration-1000 transition-[color,fill] mt-2":
             true,
           "animate-boldify": true,
         })
@@ -58,7 +58,7 @@ export default function Header() {
     } else if (previousPathName && previousPathName?.startsWith("/contact")) {
       setContactClasses(
         clsx({
-          "duration-1000 transition-[color,fill] will-change-[color,fill] mt-2":
+          "duration-1000 transition-[color,fill] mt-2":
             true,
           "animate-unboldify": true,
         })
@@ -77,7 +77,7 @@ export default function Header() {
 
   return (
     <>
-      <header className={headerClasses}>
+      <header id="site-header" className={headerClasses}>
         <div className="flex gap-8">
           <a
             href="/"
@@ -91,7 +91,7 @@ export default function Header() {
                 xmlns="http://www.w3.org/2000/svg"
                 id="Layer_1"
                 viewBox="0 0 100 100"
-                className="auto h-[2em] object-left transition-[fill] will-change-[fill] duration-1000"
+                className="auto h-[2em] object-left transition-[fill] duration-1000"
               >
                 <defs>
                   <style>
@@ -102,31 +102,31 @@ export default function Header() {
                 </defs>
                 <path
                   d="M0 0h18.14v100H0z"
-                  className="bg transition-[fill] will-change-[fill] duration-1000"
+                  className="bg transition-[fill] duration-1000"
                 />
                 <path
                   d="M54.57 0h18.14v100H54.57z"
-                  className="bg transition-[fill] will-change-[fill] duration-1000"
+                  className="bg transition-[fill] duration-1000"
                 />
                 <path
                   d="M81.86 0H100v100H81.86z"
-                  className="bg transition-[fill] will-change-[fill] duration-1000"
+                  className="bg transition-[fill] duration-1000"
                 />
                 <path
                   d="M0 45.81h18.14V100H0z"
-                  className="fg transition-[fill] will-change-[fill] duration-1000"
+                  className="fg transition-[fill] duration-1000"
                 />
                 <path
                   d="M27.29 0h18.14v100H27.29z"
-                  className="fg transition-[fill] will-change-[fill] duration-1000"
+                  className="fg transition-[fill] duration-1000"
                 />
                 <path
                   d="M54.57 30.3h18.14V100H54.57z"
-                  className="fg transition-[fill] will-change-[fill] duration-1000"
+                  className="fg transition-[fill] duration-1000"
                 />
                 <path
                   d="M81.86 30.3H100v25H81.86z"
-                  className="fg transition-[fill] will-change-[fill] duration-1000"
+                  className="fg transition-[fill] duration-1000"
                 />
               </svg>
             </div>

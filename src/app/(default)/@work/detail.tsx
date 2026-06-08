@@ -1,8 +1,7 @@
 "use client";
-import { WorkData } from "@/app/(default)/@work/workitems";
+import type { WorkData } from "@/app/(default)/@work/types";
 import {
   memo,
-  Profiler,
   useCallback,
   useEffect,
   useMemo,
@@ -12,7 +11,6 @@ import {
 import clsx from "clsx";
 import {
   useDebounce,
-  useProfilerRender,
   useTemplateFunction,
 } from "@/lib/customhooks";
 import interpolateComponents from "@automattic/interpolate-components";
@@ -23,6 +21,7 @@ import {
   decrementEventHandlerCount,
   incrementEventHandlerCount,
 } from "@/lib/state";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 
 function Detail({
   index,
@@ -35,17 +34,14 @@ function Detail({
   top: string;
   videoInView: boolean;
 }>) {
-  const [reveal, setReveal] = useState(true);
-  const [clientReveal, setClientReveal] = useState(false);
-  const [projectReveal, setProjectReveal] = useState(false);
-  const [dateReveal, setDateReveal] = useState(false);
-  const [positionReveal, setPositionReveal] = useState(false);
-  const [employerReveal, setEmployerReveal] = useState(false);
   const [size, setSize] = useState<[number, number] | undefined>();
   const sizeRef = useRef(size);
   const debouncer = useDebounce();
-  const profilerRender = useProfilerRender({ minDuration: 10 });
   const previousScrollYRef = useRef<number | null>(null);
+  const detailMainRef = useRef<HTMLDivElement>(null);
+  const detailRolesRef = useRef<HTMLDivElement>(null);
+  const revealRef = useRef(true);
+  const detailsRevealedRef = useRef(false);
 
   const { scroll } = useLocomotiveScroll();
 
@@ -53,6 +49,7 @@ function Detail({
     if (scroll) {
       incrementEventHandlerCount("scroll-detail");
       scroll.on("scroll", (obj: any) => {
+        markHandlerStart(`detail-${index}`);
         let direction;
         if (
           previousScrollYRef.current == null ||
@@ -64,23 +61,15 @@ function Detail({
           previousScrollYRef.current > obj.scroll.y
         )
           direction = "up";
+
+        let newRevealed = detailsRevealedRef.current;
+        let newReveal = revealRef.current;
+
         if (sizeRef.current && sizeRef.current[0] < 768) {
           const key = `work-${index}-detail-main-small`;
           if (key in obj.currentElements) {
             const el = obj.currentElements[key];
-            if (el.progress > 0.25 && el.progress < 0.75) {
-              setClientReveal(true);
-              setDateReveal(true);
-              setPositionReveal(true);
-              setProjectReveal(true);
-              setEmployerReveal(true);
-            } else {
-              setClientReveal(false);
-              setDateReveal(false);
-              setPositionReveal(false);
-              setProjectReveal(false);
-              setEmployerReveal(false);
-            }
+            newRevealed = el.progress > 0.25 && el.progress < 0.75;
           }
         } else {
           const key = `work-${index}-detail-target`;
@@ -91,35 +80,58 @@ function Detail({
               (progress > 0.28 && progress < 0.6 && direction == "down") ||
               (progress > 0.4 && progress < 0.7 && direction == "up")
             ) {
-              setReveal(true);
+              newReveal = true;
             } else if (
               (progress < 0.4 && direction == "up") ||
               (progress > 0.6 && direction == "down")
             ) {
-              setReveal(false);
+              newReveal = false;
             }
             if (
               (progress > 0.281 && progress < 0.599 && direction == "down") ||
               (progress > 0.401 && progress < 0.699 && direction == "up")
             ) {
-              setClientReveal(true);
-              setDateReveal(true);
-              setPositionReveal(true);
-              setProjectReveal(true);
-              setEmployerReveal(true);
+              newRevealed = true;
             } else if (
               (progress < 0.401 && direction == "up") ||
               (progress > 0.599 && direction == "down")
             ) {
-              setClientReveal(false);
-              setDateReveal(false);
-              setPositionReveal(false);
-              setProjectReveal(false);
-              setEmployerReveal(false);
+              newRevealed = false;
             }
           }
         }
+
+        // Direct DOM for reveal (no re-render)
+        if (newReveal !== revealRef.current) {
+          revealRef.current = newReveal;
+          const el = detailMainRef.current;
+          if (el) {
+            el.classList.toggle("md:opacity-100", newReveal);
+            el.classList.toggle("md:opacity-0", !newReveal);
+            el.classList.toggle("active", newReveal);
+            el.classList.toggle("not-active", !newReveal);
+            el.style.transitionDelay = newReveal ? "0ms" : "750ms";
+          }
+        }
+
+        // Direct DOM for details revealed (no re-render)
+        if (newRevealed !== detailsRevealedRef.current) {
+          detailsRevealedRef.current = newRevealed;
+          const revealClasses = [
+            "client-reveal",
+            "project-reveal",
+            "date-reveal",
+            "position-reveal",
+            "employer-reveal",
+          ];
+          [detailMainRef.current, detailRolesRef.current].forEach((el) => {
+            if (!el) return;
+            revealClasses.forEach((cls) => el.classList.toggle(cls, newRevealed));
+          });
+        }
+
         previousScrollYRef.current = obj.scroll.y;
+        markHandlerEnd(`detail-${index}`);
       });
     }
   }, [scroll, index]);
@@ -211,19 +223,13 @@ function Detail({
   return (
     <>
       <div
+        ref={detailMainRef}
         className={clsx({
           "group absolute px-[5dvw] md:text-xl lg:text-2xl h-[100dvh] w-[50dvw] z-50 box-border will-change-transform max-w-[64rem] md:flex items-center justify-center leading-loose transition-[opacity] duration-1000 hidden":
             true,
           "pointer-events-none": videoInView,
-          "md:opacity-100": reveal,
-          "md:opacity-0": !reveal,
-          "client-reveal": clientReveal,
-          "project-reveal": projectReveal,
-          "date-reveal": dateReveal,
-          "position-reveal": positionReveal,
-          "employer-reveal": employerReveal,
-          active: reveal,
-          "not-active": !reveal,
+          "md:opacity-100": true,
+          active: true,
         })}
         data-scroll
         data-scroll-repeat
@@ -233,22 +239,17 @@ function Detail({
         data-scroll-speed={1}
         style={{
           top: top,
-          transitionDelay: reveal ? `0ms` : `750ms`,
+          transitionDelay: "0ms",
         }}
       >
         <div className="leading-[1.75]">{detailItem}</div>
       </div>
       <div
-        //id={`work-${index}-detail-roles`}
+        ref={detailRolesRef}
         className={clsx({
           "group absolute px-[5dvw] text-xl h-[150dvh] w-full md:w-[50dvw] z-50 box-border md:left-[min(50dvw,64rem)] will-change-transform max-w-[64rem] flex flex-col items-center justify-center":
             true,
           "pointer-events-none": videoInView,
-          "client-reveal": clientReveal,
-          "project-reveal": projectReveal,
-          "date-reveal": dateReveal,
-          "position-reveal": positionReveal,
-          "employer-reveal": employerReveal,
         })}
         data-scroll
         data-scroll-repeat
@@ -263,13 +264,9 @@ function Detail({
           data-scroll-id={`work-${index}-detail-main-small`}
           className="leading-[1.75] md:hidden"
         >
-          <Profiler id="detail-item" onRender={profilerRender}>
-            {detailItem}
-          </Profiler>
+          {detailItem}
         </div>
-        <Profiler id="detail-roles" onRender={profilerRender}>
-          <DetailRoles work={work} index={index} />
-        </Profiler>
+        <DetailRoles work={work} index={index} />
       </div>
     </>
   );

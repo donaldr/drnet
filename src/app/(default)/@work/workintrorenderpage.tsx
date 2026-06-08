@@ -1,7 +1,7 @@
 "use client";
 
 import { useLineText } from "@/lib/linetext";
-import { Profiler, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SVGStroke from "@/lib/svgstroke";
 import { useLocomotiveScroll } from "@/lib/locomotive";
 import {
@@ -10,7 +10,8 @@ import {
   useGlobalState,
 } from "@/lib/state";
 import clsx from "clsx";
-import { useProfilerRender, useDebounce } from "@/lib/customhooks";
+import { useDebounce } from "@/lib/customhooks";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 
 export default function WorkIntroComponent() {
   const pathRefs = useRef<Array<SVGPathElement | null>>([]);
@@ -18,7 +19,10 @@ export default function WorkIntroComponent() {
   const [refsAllSet, setRefsAllSet] = useState(false);
   const [size, setSize] = useState<[number, number] | undefined>();
 
-  const [length, setLength] = useState(1);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const prevNormalizedRef = useRef(-1);
+  const pathLengthsRef = useRef<number[]>([]);
+  const lineLengthsRef = useRef<number[]>([]);
   const [textContainerClasses, setTextContainerClasses] = useState("opacity-0");
 
   const workIntroText = useLineText(
@@ -48,23 +52,37 @@ export default function WorkIntroComponent() {
   }, [resize]);
 
   const checkAllRefs = useCallback(() => {
-    setRefsAllSet(
+    const allSet =
       !!workIntroText &&
-        !!workIntroText.paths &&
-        pathRefs.current.length == workIntroText.paths.length &&
-        pathRefs.current.every((el) => el) &&
-        lineRefs.current.length == 2 &&
-        lineRefs.current.every((el) => el)
-    );
+      !!workIntroText.paths &&
+      pathRefs.current.length == workIntroText.paths.length &&
+      pathRefs.current.every((el) => el) &&
+      lineRefs.current.length == 2 &&
+      lineRefs.current.every((el) => el);
+
+    if (allSet) {
+      // Pre-compute path lengths so the scroll handler never calls getTotalLength()
+      for (let i = 0; i < pathRefs.current.length; i++) {
+        const path = pathRefs.current[i];
+        if (path && !pathLengthsRef.current[i]) {
+          pathLengthsRef.current[i] = path.getTotalLength();
+        }
+      }
+      for (let i = 0; i < lineRefs.current.length; i++) {
+        const path = lineRefs.current[i];
+        if (path && !lineLengthsRef.current[i]) {
+          lineLengthsRef.current[i] = path.getTotalLength();
+        }
+      }
+    }
+
+    setRefsAllSet(allSet);
   }, [workIntroText, pathRefs, lineRefs]);
 
-  const [offset, setOffset] = useState(0);
   const { scroll } = useLocomotiveScroll();
 
   const [activeList] = useGlobalState("activeList");
   const [active, setActive] = useState(false);
-
-  const profilerRender = useProfilerRender({ minDuration: 10 });
 
   useEffect(() => {
     setActive(activeList[activeList.length - 1] == "work-intro");
@@ -80,41 +98,62 @@ export default function WorkIntroComponent() {
         "light-grain": true,
       })
     );
-  }, [active, refsAllSet, length]);
+  }, [active, refsAllSet]);
 
   useEffect(() => {
     if (scroll) {
       incrementEventHandlerCount("scroll-workintrorender");
       scroll.on("scroll", (obj: any) => {
+        markHandlerStart("workintro");
         const key = `work-intro-container`;
         if (key in obj.currentElements) {
           const diff = obj.scroll.y - obj.currentElements[key].top;
-          setLength(
-            Math.min(
-              Math.max(
-                0,
-                1 - (diff * 2 - 1) / document.documentElement.clientHeight
-              ),
-              1
-            )
-          );
-          setOffset(
-            Math.min(
-              Math.max(
-                0,
-                (diff * 2 - 1) / document.documentElement.clientHeight
-              ),
-              1
-            )
-          );
+          const normalized =
+            (diff * 2 - 1) / document.documentElement.clientHeight;
+          const offset = Math.max(0, Math.min(1, normalized));
+
+          // Direct DOM for smooth transform (every frame)
+          if (svgRef.current) {
+            svgRef.current.style.transform = `translateY(${-50 * offset}dvh)`;
+          }
+
+          // Direct DOM for stroke dasharray (quantized, skip when unchanged)
+          const quantized = Math.round(normalized * 200);
+          if (quantized !== Math.round(prevNormalizedRef.current * 200)) {
+            prevNormalizedRef.current = normalized;
+            const sl = Math.max(0, Math.min(1, 1 - normalized));
+
+            for (let i = 0; i < pathRefs.current.length; i++) {
+              const path = pathRefs.current[i];
+              const len = pathLengthsRef.current[i];
+              if (!path || !len) continue;
+              if (sl === 0) {
+                path.style.visibility = "hidden";
+              } else {
+                path.style.visibility = "";
+                path.style.strokeDasharray = `${len * sl} ${len * (1 - sl)}`;
+              }
+            }
+            for (let i = 0; i < lineRefs.current.length; i++) {
+              const path = lineRefs.current[i];
+              const len = lineLengthsRef.current[i];
+              if (!path || !len) continue;
+              if (sl === 0) {
+                path.style.visibility = "hidden";
+              } else {
+                path.style.visibility = "";
+                path.style.strokeDasharray = `${len * sl} ${len * (1 - sl)}`;
+              }
+            }
+          }
         }
+        markHandlerEnd("workintro");
       });
     }
   }, [scroll]);
 
   return (
-    <Profiler id="work-intro" onRender={profilerRender}>
-      <div
+    <div
         className={textContainerClasses}
         data-scroll="true"
         data-scroll-sticky="true"
@@ -122,6 +161,7 @@ export default function WorkIntroComponent() {
         data-scroll-id="work-intro-container"
       >
         <svg
+          ref={svgRef}
           xmlns="http://www.w3.org/2000/svg"
           xmlSpace="preserve"
           width={workIntroText.width}
@@ -130,7 +170,7 @@ export default function WorkIntroComponent() {
           }
           className="mb-1"
           style={{
-            transform: `translateY(${-50 * offset!}dvh)`,
+            transform: "translateY(0dvh)",
           }}
         >
           {workIntroText &&
@@ -142,7 +182,7 @@ export default function WorkIntroComponent() {
                 stroke="#999999"
                 strokeWidth={1}
                 startStroke={0}
-                strokeLength={length}
+                strokeLength={1}
                 svgPath={pathRefs.current[index]}
                 renderSVGPath={(pathCSS: React.CSSProperties) => {
                   return (
@@ -165,7 +205,7 @@ export default function WorkIntroComponent() {
                 stroke="#999999"
                 strokeWidth={1}
                 startStroke={0}
-                strokeLength={length}
+                strokeLength={1}
                 svgPath={lineRefs.current[0]}
                 renderSVGPath={(pathCSS: React.CSSProperties) => {
                   return (
@@ -193,7 +233,7 @@ export default function WorkIntroComponent() {
                 stroke="#999999"
                 strokeWidth={1}
                 startStroke={0}
-                strokeLength={length}
+                strokeLength={1}
                 svgPath={lineRefs.current[1]}
                 renderSVGPath={(pathCSS: React.CSSProperties) => {
                   return (
@@ -219,7 +259,6 @@ export default function WorkIntroComponent() {
             </>
           )}
         </svg>
-      </div>
-    </Profiler>
+    </div>
   );
 }

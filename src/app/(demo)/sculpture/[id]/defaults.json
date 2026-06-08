@@ -7846,7 +7846,7 @@
         "min": 0.12,
         "max": 0.51
       },
-      "intRef": 0.5,
+      "intRef": 0,
       "roughness": {
         "min": 0,
         "max": 0.5
@@ -8116,7 +8116,7 @@
         "min": 0.05,
         "max": 0.05
       },
-      "intRef": 0,
+      "intRef": 0.2,
       "roughness": {
         "min": 0.1,
         "max": 0.2
@@ -8442,7 +8442,6 @@
   "materials": [
     {
       "name": "Floor Material",
-      "emissive": false,
       "color": {
         "r": 1,
         "g": 1,
@@ -8453,26 +8452,21 @@
         "g": 1,
         "b": 1
       },
-      "glowColor": {
-        "r": 1,
-        "g": 1,
-        "b": 1
-      },
-      "kd": 3.0000000000000018,
-      "ior": 1.41,
-      "reflectivity": 0.6399999999999999,
-      "roughness": 0.9999999999999999,
+      "kd": 3.0,
+      "ior": 1.4,
+      "reflectivity": 0.64,
+      "roughness": 1.0,
       "metallic": 0.25,
       "transparency": 0,
-      "attenuation": 0.000009999999999999254,
+      "attenuation": 0.00001,
       "attenuationStrength": 0,
       "edgeTintStrength": 0,
       "glow": 0,
       "intRef": false,
-      "reflectRoughness": 0.07000000000000002,
+      "reflectRoughness": 0.07,
       "refractRoughness": 0,
       "uuid": "FLOOR",
-      "surfaceBlur": 0.9999999999999999
+      "surfaceBlur": 1.0
     },
     {
       "name": "Default Material",
@@ -8749,12 +8743,12 @@
     {
       "type": 0,
       "color": {
-        "r": 0.2,
-        "g": 0.2,
-        "b": 0.2
+        "r": 0.4,
+        "g": 0.4,
+        "b": 0.4
       },
       "ranged": false,
-      "r": 5.579707933508832,
+      "r": 1.0,
       "dir": {
         "x": 0,
         "y": 0,
@@ -8765,7 +8759,7 @@
         "y": 0,
         "z": 0
       },
-      "strength": 1.0000000000000004,
+      "strength": 0.5,
       "uuid": "DEFAULT",
       "castsShadow": false,
       "name": "Omni"
@@ -8773,9 +8767,9 @@
     {
       "type": 1,
       "color": {
-        "r": 0.9124999999999999,
-        "g": 0.7178040077933034,
-        "b": 0.5322917888039036
+        "r": 0.9125,
+        "g": 0.7178,
+        "b": 0.5323
       },
       "ranged": false,
       "r": 1.666664455247962,
@@ -8822,9 +8816,9 @@
       "type": 2,
       "strength": 1.3000000000000003,
       "color": {
-        "r": 0.8625,
-        "g": 0.5655428786026804,
-        "b": 0.5655428786026804
+        "r": 0.6625,
+        "g": 0.5655,
+        "b": 0.5655
       },
       "ranged": false,
       "r": 1,

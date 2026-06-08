@@ -5,10 +5,9 @@ import {
   useMemo,
   useRef,
   useState,
-  Profiler,
 } from "react";
 import clsx from "clsx";
-import { WorkData } from "@/app/(default)/@work/workitems";
+import type { WorkData } from "@/app/(default)/@work/types";
 import Title from "./title";
 import Hero from "./hero";
 import HeaderTitle from "../headertitle";
@@ -24,10 +23,10 @@ import {
   incrementEventHandlerCount,
   useGlobalState,
 } from "@/lib/state";
+import { markHandlerStart, markHandlerEnd } from "@/lib/scrollperf";
 import WorkOutro from "./workoutro";
 import Squares from "../squares";
 import NoSSR from "react-no-ssr";
-import { useProfilerRender } from "@/lib/customhooks";
 
 export default function WorkComponent({
   work,
@@ -44,10 +43,7 @@ export default function WorkComponent({
       ? work.description
       : [work.description];
   }, [work]);
-  const [descriptionState, setDescriptionState] = useState<Array<string>>(
-    Array(desc.length).fill("exit")
-  );
-  const descriptionStateRef = useRef(descriptionState);
+  const descriptionStateRef = useRef<string[]>(Array(desc.length).fill("exit"));
   const [showTitle, setShowTitle] = useState(false);
   const { scroll } = useLocomotiveScroll();
   const [title2ShowBackground, setTitle2ShowBackground] = useState(false);
@@ -61,12 +57,12 @@ export default function WorkComponent({
     return inViews.includes(`work-${index}`);
   }, [inViews, index]);
   const activeRef = useRef(false);
-  const [inColor, setInColor] = useState(false);
+  const inColorRef = useRef(false);
+  const title2ShowBgRef = useRef(false);
   const setImageSrcCallbackRef = useRef(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   //const { stop, wait } = useWaitWheel();
   const [size, setSize] = useState<[number, number] | undefined>();
-  const profilerRender = useProfilerRender({ minDuration: 10 });
 
   useLayoutEffect(() => {
     function updateSize() {
@@ -91,7 +87,7 @@ export default function WorkComponent({
   useEffect(() => {
     setWorkClasses(
       clsx({
-        "h-full w-screen transition-[opacity] duration-1000 will-change-[opacity] pt-[50dvh] bg-[var(--dark)]":
+        "h-full w-screen transition-[opacity] duration-1000 pt-[50dvh] bg-[var(--dark)]":
           true,
       })
     );
@@ -121,18 +117,29 @@ export default function WorkComponent({
       });
       incrementEventHandlerCount("scroll-workrender");
       scroll.on("scroll", (obj: any) => {
+        markHandlerStart(`workrender-${index}`);
         if (activeRef.current) {
           const videoContainerKey = `work-${index}-video-container`;
           const videoPullContainerKey = `work-${index}-video-pull-container`;
           const workThemeChangeTargetKey = `work-${index}-theme-change-target`;
-          if (
+
+          // Direct DOM for foreground color (no re-render)
+          const newInColor =
             workThemeChangeTargetKey in obj.currentElements &&
-            work.theme == "light"
-          ) {
-            setInColor(true);
-          } else {
-            setInColor(false);
+            work.theme == "light";
+          if (newInColor !== inColorRef.current) {
+            inColorRef.current = newInColor;
+            // Scope the foreground inversion to the header (the logo is the only
+            // persistent overlay that needs it) instead of :root, which would
+            // force a whole-document style recalc on every boundary.
+            document
+              .getElementById("site-header")
+              ?.style.setProperty(
+                "--foreground",
+                newInColor ? "var(--dark)" : "var(--light)"
+              );
           }
+
           if (videoContainerKey in obj.currentElements) {
             if (obj.currentElements[videoContainerKey].progress > 0.5) {
               obj.currentElements[videoContainerKey].speed = -1;
@@ -146,9 +153,16 @@ export default function WorkComponent({
               }
             }
           }
-          const title2Key = `work-${index}-title-target-2`;
-          setTitle2ShowBackground(title2Key in obj.currentElements);
 
+          // Only setState when value actually changes
+          const title2Key = `work-${index}-title-target-2`;
+          const newShowBg = title2Key in obj.currentElements;
+          if (newShowBg !== title2ShowBgRef.current) {
+            title2ShowBgRef.current = newShowBg;
+            setTitle2ShowBackground(newShowBg);
+          }
+
+          // Direct DOM for description enter/exit classes (no re-render)
           const descriptionElKeys = Object.keys(obj.currentElements).filter(
             (el: string) => el.match(/^work-\d+-description-(\d)$/)
           );
@@ -159,69 +173,61 @@ export default function WorkComponent({
             const progress = el.progress * descriptionElKeys.length - i;
             if (progress > 0.1 && progress < 0.9) {
               if (descriptionStateRef.current[i] == "exit") {
-                /*
-                stop();
-                //scroll.scrollTo(el.el);
-                setTimeout(() => {
-                  wait();
-                }, 500);
-                */
-                setDescriptionState((old) => {
-                  const newDesc = [...old];
-                  newDesc[i] = "enter";
-                  return newDesc;
-                });
+                descriptionStateRef.current[i] = "enter";
+                const container = document.getElementById(
+                  `work-${index}-description-${i}-container`
+                );
+                if (container) {
+                  const actionDiv = container.firstElementChild as HTMLElement;
+                  if (actionDiv) actionDiv.className = "group/action enter";
+                }
               }
             } else if (descriptionStateRef.current[i] == "enter") {
-              setDescriptionState((old) => {
-                const newDesc = [...old];
-                newDesc[i] = "exit";
-                return newDesc;
-              });
+              descriptionStateRef.current[i] = "exit";
+              const container = document.getElementById(
+                `work-${index}-description-${i}-container`
+              );
+              if (container) {
+                const actionDiv = container.firstElementChild as HTMLElement;
+                if (actionDiv) actionDiv.className = "group/action exit";
+              }
             }
           });
 
-          descriptionStateRef.current
-            .map((el, index) => [index, el])
-            .filter((el) => el[1] == "enter")
-            .forEach((entered) => {
-              const i = entered[0] as number;
+          // Cleanup: reset descriptions that scrolled out of currentElements
+          descriptionStateRef.current.forEach((state, i) => {
+            if (state == "enter") {
               const elName = `work-${index}-description-${i}`;
               if (!(elName in obj.currentElements)) {
-                setDescriptionState((old) => {
-                  const newDesc = [...old];
-                  newDesc[i] = "exit";
-                  return newDesc;
-                });
+                descriptionStateRef.current[i] = "exit";
+                const container = document.getElementById(
+                  `work-${index}-description-${i}-container`
+                );
+                if (container) {
+                  const actionDiv = container.firstElementChild as HTMLElement;
+                  if (actionDiv) actionDiv.className = "group/action exit";
+                }
               }
-            });
+            }
+          });
         }
+        markHandlerEnd(`workrender-${index}`);
       });
     }
   }, [scroll, index, work]);
 
   useEffect(() => {
-    descriptionStateRef.current = descriptionState;
-  }, [descriptionState]);
-
-  useEffect(() => {
     setTitleClasses(
       clsx({
         "group pt-header px-[5dvw] fixed left-0 top-0": true,
-        hidden: !showTitle,
+        // composited hide (visibility) instead of `hidden` (display:none) so
+        // toggling at a boundary doesn't force a layout+paint of the split title
+        invisible: !showTitle,
         active: inView,
         "not-active": !inView,
       })
     );
   }, [showTitle, inView]);
-
-  useLayoutEffect(() => {
-    if (inColor) {
-      document.documentElement.style.setProperty("--foreground", "var(--dark");
-    } else {
-      document.documentElement.style.setProperty("--foreground", "var(--light");
-    }
-  }, [inColor]);
 
   const revealTitle = useMemo(
     () => (
@@ -237,9 +243,12 @@ export default function WorkComponent({
     [work]
   );
 
-  return (
-    <>
-      <Profiler id={`work-${index}`} onRender={profilerRender}>
+  // Memoize the body so a boundary-crossing re-render storm (every WorkComponent
+  // re-renders when global active/inView changes) only reconciles the works
+  // whose own state actually changed — the rest return the cached tree and bail.
+  const body = useMemo(
+    () => (
+      <>
         <div
           id={`work-${index}-title-target`}
           className="absolute top-[50dvh] h-[200dvh] mt-[-100dvh]"
@@ -371,9 +380,7 @@ export default function WorkComponent({
             data-scroll-id={`work-${index}-hero-container`}
             data-scroll-speed={10}
           >
-            <Profiler id={`hero-${index}`} onRender={profilerRender}>
-              <Hero work={work} index={index!} />
-            </Profiler>
+            <Hero work={work} index={index!} />
           </div>
           <div
             data-scroll
@@ -384,17 +391,15 @@ export default function WorkComponent({
             data-scroll-id={`work-${index}-title-container`}
           >
             <div className={titleClasses}>
-              <Profiler id={`title-${index}`} onRender={profilerRender}>
-                <NoSSR>
-                  <Title
-                    theme={work.theme || "dark"}
-                    titleOutline={!!work.titleOutline}
-                    color={work.primaryColor}
-                  >
-                    {work.project}
-                  </Title>
-                </NoSSR>
-              </Profiler>
+              <NoSSR>
+                <Title
+                  theme={work.theme || "dark"}
+                  titleOutline={!!work.titleOutline}
+                  color={work.primaryColor}
+                >
+                  {work.project}
+                </Title>
+              </NoSSR>
             </div>
           </div>
           <div
@@ -404,17 +409,15 @@ export default function WorkComponent({
               height: `${100 + 100 * desc.length}dvh`,
             }}
           >
-            <Profiler id={`header-title-${index}`} onRender={profilerRender}>
-              <HeaderTitle
-                id={`work-${index!.toString()}-1`}
-                color={work.primaryColor}
-                theme={work.theme || "dark"}
-                activeRef={activeRef}
-                work={work}
-              >
-                {work.project}
-              </HeaderTitle>
-            </Profiler>
+            <HeaderTitle
+              id={`work-${index!.toString()}-1`}
+              color={work.primaryColor}
+              theme={work.theme || "dark"}
+              activeRef={activeRef}
+              work={work}
+            >
+              {work.project}
+            </HeaderTitle>
             <div
               id={`work-${index}-reveal-title`}
               className="absolute top-[-100dvh] z-[45] w-full h-[100dvh] will-change-transform"
@@ -441,22 +444,20 @@ export default function WorkComponent({
                 height: `calc(${100 + desc.length * 100}dvh - 7rem)`,
               }}
             >
-              <Profiler id={`squares-${index}`} onRender={profilerRender}>
-                <NoSSR>
-                  <Squares
-                    count={20}
-                    theme={work.theme}
-                    index={`work-${index}`}
-                    color={work.primaryColor}
-                    minWidth={5}
-                    maxWidth={15}
-                    minSpeed={0}
-                    maxSpeed={20}
-                    height={100 * desc.length}
-                    top={0}
-                  />
-                </NoSSR>
-              </Profiler>
+              <NoSSR>
+                <Squares
+                  count={20}
+                  theme={work.theme}
+                  index={`work-${index}`}
+                  color={work.primaryColor}
+                  minWidth={5}
+                  maxWidth={15}
+                  minSpeed={0}
+                  maxSpeed={20}
+                  height={100 * desc.length}
+                  top={0}
+                />
+              </NoSSR>
               <NoSSR>
                 {desc.map((d, i) => (
                   <div
@@ -478,15 +479,10 @@ export default function WorkComponent({
                       //data-scroll-call={`work${index}DescriptionInView`}
                       data-scroll-id={`work-${index}-description-${i}-container`}
                     >
-                      <div className={`group/action ${descriptionState[i]}`}>
-                        <Profiler
-                          id={`description-${index}`}
-                          onRender={profilerRender}
-                        >
-                          <Description theme={work.theme || "dark"}>
-                            {d}
-                          </Description>
-                        </Profiler>
+                      <div className="group/action exit">
+                        <Description theme={work.theme || "dark"}>
+                          {d}
+                        </Description>
                       </div>
                     </div>
                   </div>
@@ -505,9 +501,7 @@ export default function WorkComponent({
                 top: `${50 + desc.length * 100}dvh`,
               }}
             >
-              <Profiler id={`video-${index}`} onRender={profilerRender}>
-                <Video work={work} index={index!} videoRef={videoRef} />
-              </Profiler>
+              <Video work={work} index={index!} videoRef={videoRef} />
             </div>
           )}
           {
@@ -523,9 +517,7 @@ export default function WorkComponent({
                   top: `${50 + desc.length * 100}dvh`,
                 }}
               >
-                <Profiler id={`video-pull-${index}`} onRender={profilerRender}>
-                  <VideoPull work={work} index={index!} videoRef={videoRef} />
-                </Profiler>
+                <VideoPull work={work} index={index!} videoRef={videoRef} />
               </div>
             )
           }
@@ -536,53 +528,47 @@ export default function WorkComponent({
               top: `${150 + desc.length * 100 + 195}dvh`,
             }}
           >
-            <Profiler id={`header-title-2-${index}`} onRender={profilerRender}>
-              <HeaderTitle
-                id={`work-${index!.toString()}-2`}
-                color="transparent"
-                theme={work.theme || "dark"}
-                setImageSrcCallbackRef={setImageSrcCallbackRef}
-                showBackground={title2ShowBackground}
-                activeRef={activeRef}
-                work={work}
-              >
-                {work.project}
-              </HeaderTitle>
-            </Profiler>
+            <HeaderTitle
+              id={`work-${index!.toString()}-2`}
+              color="transparent"
+              theme={work.theme || "dark"}
+              setImageSrcCallbackRef={setImageSrcCallbackRef}
+              showBackground={title2ShowBackground}
+              activeRef={activeRef}
+              work={work}
+            >
+              {work.project}
+            </HeaderTitle>
           </div>
-          <Profiler id={`detail-and-slides-${index}`} onRender={profilerRender}>
+          <NoSSR>
+            <Detail
+              work={work}
+              index={index!}
+              top={`${150 + desc.length * 100 + 200}dvh`}
+              videoInView={videoInView}
+            />
+          </NoSSR>
+          <div
+            data-scroll
+            data-scroll-sticky
+            data-scroll-target={`#work-${index}-slides-target`}
+            className={clsx({
+              "absolute h-[100dvh] w-screen bg-[var(--dark)] will-change-transform z-30":
+                true,
+              "pointer-events-none": videoInView,
+            })}
+            style={{
+              top: `${150 + desc.length * 100 + 100}dvh`,
+            }}
+          >
             <NoSSR>
-              <Detail
+              <Slides
                 work={work}
                 index={index!}
-                top={`${150 + desc.length * 100 + 200}dvh`}
-                videoInView={videoInView}
+                setImageSrcCallbackRef={setImageSrcCallbackRef}
               />
             </NoSSR>
-            <div
-              data-scroll
-              data-scroll-sticky
-              data-scroll-target={`#work-${index}-slides-target`}
-              className={clsx({
-                "absolute h-[100dvh] w-screen bg-[var(--dark)] will-change-transform z-30":
-                  true,
-                "pointer-events-none": videoInView,
-              })}
-              style={{
-                top: `${150 + desc.length * 100 + 100}dvh`,
-              }}
-            >
-              <Profiler id={`slides-${index}`} onRender={profilerRender}>
-                <NoSSR>
-                  <Slides
-                    work={work}
-                    index={index!}
-                    setImageSrcCallbackRef={setImageSrcCallbackRef}
-                  />
-                </NoSSR>
-              </Profiler>
-            </div>
-          </Profiler>
+          </div>
           <div
             data-scroll
             data-scroll-sticky
@@ -596,12 +582,24 @@ export default function WorkComponent({
               top: `${150 + desc.length * 100 + 100}dvh`,
             }}
           >
-            <Profiler id={`outro-${index}`} onRender={profilerRender}>
-              <WorkOutro index={index} />
-            </Profiler>
+            <WorkOutro index={index} />
           </div>
         </div>
-      </Profiler>
-    </>
+      </>
+    ),
+    [
+      work,
+      index,
+      desc,
+      workClasses,
+      heroClasses,
+      titleClasses,
+      title2ShowBackground,
+      videoInView,
+      size,
+      revealTitle,
+    ]
   );
+
+  return body;
 }
