@@ -178,7 +178,7 @@ export default function ResumeRenderPage() {
           data-scroll-sticky
           data-scroll-target="#resume-sticky-target"
           data-scroll-id="resume-container"
-          onClick={() => window.open(`/DonaldRichardsonResume.pdf`)}
+          onClick={() => window.open(`/Donald_Richardson_Resume_2026_TD.pdf`)}
         >
           <div
             className={containerClasses}
